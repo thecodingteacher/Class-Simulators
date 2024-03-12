@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TCP Communication Simulation</title>
+    <style>
+        #serverData {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>TCP Communication Simulation</h2>
+    <div>
+        <h3>Client</h3>
+        <button onclick="startConnection()">Start Connection</button>
+        <input type="text" id="clientMessage" placeholder="Type a message">
+        <button onclick="sendData()">Send Message</button>
+        <button onclick="closeConnection()">Close Connection</button>
+    </div>
+    <div>
+        <h3>Server</h3>
+        <div id="serverData">Server Log:</div>
+    </div>
+
+    <script>
+        let connectionEstablished = false;
+
+        function logServer(message) {
+            document.getElementById('serverData').innerHTML += '<br>' + message;
+        }
+
+        function startConnection() {
+            logServer('Client: SYN (Request to start connection)');
+            logServer('Server: SYN-ACK (Acknowledgement and ready to connect)');
+            logServer('Client: ACK (Acknowledgement received)');
+            connectionEstablished = true;
+            logServer('TCP Connection established.');
+        }
+
+        function sendData() {
+            if (!connectionEstablished) {
+                logServer('Connection not established. Cannot send data.');
+                return;
+            }
+            var message = document.getElementById('clientMessage').value;
+            logServer('Client: Data - ' + message);
+            logServer('Server: ACK (Acknowledgement of data received)');
+        }
+
+        function closeConnection() {
+            if (!connectionEstablished) {
+                logServer('Connection not established. Cannot close connection.');
+                return;
+            }
+            logServer('Client: FIN (Request to finish connection)');
+            logServer('Server: ACK (Acknowledgement of request to finish)');
+            logServer('Server: FIN (Ready to finish connection)');
+            logServer('Client: ACK (Acknowledgement of ready to finish)');
+            connectionEstablished = false;
+            logServer('TCP Connection closed.');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Selection Sort Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .bar {
+            height: 20px;
+            margin: 2px;
+            background-color: #4CAF50;
+            display: inline-block;
+            width: 20px;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h2>Selection Sort Simulation</h2>
+    <p>Click the "Sort" button to see how the Selection Sort algorithm sorts the array.</p>
+    <div id="array"></div>
+    <button onclick="selectionSort()">Sort</button>
+
+    <script>
+        const array = [5, 3, 8, 4, 2];
+        const arrayContainer = document.getElementById('array');
+
+        function displayArray() {
+            arrayContainer.innerHTML = '';
+            array.forEach(value => {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = `${value * 20}px`;
+                arrayContainer.appendChild(bar);
+            });
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function selectionSort() {
+            for (let i = 0; i < array.length - 1; i++) {
+                let minIndex = i;
+                for (let j = i + 1; j < array.length; j++) {
+                    if (array[j] < array[minIndex]) {
+                        minIndex = j;
+                    }
+                }
+                if (minIndex !== i) {
+                    [array[i], array[minIndex]] = [array[minIndex], array[i]];
+                    displayArray();
+                    await sleep(1000);
+                }
+            }
+        }
+
+        displayArray();
+    </script>
+</body>
+</html>

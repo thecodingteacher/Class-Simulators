@@ -8,12 +8,13 @@
             margin: 20px;
         }
 
-        .bar {
-            height: 20px;
+        .animal {
             margin: 2px;
+            padding: 5px;
             background-color: #4CAF50;
             display: inline-block;
-            width: 20px;
+            color: white;
+            border-radius: 5px;
         }
 
         button {
@@ -22,26 +23,45 @@
             font-size: 16px;
             cursor: pointer;
         }
+
+        #explanation {
+            margin-top: 10px;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
-    <h2>Selection Sort Simulation</h2>
-    <p>Click the "Sort" button to see how the Selection Sort algorithm sorts the array.</p>
-    <div id="array"></div>
+    <h2>Selection Sort Simulation with Animal Names</h2>
+    <p>Enter an animal name and click "Add". Then, click "Sort" to see how the Selection Sort algorithm sorts the array.</p>
+    <input type="text" id="animalName" placeholder="Enter animal name">
+    <button onclick="addAnimal()">Add</button>
     <button onclick="selectionSort()">Sort</button>
+    <div id="array"></div>
+    <div id="explanation"></div>
 
     <script>
-        const array = [5, 3, 8, 4, 2];
+        let animals = ["Dog", "Cat", "Elephant", "Giraffe", "Lion"];
         const arrayContainer = document.getElementById('array');
+        const explanation = document.getElementById('explanation');
 
         function displayArray() {
             arrayContainer.innerHTML = '';
-            array.forEach(value => {
-                const bar = document.createElement('div');
-                bar.className = 'bar';
-                bar.style.height = `${value * 20}px`;
-                arrayContainer.appendChild(bar);
+            animals.forEach(animal => {
+                const animalElement = document.createElement('div');
+                animalElement.className = 'animal';
+                animalElement.textContent = animal;
+                arrayContainer.appendChild(animalElement);
             });
+        }
+
+        function addAnimal() {
+            const animalName = document.getElementById('animalName').value.trim();
+            if (animalName) {
+                animals.push(animalName);
+                displayArray();
+                document.getElementById('animalName').value = '';
+                explanation.textContent = '';
+            }
         }
 
         function sleep(ms) {
@@ -49,19 +69,21 @@
         }
 
         async function selectionSort() {
-            for (let i = 0; i < array.length - 1; i++) {
+            for (let i = 0; i < animals.length - 1; i++) {
                 let minIndex = i;
-                for (let j = i + 1; j < array.length; j++) {
-                    if (array[j] < array[minIndex]) {
+                for (let j = i + 1; j < animals.length; j++) {
+                    if (animals[j].localeCompare(animals[minIndex]) < 0) {
                         minIndex = j;
                     }
                 }
                 if (minIndex !== i) {
-                    [array[i], array[minIndex]] = [array[minIndex], array[i]];
+                    [animals[i], animals[minIndex]] = [animals[minIndex], animals[i]];
                     displayArray();
+                    explanation.textContent = `Swapping ${animals[minIndex]} and ${animals[i]}.`;
                     await sleep(1000);
                 }
             }
+            explanation.textContent = "Array is sorted!";
         }
 
         displayArray();

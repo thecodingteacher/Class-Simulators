@@ -3,27 +3,61 @@
 <head>
     <title>TCP Communication Simulation</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h3 {
+            color: #333;
+        }
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
         #serverData {
+            background-color: #eaeaea;
+            padding: 10px;
+            border-radius: 5px;
             margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <h2>TCP Communication Simulation</h2>
-    <div>
-        <h3>Client</h3>
-        <button onclick="startConnection()">Start Connection</button>
-        <input type="text" id="clientMessage" placeholder="Type a message">
-        <button onclick="sendData()">Send Message</button>
-        <button onclick="closeConnection()">Close Connection</button>
-    </div>
-    <div>
-        <h3>Server</h3>
-        <div id="serverData">Server Log:</div>
+    <div class="container">
+        <h2>TCP Communication Simulation</h2>
+        <div>
+            <h3>Client</h3>
+            <button class="button" onclick="startConnection()">Start Connection</button>
+            <input type="text" id="clientMessage" placeholder="Type a message">
+            <button class="button" onclick="sendData()">Send Message</button>
+            <button class="button" onclick="closeConnection()">Close Connection</button>
+        </div>
+        <div>
+            <h3>Server</h3>
+            <div id="serverData">Server Log:</div>
+        </div>
     </div>
 
     <script>
-        let connectionEstablished = false;
+  let connectionEstablished = false;
+        let messageQueue = [];
+        let messageLossRate = 0.2; // 20% chance of message loss
 
         function logServer(message) {
             document.getElementById('serverData').innerHTML += '<br>' + message;
@@ -31,20 +65,36 @@
 
         function startConnection() {
             logServer('Client: SYN (Request to start connection)');
-            logServer('Server: SYN-ACK (Acknowledgement and ready to connect)');
-            logServer('Client: ACK (Acknowledgement received)');
-            connectionEstablished = true;
-            logServer('TCP Connection established.');
+            setTimeout(() => logServer('Server: SYN-ACK (Acknowledgement and ready to connect)'), 1000);
+            setTimeout(() => {
+                logServer('Client: ACK (Acknowledgement received)');
+                connectionEstablished = true;
+                logServer('TCP Connection established.');
+            }, 2000);
         }
 
-        function sendData() {
+        async function sendData() {
             if (!connectionEstablished) {
                 logServer('Connection not established. Cannot send data.');
                 return;
             }
-            var message = document.getElementById('clientMessage').value;
-            logServer('Client: Data - ' + message);
-            logServer('Server: ACK (Acknowledgement of data received)');
+            let message = document.getElementById('clientMessage').value;
+            for (let i = 0; i < message.length; i += 3) {
+                let chunk = message.substring(i, i + 3);
+                messageQueue.push(chunk);
+            }
+            while (messageQueue.length > 0) {
+                let chunk = messageQueue.shift();
+                if (Math.random() > messageLossRate) {
+                    logServer(`Client: Data - ${chunk}`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    logServer('Server: ACK (Acknowledgement of data received)');
+                } else {
+                    logServer(`Client: Data - ${chunk} (Lost)`);
+                    messageQueue.unshift(chunk); // Requeue the lost chunk
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
         }
 
         function closeConnection() {
@@ -53,12 +103,13 @@
                 return;
             }
             logServer('Client: FIN (Request to finish connection)');
-            logServer('Server: ACK (Acknowledgement of request to finish)');
-            logServer('Server: FIN (Ready to finish connection)');
-            logServer('Client: ACK (Acknowledgement of ready to finish)');
-            connectionEstablished = false;
-            logServer('TCP Connection closed.');
-        }
-    </script>
+            setTimeout(() => logServer('Server: ACK (Acknowledgement of request to finish)'), 1000);
+            setTimeout(() => {
+                logServer('Server: FIN (Ready to finish connection)');
+                logServer('Client: ACK (Acknowledgement of ready to finish)');
+                connectionEstablished = false;
+                logServer('TCP Connection closed.');
+            }, 2000);
+        }    </script>
 </body>
 </html>

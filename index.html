@@ -3,47 +3,81 @@
 <head>
     <title>Data Encryption and Decryption</title>
     <style>
-        #message, #result {
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            background-color: #fff;
+            padding: 20px;
+            margin: 0 auto;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        label, input, button, p {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
             font-size: 20px;
-            margin: 10px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <label for="message">Message:</label>
-    <input type="text" id="message" value="Hello, World!">
-    <label for="key">Key (1-25):</label>
-    <input type="number" id="key" min="1" max="25" value="3">
-    <br>
-    <button onclick="encrypt()">Encrypt</button>
-    <button onclick="decrypt()">Decrypt</button>
-    <div id="result">Result: </div>
-
-    <script>
-        function encrypt() {
-            processMessage(1);
-        }
-
-        function decrypt() {
-            processMessage(-1);
-        }
-
-        function processMessage(direction) {
-            var message = document.getElementById('message').value;
-            var key = parseInt(document.getElementById('key').value);
-            var result = '';
-            for (var i = 0; i < message.length; i++) {
-                var charCode = message.charCodeAt(i);
-                if (charCode >= 65 && charCode <= 90) { // Uppercase letters
-                    result += String.fromCharCode(((charCode - 65 + key * direction + 26) % 26) + 65);
-                } else if (charCode >= 97 && charCode <= 122) { // Lowercase letters
-                    result += String.fromCharCode(((charCode - 97 + key * direction + 26) % 26) + 97);
-                } else {
-                    result += message[i];
-                }
+    <div class="container">
+        <h2>Data Encryption and Decryption</h2>
+        <p>Encryption helps protect privacy by transforming readable data into an unreadable format, using a key. Only those with the correct key can decrypt and access the original data.</p>
+        <label for="message">Message:</label>
+        <input type="text" id="message" value="Hello, World!">
+        <label for="key">Key (1-25):</label>
+        <input type="number" id="key" min="1" max="25" value="3">
+        <button onclick="encrypt()">Encrypt</button>
+        <button onclick="decrypt()">Decrypt</button>
+        <div id="result">Result: </div>
+        <script>
+            function encrypt() {
+                processMessage(1);
             }
-            document.getElementById('result').textContent = 'Result: ' + result;
-        }
-    </script>
+
+            function decrypt() {
+                processMessage(-1);
+            }
+
+            function processMessage(direction) {
+                var message = document.getElementById('message').value;
+                var key = parseInt(document.getElementById('key').value);
+                var result = '';
+                for (var i = 0; i < message.length; i++) {
+                    var charCode = message.charCodeAt(i);
+                    if (charCode >= 65 && charCode <= 90) {
+                        result += String.fromCharCode(((charCode - 65 + key * direction + 26) % 26) + 65);
+                    } else if (charCode >= 97 && charCode <= 122) {
+                        result += String.fromCharCode(((charCode - 97 + key * direction + 26) % 26) + 97);
+                    } else {
+                        result += message[i];
+                    }
+                }
+                document.getElementById('result').textContent = 'Result: ' + result;
+            }
+        </script>
+    </div>
 </body>
 </html>

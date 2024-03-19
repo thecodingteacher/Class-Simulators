@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fortnite Parameter Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin-top: 20px;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        .input-group label {
+            margin-right: 10px;
+        }
+        .output, .info {
+            margin-top: 20px;
+        }
+        .info {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .info h3 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Fortnite Parameter Simulator</h2>
+        <p>This simulator demonstrates the concept of parameters and arguments in programming. Enter the details below to simulate a battle scenario in Fortnite.</p>
+        <div class="input-group">
+            <label for="playerName">Player Name:</label>
+            <input type="text" id="playerName" placeholder="Enter player name">
+        </div>
+        <div class="input-group">
+            <label for="health">Health:</label>
+            <input type="number" id="health" placeholder="Enter health" min="0" max="100" value="100">
+        </div>
+        <div class="input-group">
+            <label for="weapon">Weapon:</label>
+            <select id="weapon">
+                <option value="pistol">Pistol</option>
+                <option value="shotgun">Shotgun</option>
+                <option value="sniper">Sniper</option>
+            </select>
+        </div>
+        <button onclick="simulateBattle()">Simulate Battle</button>
+        <div class="output" id="output"></div>
+
+        <div class="info">
+            <h3>Understanding Parameters and Arguments</h3>
+            <p><strong>Parameters</strong> are variables that are used in the function declaration to represent the values that will be passed to the function. In this simulator, <code>playerName</code>, <code>health</code>, and <code>weapon</code> are parameters in the <code>simulateBattle()</code> function.</p>
+            <p><strong>Arguments</strong> are the actual values that are passed to the function when it is called. In this case, the values entered by the user (player name, health, and selected weapon) are the arguments that are passed to the <code>simulateBattle()</code> function.</p>
+            <p>Parameters allow functions to be more flexible and reusable by accepting different arguments each time they are called. For example, the <code>simulateBattle()</code> function can be used to simulate a battle for any player with any health and weapon, simply by changing the arguments.</p>
+        </div>
+    </div>
+
+    <script>
+        function simulateBattle() {
+            var playerName = document.getElementById("playerName").value;
+            var health = parseInt(document.getElementById("health").value);
+            var weapon = document.getElementById("weapon").value;
+
+            if (playerName.trim() === "") {
+                alert("Please enter a player name.");
+                return;
+            }
+
+            if (health < 0 || health > 100) {
+                alert("Health must be between 0 and 100.");
+                return;
+            }
+
+            var damage = calculateDamage(weapon);
+            var remainingHealth = health - damage;
+
+            var output = "Player Name: " + playerName + "<br>" +
+                         "Health Before Attack: " + health + "<br>" +
+                         "Weapon Used: " + weapon + "<br>" +
+                         "Damage Taken: " + damage + "<br>" +
+                         "Remaining Health: " + remainingHealth;
+
+            document.getElementById("output").innerHTML = output;
+        }
+
+        function calculateDamage(weapon) {
+            switch (weapon) {
+                case "pistol":
+                    return 25;
+                case "shotgun":
+                    return 50;
+                case "sniper":
+                    return 75;
+                default:
+                    return 0;
+            }
+        }
+    </script>
+</body>
+</html>

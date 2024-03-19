@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Compression Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin-top: 20px;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        .input-group label {
+            margin-right: 10px;
+        }
+        .output {
+            margin-top: 20px;
+        }
+        .explanation {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Compression Simulator</h2>
+        <div class="input-group">
+            <label for="compressionType">Compression Type:</label>
+            <select id="compressionType">
+                <option value="lossless">Lossless</option>
+                <option value="lossy">Lossy</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="originalData">Original Data:</label>
+            <input type="text" id="originalData" placeholder="Enter original data">
+        </div>
+        <button onclick="simulateCompression()">Simulate Compression</button>
+        <div class="output" id="output"></div>
+
+        <div class="explanation">
+            <h3>Explanation</h3>
+            <p><strong>Lossless Compression:</strong> In lossless compression, the original data can be perfectly reconstructed from the compressed data. This type of compression is used when it's important to preserve the original data exactly.</p>
+            <p><strong>Lossy Compression:</strong> In lossy compression, some data is lost during the compression process, and the original data cannot be perfectly reconstructed. The advantage of lossy compression is that it can achieve much higher compression ratios than lossless compression.</p>
+        </div>
+    </div>
+
+    <script>
+        function simulateCompression() {
+            var compressionType = document.getElementById("compressionType").value;
+            var originalData = document.getElementById("originalData").value;
+            var compressedData = '';
+            var key = '';
+
+            if (compressionType === 'lossless') {
+                compressedData = originalData.replace(/(\w)\1+/g, function(match, char) {
+                    return char + match.length;
+                });
+            } else if (compressionType === 'lossy') {
+                compressedData = originalData.replace(/[aeiou]/gi, '');
+                key = originalData.replace(/[^aeiou]/gi, '');
+            }
+
+            var output = "<strong>Original Data:</strong> " + originalData + "<br>" +
+                         "<strong>Compression Type:</strong> " + compressionType + "<br>" +
+                         "<strong>Compressed Data:</strong> " + compressedData;
+
+            if (compressionType === 'lossy') {
+                output += "<br><strong>Key for Uncompression:</strong> " + key +
+                          "<br><button onclick='uncompressLossy(\"" + compressedData + "\", \"" + key + "\")'>Uncompress Lossy Text</button>";
+            }
+
+            document.getElementById("output").innerHTML = output;
+        }
+
+        function uncompressLossy(compressedData, key) {
+            var uncompressedData = compressedData;
+            for (var i = 0; i < key.length; i++) {
+                uncompressedData = uncompressedData.replace(new RegExp("(.{" + i + "})", "g"), "$1" + key[i]);
+            }
+
+            var output = "<strong>Uncompressed Data:</strong> " + uncompressedData;
+            document.getElementById("output").innerHTML += "<br><br>" + output;
+        }
+    </script>
+</body>
+</html>

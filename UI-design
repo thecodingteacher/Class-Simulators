@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UI/UX Spacing, Padding, and Text Size Demo</title>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            width: 300px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .row {
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        .label {
+            font-weight: bold;
+        }
+        .input {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            width: calc(100% - 10px);
+        }
+        .button {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <span class="label">Name:</span>
+            <input type="text" class="input">
+        </div>
+        <div class="row">
+            <span class="label">Email:</span>
+            <input type="email" class="input">
+        </div>
+        <div class="row">
+            <button class="button">Submit</button>
+        </div>
+    </div>
+    <div style="text-align: center; margin-top: 20px;">
+        <label for="spacing">Adjust spacing:</label>
+        <input type="range" id="spacing" name="spacing" min="0" max="50" value="10" oninput="adjustSpacing(this.value)">
+        <br>
+        <label for="padding">Adjust padding:</label>
+        <input type="range" id="padding" name="padding" min="0" max="20" value="5" oninput="adjustPadding(this.value)">
+        <br>
+        <label for="textSize">Adjust text size:</label>
+        <input type="range" id="textSize" name="textSize" min="8" max="24" value="16" oninput="adjustTextSize(this.value)">
+    </div>
+    <div style="margin-top: 20px; width: 300px; margin-left: auto; margin-right: auto; font-size: 0.9em;">
+        <strong>Explanation:</strong>
+        <p><strong>Spacing:</strong> Adjusting the spacing affects the distance between each row of the form. This can impact the readability and visual appeal of the form.</p>
+        <p><strong>Padding:</strong> Changing the padding alters the space between the content and the border of the input fields and button. This can influence the overall comfort and aesthetics of the form.</p>
+        <p><strong>Text Size:</strong> Modifying the text size adjusts the size of the text within the form elements. This can affect the readability and visual balance of the form.</p>
+    </div>
+    <script>
+        function adjustSpacing(value) {
+            var rows = document.querySelectorAll('.row');
+            rows.forEach(function(row) {
+                row.style.marginBottom = value + 'px';
+            });
+        }
+
+        function adjustPadding(value) {
+            var inputs = document.querySelectorAll('.input');
+            var button = document.querySelector('.button');
+            inputs.forEach(function(input) {
+                input.style.padding = value + 'px';
+            });
+            button.style.padding = value + 'px 10px';
+        }
+
+        function adjustTextSize(value) {
+            var container = document.querySelector('.container');
+            container.style.fontSize = value + 'px';
+        }
+    </script>
+</body>
+</html>

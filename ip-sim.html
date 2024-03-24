@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Server Simulation with Routing</title>
+  <style>
+    #serverContainer {
+      position: relative;
+      width: 500px;
+      height: 500px;
+      border: 1px solid #ccc;
+    }
+    .server, .router {
+      width: 50px;
+      height: 50px;
+      position: absolute;
+      text-align: center;
+      line-height: 50px;
+      color: white;
+      border-radius: 5px;
+    }
+    .server {
+      background-color: #4CAF50;
+    }
+    .router {
+      background-color: #f39c12;
+    }
+    .packet {
+      width: 20px;
+      height: 20px;
+      background-color: #ff0000;
+      border-radius: 50%;
+      position: absolute;
+      transition: all 1s linear;
+    }
+  </style>
+</head>
+<body>
+  <h1>2D Server Network Simulation with Routing</h1>
+  <div id="serverContainer"></div>
+  <br>
+  <input type="number" id="xCoord" placeholder="X Coordinate">
+  <input type="number" id="yCoord" placeholder="Y Coordinate">
+  <button onclick="addServer()">Add Server</button>
+  <button onclick="addRouter()">Add Router</button>
+  <br><br>
+  <label for="message">Message:</label>
+  <input type="text" id="message">
+  <br>
+  <label for="source">Source Server:</label>
+  <select id="source"></select>
+  <br>
+  <label for="destination">Destination Server:</label>
+  <select id="destination"></select>
+  <br>
+  <button onclick="sendMessage()">Send Message</button>
+
+  <script>
+      let serverCount = 0;
+    let routerCount = 0;
+    const servers = [];
+    const routers = [];
+    const serverContainer = document.getElementById('serverContainer');
+    const sourceSelect = document.getElementById('source');
+    const destinationSelect = document.getElementById('destination');
+
+    function addServer() {
+      const x = document.getElementById('xCoord').value;
+      const y = document.getElementById('yCoord').value;
+      if (x === '' || y === '' || x < 0 || y < 0 || x > 450 || y > 450) {
+        alert('Please enter valid X and Y coordinates (0-450).');
+        return;
+      }
+
+      serverCount++;
+      const serverElement = document.createElement('div');
+      serverElement.className = 'server';
+      serverElement.textContent = `S${serverCount}`;
+      serverElement.style.left = `${x}px`;
+      serverElement.style.top = `${y}px`;
+      serverContainer.appendChild(serverElement);
+
+      servers.push({ x: parseInt(x, 10), y: parseInt(y, 10) });
+
+      const option = document.createElement('option');
+      option.value = serverCount;
+      option.text = `Server ${serverCount}`;
+      sourceSelect.add(option);
+      destinationSelect.add(option.cloneNode(true));
+    }
+
+    function addRouter() {
+      const x = document.getElementById('xCoord').value;
+      const y = document.getElementById('yCoord').value;
+      if (x === '' || y === '' || x < 0 || y < 0 || x > 450 || y > 450) {
+        alert('Please enter valid X and Y coordinates (0-450).');
+        return;
+      }
+
+      routerCount++;
+      const routerElement = document.createElement('div');
+      routerElement.className = 'router';
+      routerElement.textContent = `R${routerCount}`;
+      routerElement.style.left = `${x}px`;
+      routerElement.style.top = `${y}px`;
+      serverContainer.appendChild(routerElement);
+
+      routers.push({ x: parseInt(x, 10), y: parseInt(y, 10) });
+    }
+
+    function sendMessage() {
+      const message = document.getElementById('message').value;
+      const sourceIndex = sourceSelect.selectedIndex;
+      const destinationIndex = destinationSelect.selectedIndex;
+      const sourceServer = servers[sourceIndex];
+      const destinationServer = servers[destinationIndex];
+
+      if (sourceIndex === destinationIndex) {
+        alert('Source and destination servers cannot be the same.');
+        return;
+      }
+
+      const packet = document.createElement('div');
+      packet.className = 'packet';
+      serverContainer.appendChild(packet);
+
+      // Calculate the position of the packet at the source server
+      packet.style.left = `${sourceServer.x + 15}px`;
+      packet.style.top = `${sourceServer.y + 15}px`;
+
+      // Find the closest router to the source server
+      const closestRouter = routers.reduce((closest, router) => {
+        const distanceToSource = Math.hypot(router.x - sourceServer.x, router.y - sourceServer.y);
+        return distanceToSource < Math.hypot(closest.x - sourceServer.x, closest.y - sourceServer.y) ? router : closest;
+      }, routers[0]);
+
+      // Calculate the position of the packet at the closest router
+      const deltaXRouter = closestRouter.x - sourceServer.x;
+      const deltaYRouter = closestRouter.y - sourceServer.y;
+
+      setTimeout(() => {
+        packet.style.transform = `translate(${deltaXRouter}px, ${deltaYRouter}px)`;
+      }, 100);
+
+      // Calculate the position of the packet at the destination server
+      const deltaXServer = destinationServer.x - closestRouter.x;
+      const deltaYServer = destinationServer.y - closestRouter.y;
+
+      setTimeout(() => {
+        packet.style.transform += ` translate(${deltaXServer}px, ${deltaYServer}px)`;
+      }, 1100);
+
+      setTimeout(() => {
+        serverContainer.removeChild(packet);
+        alert(`Message "${message}" sent from Server ${sourceIndex + 1} to Server ${destinationIndex + 1} via Router`);
+      }, 2100);
+    }
+  </script>
+</body>
+</html>

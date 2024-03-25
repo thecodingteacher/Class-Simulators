@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fiber Optic Data Transmission Simulation</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.3.0/pixi.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.7.1/gsap.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    #simulation {
+      margin: 20px auto;
+    }
+    .controls {
+      margin-bottom: 20px;
+    }
+    .explanation {
+      margin-top: 20px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <h1>Fiber Optic Data Transmission Simulation</h1>
+  <div class="controls">
+    <label for="transmission-type">Transmission Type:</label>
+    <select id="transmission-type">
+      <option value="parallel">Parallel</option>
+      <option value="serial">Serial</option>
+    </select>
+    <label for="transmission-mode">Transmission Mode:</label>
+    <select id="transmission-mode">
+      <option value="synchronous">Synchronous</option>
+      <option value="asynchronous">Asynchronous</option>
+    </select>
+    <label for="duplex-mode">Duplex Mode:</label>
+    <select id="duplex-mode">
+      <option value="simplex">Simplex</option>
+      <option value="full-duplex">Full Duplex</option>
+    </select>
+    <label for="speed">Speed:</label>
+    <input type="range" id="speed" min="1" max="10" value="5" step="1">
+    <span id="speed-value">5</span>
+    <label for="bandwidth">Bandwidth:</label>
+    <input type="range" id="bandwidth" min="1" max="10" value="5" step="1">
+    <span id="bandwidth-value">5</span>
+    <button id="start-stop-btn">Start</button>
+  </div>
+  <div id="simulation"></div>
+  <div class="explanation">
+    <h2>Explanation:</h2>
+    <p>This simulation demonstrates the difference between parallel and serial data transmission using fiber optics, as well as synchronous/asynchronous and simplex/full-duplex modes.</p>
+    <p>In parallel transmission, multiple bits of data are sent simultaneously over multiple fibers, allowing for faster data transfer. However, it requires more fibers and is more expensive to implement.</p>
+    <p>In serial transmission, data is sent sequentially, one bit at a time, over a single fiber. It is slower compared to parallel transmission but requires fewer fibers and is more cost-effective.</p>
+    <p>Synchronous transmission sends data in a continuous stream, synchronized with a clock signal. Asynchronous transmission sends data in smaller packets, with start and stop bits to indicate the beginning and end of each packet.</p>
+    <p>Simplex mode allows data transmission in only one direction, while full-duplex mode allows simultaneous transmission in both directions.</p>
+    <p>Use the controls to select the transmission type, transmission mode, duplex mode, adjust the speed, and change the bandwidth to see how it affects the data transmission process.</p>
+  </div>
+
+  <script>
+    const app = new PIXI.Application({
+      width: 800,
+      height: 400,
+      backgroundColor: 0xffffff
+    });
+    document.getElementById('simulation').appendChild(app.view);
+
+    const transmissionType = document.getElementById('transmission-type');
+    const transmissionMode = document.getElementById('transmission-mode');
+    const duplexMode = document.getElementById('duplex-mode');
+    const speedSlider = document.getElementById('speed');
+    const speedValue = document.getElementById('speed-value');
+    const bandwidthSlider = document.getElementById('bandwidth');
+    const bandwidthValue = document.getElementById('bandwidth-value');
+    const startStopBtn = document.getElementById('start-stop-btn');
+
+    let fiberCount = 5;
+    let dataSpeed = 5;
+    let bandwidth = 5;
+    let animationInterval;
+    let isRunning = false;
+
+    function createFibers() {
+      for (let i = 0; i < fiberCount; i++) {
+        const fiber = new PIXI.Graphics();
+        fiber.lineStyle(2, 0x000000);
+        fiber.moveTo(0, i * 50 + 50);
+        fiber.lineTo(app.screen.width, i * 50 + 50);
+        app.stage.addChild(fiber);
+      }
+    }
+
+    function sendData(direction) {
+      const data = new PIXI.Graphics();
+      data.beginFill(direction === 'forward' ? 0xff0000 : 0x0000ff);
+      data.drawRect(0, 0, 20, 20);
+      data.endFill();
+      app.stage.addChild(data);
+
+      const startX = direction === 'forward' ? 0 : app.screen.width;
+      const targetX = direction === 'forward' ? app.screen.width : 0;
+      const duration = (11 - dataSpeed) * 500;
+
+      if (transmissionType.value === 'parallel') {
+        for (let i = 0; i < fiberCount; i++) {
+          const fiberData = data.clone();
+          fiberData.y = i * 50 + 40;
+          fiberData.x = startX;
+          app.stage.addChild(fiberData);
+          gsap.to(fiberData, { x: targetX, duration: duration / 1000, ease: 'linear', onComplete: () => {
+            app.stage.removeChild(fiberData);
+          }});
+        }
+      } else {
+        data.y = app.screen.height / 2 - 10;
+        data.x = startX;
+        gsap.to(data, { x: targetX, duration: duration / 1000, ease: 'linear', onComplete: () => {
+          app.stage.removeChild(data);
+        }});
+      }
+    }
+
+    function sendImageData() {
+      const imageUrl = 'image.jpg'; // Replace with your image URL
+      const imageSprite = PIXI.Sprite.from(imageUrl);
+      imageSprite.width = 100;
+      imageSprite.height = 100;
+      imageSprite.x = 0;
+      imageSprite.y = app.screen.height - 120;
+      app.stage.addChild(imageSprite);
+
+      const targetX = app.screen.width - imageSprite.width;
+      const duration = (11 - dataSpeed) * 500;
+
+      gsap.to(imageSprite, { x: targetX, duration: duration / 1000, ease: 'linear', onComplete: () => {
+        app.stage.removeChild(imageSprite);
+      }});
+    }
+
+    function startAnimation() {
+      if (!isRunning) {
+        isRunning = true;
+        startStopBtn.textContent = 'Stop';
+
+        if (transmissionMode.value === 'synchronous') {
+          animationInterval = setInterval(() => {
+            app.stage.removeChildren();
+            createFibers();
+            sendData('forward');
+            if (duplexMode.value === 'full-duplex') {
+              sendData('backward');
+            }
+            sendImageData();
+          }, (11 - dataSpeed) * 500);
+        } else {
+          // Asynchronous transmission
+          const asyncDelay = (11 - dataSpeed) * 500;
+          let asyncInterval = asyncDelay;
+
+          animationInterval = setInterval(() => {
+            app.stage.removeChildren();
+            createFibers();
+            sendData('forward');
+            if (duplexMode.value === 'full-duplex') {
+              sendData('backward');
+            }
+            sendImageData();
+
+            asyncInterval += asyncDelay;
+          }, asyncInterval);
+        }
+      }
+    }
+
+    function stopAnimation() {
+      if (isRunning) {
+        isRunning = false;
+        startStopBtn.textContent = 'Start';
+        clearInterval(animationInterval);
+        app.stage.removeChildren();
+        createFibers();
+      }
+    }
+
+    function updateSimulation() {
+      stopAnimation();
+      fiberCount = bandwidth;
+      if (isRunning) {
+        startAnimation();
+      }
+    }
+
+    transmissionType.addEventListener('change', updateSimulation);
+    transmissionMode.addEventListener('change', updateSimulation);
+    duplexMode.addEventListener('change', updateSimulation);
+    speedSlider.addEventListener('input', () => {
+      dataSpeed = parseInt(speedSlider.value);
+      speedValue.textContent = dataSpeed;
+      updateSimulation();
+    });
+    bandwidthSlider.addEventListener('input', () => {
+      bandwidth = parseInt(bandwidthSlider.value);
+      bandwidthValue.textContent = bandwidth;
+      updateSimulation();
+    });
+    startStopBtn.addEventListener('click', () => {
+      if (isRunning) {
+        stopAnimation();
+      } else {
+        startAnimation();
+      }
+    });
+
+    createFibers();
+  </script>
+</body>
+</html>

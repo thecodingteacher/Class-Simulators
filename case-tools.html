@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CASE Tools Adventure</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.5.2/browser/pixi.min.js"></script>
+</head>
+<body>
+  <script>
+    // Create the Pixi.js application
+    const app = new PIXI.Application({
+      width: 800,
+      height: 600,
+      backgroundColor: 0x1099bb
+    });
+    document.body.appendChild(app.view);
+
+    // Create the game container
+    const gameContainer = new PIXI.Container();
+    app.stage.addChild(gameContainer);
+
+    // Create the player sprite
+    const player = PIXI.Sprite.from('player.png');
+    player.x = app.screen.width / 2;
+    player.y = app.screen.height / 2;
+    player.anchor.set(0.5);
+    gameContainer.addChild(player);
+
+    // Create the NPC sprites
+    const npcPositions = [
+      { x: 200, y: 200 },
+      { x: 600, y: 200 },
+      { x: 200, y: 400 },
+      { x: 600, y: 400 }
+    ];
+
+    const npcSprites = [];
+    for (let i = 0; i < 4; i++) {
+      const npc = PIXI.Sprite.from('npc.png');
+      npc.x = npcPositions[i].x;
+      npc.y = npcPositions[i].y;
+      npc.anchor.set(0.5);
+      npc.interactive = true;
+      npc.buttonMode = true;
+      npc.on('pointerdown', () => showDialog(i));
+      gameContainer.addChild(npc);
+      npcSprites.push(npc);
+    }
+
+    // Create the dialog container
+    const dialogContainer = new PIXI.Container();
+    dialogContainer.visible = false;
+    gameContainer.addChild(dialogContainer);
+
+    const dialogBox = new PIXI.Graphics();
+    dialogBox.beginFill(0xffffff);
+    dialogBox.drawRect(0, 0, app.screen.width, 200);
+    dialogBox.endFill();
+    dialogBox.y = app.screen.height - 200;
+    dialogContainer.addChild(dialogBox);
+
+    const dialogText = new PIXI.Text('', {
+      fontFamily: 'Arial',
+      fontSize: 24,
+      fill: 'black',
+      wordWrap: true,
+      wordWrapWidth: app.screen.width - 40
+    });
+    dialogText.x = 20;
+    dialogText.y = dialogBox.y + 20;
+    dialogContainer.addChild(dialogText);
+
+    const continueButton = new PIXI.Graphics();
+    continueButton.beginFill(0x00ff00);
+    continueButton.drawRect(0, 0, 100, 40);
+    continueButton.endFill();
+    continueButton.x = app.screen.width - 120;
+    continueButton.y = dialogBox.y + 140;
+    continueButton.interactive = true;
+    continueButton.buttonMode = true;
+    continueButton.on('pointerdown', () => {
+      dialogContainer.visible = false;
+      currentDialogIndex++;
+      if (currentDialogIndex < dialogTexts[currentNpcIndex].length) {
+        showDialog(currentNpcIndex);
+      }
+    });
+    dialogContainer.addChild(continueButton);
+
+    const continueText = new PIXI.Text('Continue', {
+      fontFamily: 'Arial',
+      fontSize: 18,
+      fill: 'white'
+    });
+    continueText.x = continueButton.width / 2;
+    continueText.y = continueButton.height / 2;
+    continueText.anchor.set(0.5);
+    continueButton.addChild(continueText);
+
+    // Dialog texts for each NPC
+    const dialogTexts = [
+      [
+        'Hello! I can teach you about UML Diagrams. They help in visualizing the structure and behavior of software systems.',
+        'UML Diagrams are essential for designing and communicating software architecture. They provide a standard notation for modeling various aspects of a system.',
+        'There are different types of UML Diagrams, such as Class Diagrams, Sequence Diagrams, and Use Case Diagrams. Each serves a specific purpose in the software development process.',
+        'Class Diagrams represent the static structure of a system, showing classes, attributes, operations, and relationships between classes.',
+        'Sequence Diagrams illustrate the dynamic behavior of objects, focusing on the sequence of messages exchanged between them over time.',
+        'Use Case Diagrams capture the functional requirements of a system, depicting actors, use cases, and their relationships.',
+        'UML Diagrams are widely used in the software industry to facilitate communication among team members, stakeholders, and clients.',
+        'Question: Can you name three types of UML Diagrams and their purposes?'
+      ],
+      [
+        'Hi there! Let me tell you about Code Generation. It automatically generates code snippets based on models, saving time and effort.',
+        'Code Generation is a powerful technique that bridges the gap between high-level models and executable code.',
+        'By defining models using UML or other modeling languages, developers can automatically generate code templates, reducing manual coding efforts.',
+        'Code Generation tools analyze the models and generate code in the desired programming language, such as Java, C++, or Python.',
+        'The generated code serves as a starting point for developers, providing a structure and boilerplate code that can be further customized and extended.',
+        'Code Generation ensures consistency and adherence to design patterns, coding conventions, and best practices.',
+        'It accelerates the development process, minimizes errors, and allows developers to focus on higher-level aspects of the system.',
+        'Question: How can Code Generation improve the efficiency and quality of software development?'
+      ],
+      [
+        'Hey! I specialize in Reverse Engineering. It involves analyzing existing code to understand and document the system.',
+        'Reverse Engineering is the process of examining an existing software system to identify its components, understand its architecture, and extract design information.',
+        'It is particularly useful when dealing with legacy systems or when documentation is outdated or missing.',
+        'Reverse Engineering tools can automatically analyze the source code and generate visual representations, such as UML Diagrams, to aid in understanding the system.',
+        'By reverse engineering a system, developers can gain insights into its structure, dependencies, and behavior.',
+        'This knowledge is valuable for maintenance, bug fixing, system enhancements, and migration to new technologies.',
+        'Reverse Engineering also helps in identifying potential security vulnerabilities and performance bottlenecks.',
+        'Question: In what scenarios would Reverse Engineering be most beneficial for a software development team?'
+      ],
+      [
+        'Greetings! I\'m an expert in Model-Driven Development. It focuses on creating models and transforming them into executable code.',
+        'Model-Driven Development (MDD) is an approach that emphasizes the use of models as the primary artifacts in the software development process.',
+        'In MDD, developers create high-level models that capture the system\'s structure, behavior, and requirements using modeling languages like UML.',
+        'These models serve as a platform-independent representation of the system, abstracting away the complexities of the underlying technology.',
+        'MDD tools and frameworks provide mechanisms to automatically transform the models into executable code for various platforms and programming languages.',
+        'The generated code is based on predefined templates and transformation rules, ensuring consistency and reducing manual coding efforts.',
+        'MDD promotes a higher level of abstraction, enabling developers to focus on the system\'s design and functionality rather than low-level implementation details.',
+        'Question: What are the key benefits of adopting Model-Driven Development in a software project?'
+      ]
+    ];
+
+    let currentNpcIndex = 0;
+    let currentDialogIndex = 0;
+
+    // Function to show the dialog
+    function showDialog(npcIndex) {
+      currentNpcIndex = npcIndex;
+      dialogContainer.visible = true;
+      dialogText.text = dialogTexts[npcIndex][currentDialogIndex];
+    }
+
+    // Handle player movement
+    const moveSpeed = 5;
+
+    const leftArrow = keyboard(37);
+    const upArrow = keyboard(38);
+    const rightArrow = keyboard(39);
+    const downArrow = keyboard(40);
+
+    leftArrow.press = () => {
+      player.x -= moveSpeed;
+    };
+
+    upArrow.press = () => {
+      player.y -= moveSpeed;
+    };
+
+    rightArrow.press = () => {
+      player.x += moveSpeed;
+    };
+
+    downArrow.press = () => {
+      player.y += moveSpeed;
+    };
+
+    // Keyboard input helper function
+    function keyboard(keyCode) {
+      const key = {};
+      key.code = keyCode;
+      key.downHandler = (event) => {
+    if (event.keyCode === key.code) {
+      if (key.isUp && key.press) key.press();
+      key.isDown = true;
+      key.isUp = false;
+    }
+    event.preventDefault();
+  };
+
+  key.upHandler = (event) => {
+    if (event.keyCode === key.code) {
+      if (key.isDown && key.release) key.release();
+      key.isDown = false;
+      key.isUp = true;
+    }
+    event.preventDefault();
+  };
+
+  window.addEventListener('keydown', key.downHandler.bind(key), false);
+  window.addEventListener('keyup', key.upHandler.bind(key), false);
+
+  return key;
+}
+</script>

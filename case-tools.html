@@ -41,7 +41,6 @@
       npc.anchor.set(0.5);
       npc.interactive = true;
       npc.buttonMode = true;
-      npc.on('pointerdown', () => showDialog(i));
       gameContainer.addChild(npc);
       npcSprites.push(npc);
     }
@@ -82,6 +81,8 @@
       currentDialogIndex++;
       if (currentDialogIndex < dialogTexts[currentNpcIndex].length) {
         showDialog(currentNpcIndex);
+      } else {
+        obtainItem(currentNpcIndex);
       }
     });
     dialogContainer.addChild(continueButton);
@@ -140,6 +141,9 @@
       ]
     ];
 
+    const items = ['UML Diagram Book', 'Code Generation Tool', 'Reverse Engineering Guide', 'MDD Framework'];
+    const obtainedItems = [];
+
     let currentNpcIndex = 0;
     let currentDialogIndex = 0;
 
@@ -150,6 +154,25 @@
       dialogText.text = dialogTexts[npcIndex][currentDialogIndex];
     }
 
+    // Function to obtain an item from an NPC
+    function obtainItem(npcIndex) {
+      const item = items[npcIndex];
+      obtainedItems.push(item);
+      console.log(`Obtained item: ${item}`);
+    }
+
+    // Function to check if the player is near an NPC
+    function checkNearNPC() {
+      for (let i = 0; i < npcSprites.length; i++) {
+        const npc = npcSprites[i];
+        const distance = Math.hypot(player.x - npc.x, player.y - npc.y);
+        if (distance < 100) {
+          showDialog(i);
+          break;
+        }
+      }
+    }
+
     // Handle player movement
     const moveSpeed = 5;
 
@@ -158,47 +181,52 @@
     const rightArrow = keyboard(39);
     const downArrow = keyboard(40);
 
-    leftArrow.press = () => {
-      player.x -= moveSpeed;
-    };
+    // Update player movement based on key states
+    function updatePlayerMovement() {
+      if (leftArrow.isDown) {
+        player.x -= moveSpeed;
+      }
+      if (upArrow.isDown) {
+        player.y -= moveSpeed;
+      }
+      if (rightArrow.isDown) {
+        player.x += moveSpeed;
+      }
+      if (downArrow.isDown) {
+        player.y += moveSpeed;
+      }
+    }
 
-    upArrow.press = () => {
-      player.y -= moveSpeed;
-    };
-
-    rightArrow.press = () => {
-      player.x += moveSpeed;
-    };
-
-    downArrow.press = () => {
-      player.y += moveSpeed;
-    };
+    // Game loop
+    app.ticker.add(() => {
+      updatePlayerMovement();
+      checkNearNPC();
+    });
 
     // Keyboard input helper function
     function keyboard(keyCode) {
       const key = {};
       key.code = keyCode;
-      key.downHandler = (event) => {
-    if (event.keyCode === key.code) {
-      if (key.isUp && key.press) key.press();
-      key.isDown = true;
-      key.isUp = false;
-    }
-    event.preventDefault();
-  };
-
-  key.upHandler = (event) => {
-    if (event.keyCode === key.code) {
-      if (key.isDown && key.release) key.release();
       key.isDown = false;
       key.isUp = true;
+      key.downHandler = (event) => {
+        if (event.keyCode === key.code) {
+          key.isDown = true;
+          key.isUp = false;
+        }
+        event.preventDefault();
+      };
+      key.upHandler = (event) => {
+        if (event.keyCode === key.code) {
+          key.isDown = false;
+          key.isUp = true;
+        }
+        event.preventDefault();
+      };
+      window.addEventListener('keydown', key.downHandler.bind(key), false);
+      window.addEventListener('keyup', key.upHandler.bind(key), false);
+      return key;
     }
-    event.preventDefault();
-  };
-
-  window.addEventListener('keydown', key.downHandler.bind(key), false);
-  window.addEventListener('keyup', key.upHandler.bind(key), false);
-
-  return key;
-}
-</script>
+  </script>
+</body>
+</html>

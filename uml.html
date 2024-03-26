@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Advanced Interactive Fortnite Game UML Diagram</title>
+    <style>
+        svg {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <h1>Advanced Interactive Fortnite Game UML Diagram</h1>
+    <p>Add new classes and properties to the diagram, and connect them with relationships:</p>
+    <form id="addClassForm">
+        <label for="className">Class Name:</label>
+        <input type="text" id="className" name="className" required>
+        <label for="classProperties">Properties (separated by commas):</label>
+        <input type="text" id="classProperties" name="classProperties" required>
+        <button type="submit">Add Class</button>
+    </form>
+    <form id="addRelationshipForm">
+        <label for="sourceClass">Source Class:</label>
+        <input type="text" id="sourceClass" name="sourceClass" required>
+        <label for="targetClass">Target Class:</label>
+        <input type="text" id="targetClass" name="targetClass" required>
+        <button type="submit">Add Relationship</button>
+    </form>
+    <svg id="umlDiagram" width="800" height="600">
+        <!-- Example classes and relationships will be added here -->
+    </svg>
+
+    <script>
+        const svg = document.getElementById('umlDiagram');
+        let classCount = 0;
+        let classPositions = {};
+
+        document.getElementById('addClassForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const className = document.getElementById('className').value;
+            const classProperties = document.getElementById('classProperties').value.split(',').map(prop => prop.trim());
+            addClassToDiagram(className, classProperties);
+            this.reset();
+        });
+
+        document.getElementById('addRelationshipForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const sourceClass = document.getElementById('sourceClass').value;
+            const targetClass = document.getElementById('targetClass').value;
+            addRelationshipToDiagram(sourceClass, targetClass);
+            this.reset();
+        });
+
+        function addClassToDiagram(className, classProperties) {
+            const x = 50 + (classCount % 4) * 180;
+            const y = 50 + Math.floor(classCount / 4) * 120;
+
+            const classGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            classGroup.setAttribute('transform', `translate(${x},${y})`);
+
+            const rectHeight = 30 + classProperties.length * 20;
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('width', '120');
+            rect.setAttribute('height', rectHeight);
+            rect.style.fill = 'white';
+            rect.style.stroke = 'black';
+            rect.style.strokeWidth = '2';
+            classGroup.appendChild(rect);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', '10');
+            text.setAttribute('y', '20');
+            text.style.fill = 'black';
+            text.textContent = className;
+            classGroup.appendChild(text);
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', '0');
+            line.setAttribute('y1', '30');
+            line.setAttribute('x2', '120');
+            line.setAttribute('y2', '30');
+            line.style.stroke = 'black';
+            line.style.strokeWidth = '2';
+            classGroup.appendChild(line);
+
+            classProperties.forEach((prop, index) => {
+                const propertyText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                propertyText.setAttribute('x', '10');
+                propertyText.setAttribute('y', 50 + index * 20);
+                propertyText.style.fill = 'black';
+                propertyText.textContent = prop;
+                classGroup.appendChild(propertyText);
+            });
+
+            svg.appendChild(classGroup);
+            classPositions[className] = { x: x + 60, y: y + rectHeight / 2 };
+            classCount++;
+        }
+
+        function addRelationshipToDiagram(sourceClass, targetClass) {
+            if (classPositions[sourceClass] && classPositions[targetClass]) {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', classPositions[sourceClass].x);
+                line.setAttribute('y1', classPositions[sourceClass].y);
+                line.setAttribute('x2', classPositions[targetClass].x);
+                line.setAttribute('y2', classPositions[targetClass].y);
+                line.style.stroke = 'black';
+                line.style.strokeWidth = '2';
+                svg.appendChild(line);
+            } else {
+                alert('One or both of the classes do not exist. Please add the classes first.');
+            }
+        }
+    </script>
+</body>
+</html>

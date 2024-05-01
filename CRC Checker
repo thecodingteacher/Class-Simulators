@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CRC Error Checking Simulator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    input[type="text"] {
+      width: 300px;
+      padding: 5px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 5px 10px;
+    }
+    .step {
+      margin-bottom: 20px;
+    }
+    .correct {
+      color: green;
+    }
+    .incorrect {
+      color: red;
+    }
+    .hint {
+      color: blue;
+      cursor: pointer;
+    }
+    .explanation {
+      margin-top: 20px;
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>CRC Error Checking Simulator</h1>
+  
+  <div id="question1" class="step">
+    <h2>Question 1: Find the Divisor</h2>
+    <p>Given the data: <span id="data"></span></p>
+    <p>Find the divisor that will be used for CRC error checking.</p>
+    <input type="text" id="divisorInput" placeholder="Enter divisor">
+    <button onclick="checkDivisor()">Check Divisor</button>
+    <p id="divisorResult"></p>
+    <p class="hint" onclick="showDivisorHint()">Show Hint</p>
+    <button onclick="showDivisorAnswer()">Show Answer</button>
+  </div>
+  
+  <div id="question2" class="step" style="display: none;">
+    <h2>Question 2: Check for Transmission Errors</h2>
+    <p>Given the transmitted data: <span id="transmittedData"></span></p>
+    <p>Using the divisor from Question 1, check if there were any errors in transmission.</p>
+    <button onclick="checkTransmissionErrors()">Check Transmission Errors</button>
+    <div id="transmissionSteps"></div>
+    <p id="transmissionResult"></p>
+  </div>
+  
+  <button onclick="generateNewQuestion()">Generate New Question</button>
+  
+  <div class="explanation">
+    <h2>Why CRC is Used</h2>
+    <p>CRC (Cyclic Redundancy Check) is an error-detecting code commonly used in digital networks and storage devices to detect accidental changes to raw data. It is used to ensure the integrity of data during transmission or storage.</p>
+    <p>Here's how CRC works:</p>
+    <ol>
+      <li>The sender calculates a CRC value based on the data being sent using a predetermined algorithm.</li>
+      <li>The CRC value is appended to the data and sent to the receiver.</li>
+      <li>The receiver recalculates the CRC value using the same algorithm and compares it with the received CRC value.</li>
+      <li>If the calculated CRC value matches the received CRC value, it indicates that the data was transmitted correctly without any errors.</li>
+      <li>If the CRC values don't match, it means that the data was corrupted during transmission, and the receiver can request retransmission or take appropriate action.</li>
+    </ol>
+    <p>CRC is widely used because it provides a simple and effective way to detect errors in data transmission, helping to ensure data integrity and reliability.</p>
+  </div>
+  
+  <script>
+    let divisor;
+    let data;
+    let transmittedData;
+    let incorrectAttempts = 0;
+    
+    function generateNewQuestion() {
+      // Generate random data and divisor
+      data = Math.floor(Math.random() * 900) + 100; // Random 3-digit number
+      divisor = getRandomFactor(data); // Random factor of data
+      
+      // Generate transmitted data with or without errors
+      const hasErrors = Math.random() < 0.5; // 50% chance of errors
+      const remainder = data % divisor;
+      transmittedData = hasErrors ? data + 1 : data * divisor + remainder;
+      
+      // Update question text
+      document.getElementById('data').textContent = data;
+      document.getElementById('transmittedData').textContent = transmittedData;
+      
+      // Reset input and result fields
+      document.getElementById('divisorInput').value = '';
+      document.getElementById('divisorResult').textContent = '';
+      document.getElementById('transmissionSteps').innerHTML = '';
+      document.getElementById('transmissionResult').textContent = '';
+      
+      // Hide Question 2 initially
+      document.getElementById('question2').style.display = 'none';
+      
+      // Reset incorrect attempts counter
+      incorrectAttempts = 0;
+    }
+    
+    function getRandomFactor(number) {
+      const factors = [];
+      for (let i = 2; i <= Math.sqrt(number); i++) {
+        if (number % i === 0) {
+          factors.push(i);
+          if (i !== number / i) {
+            factors.push(number / i);
+          }
+        }
+      }
+      return factors[Math.floor(Math.random() * factors.length)];
+    }
+    
+    function checkDivisor() {
+      const userDivisor = parseInt(document.getElementById('divisorInput').value);
+      const divisorResult = document.getElementById('divisorResult');
+      
+      if (userDivisor === divisor) {
+        divisorResult.textContent = 'Correct divisor!';
+        divisorResult.className = 'correct';
+        document.getElementById('question2').style.display = 'block';
+      } else {
+        divisorResult.textContent = 'Incorrect divisor. Please try again.';
+        divisorResult.className = 'incorrect';
+        incorrectAttempts++;
+        
+        if (incorrectAttempts === 1) {
+          divisorResult.textContent += ' Hint: The divisor is a factor of the data.';
+        } else if (incorrectAttempts === 2) {
+          divisorResult.textContent += ' Hint: The divisor is between 1 and the square root of the data.';
+        } else if (incorrectAttempts >= 3) {
+          divisorResult.textContent += ' Hint: Consider using the "Show Answer" button for assistance.';
+        }
+      }
+    }
+    
+    function showDivisorHint() {
+      const divisorResult = document.getElementById('divisorResult');
+      divisorResult.textContent = `Hint: The divisor is a factor of ${data}.`;
+      divisorResult.className = 'hint';
+    }
+    
+    function showDivisorAnswer() {
+      const divisorResult = document.getElementById('divisorResult');
+      divisorResult.innerHTML = `The divisor is ${divisor}.<br>Explanation: ${divisor} is a factor of ${data} because ${data} ÷ ${divisor} = ${data / divisor} with no remainder.`;
+      divisorResult.className = 'hint';
+    }
+    
+    function checkTransmissionErrors() {
+      const transmissionSteps = document.getElementById('transmissionSteps');
+      const transmissionResult = document.getElementById('transmissionResult');
+      
+      // Step 1: Divide the transmitted data by the divisor
+      const remainder = transmittedData % divisor;
+      const step1 = `Step 1: Divide the transmitted data by the divisor: ${transmittedData} ÷ ${divisor}<br>`;
+      const step2 = `Step 2: Remainder: ${remainder}<br>`;
+      
+      // Step 3: Check if the remainder is zero
+      const errorDetected = remainder !== 0;
+      const step3 = `Step 3: Check if the remainder is zero: ${errorDetected ? 'Error detected' : 'No errors'}<br>`;
+      
+      transmissionSteps.innerHTML = step1 + step2 + step3;
+      
+      if (errorDetected) {
+        transmissionResult.textContent = 'Errors detected in transmission.';
+        transmissionResult.className = 'incorrect';
+      } else {
+        transmissionResult.textContent = 'No errors detected in transmission.';
+        transmissionResult.className = 'correct';
+      }
+    }
+    
+    // Generate initial question
+    generateNewQuestion();
+  </script>
+</body>
+</html>

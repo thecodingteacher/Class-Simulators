@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Application and Hosting Simulator</title>
+  <style>
+    /* Add your CSS styles here */
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+    }
+    
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 200px;
+      background-color: #555;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -100px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+    
+    .correct {
+      color: green;
+    }
+    
+    .incorrect {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>Application and Hosting Simulator</h1>
+  
+  <div id="intro">
+    <p>Welcome to the Application and Hosting Simulator! In this interactive experience, you'll learn about the impact of different service providers on the security of your application. Select the appropriate settings for each service to ensure your application is secure and protected against potential threats.</p>
+  </div>
+  
+  <div id="difficulty">
+    <label for="level">Select Difficulty:</label>
+    <select id="level">
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+  </div>
+  
+  <div id="services">
+    <h2>Select Services:</h2>
+    
+    <h3>AWS</h3>
+    <label><input type="checkbox" name="aws" value="vpc"><span class="tooltip">Enable VPC<span class="tooltiptext">Enable Virtual Private Cloud for network isolation.</span></span></label>
+    <label><input type="checkbox" name="aws" value="security-groups"><span class="tooltip">Configure Security Groups<span class="tooltiptext">Set up security groups to control inbound and outbound traffic.</span></span></label>
+    <label><input type="checkbox" name="aws" value="encryption"><span class="tooltip">Enable Data Encryption<span class="tooltiptext">Encrypt sensitive data at rest and in transit.</span></span></label>
+    <label><input type="checkbox" name="aws" value="access-control"><span class="tooltip">Set Up Access Control<span class="tooltiptext">Configure access control policies to restrict unauthorized access.</span></span></label>
+    
+    <h3>Cloudflare</h3>
+    <label><input type="checkbox" name="cloudflare" value="ddos-protection"><span class="tooltip">Enable DDoS Protection<span class="tooltiptext">Protect against Distributed Denial of Service attacks.</span></span></label>
+    <label><input type="checkbox" name="cloudflare" value="ssl"><span class="tooltip">Configure SSL/TLS<span class="tooltiptext">Enable SSL/TLS to encrypt data in transit.</span></span></label>
+    <label><input type="checkbox" name="cloudflare" value="firewall"><span class="tooltip">Set Up Web Application Firewall<span class="tooltiptext">Configure firewall rules to protect against common web vulnerabilities.</span></span></label>
+    <label><input type="checkbox" name="cloudflare" value="rate-limiting"><span class="tooltip">Enable Rate Limiting<span class="tooltiptext">Limit the rate of requests to prevent abuse and protect resources.</span></span></label>
+    
+    <h3>Auth0</h3>
+    <label><input type="checkbox" name="auth0" value="mfa"><span class="tooltip">Enable Multi-Factor Authentication<span class="tooltiptext">Require additional factors for authentication, such as SMS or hardware tokens.</span></span></label>
+    <label><input type="checkbox" name="auth0" value="sso"><span class="tooltip">Configure Single Sign-On<span class="tooltiptext">Enable Single Sign-On for seamless authentication across multiple applications.</span></span></label>
+    <label><input type="checkbox" name="auth0" value="password-policy"><span class="tooltip">Set Strong Password Policy<span class="tooltiptext">Enforce strong password requirements, such as minimum length and complexity.</span></span></label>
+    <label><input type="checkbox" name="auth0" value="brute-force"><span class="tooltip">Enable Brute Force Protection<span class="tooltiptext">Implement measures to prevent brute force attacks on user accounts.</span></span></label>
+    
+    <h3>Heroku</h3>
+    <label><input type="checkbox" name="heroku" value="ssl"><span class="tooltip">Enable SSL/TLS<span class="tooltiptext">Configure SSL/TLS to encrypt data in transit.</span></span></label>
+    <label><input type="checkbox" name="heroku" value="logging"><span class="tooltip">Set Up Logging and Monitoring<span class="tooltiptext">Implement logging and monitoring to detect and respond to security incidents.</span></span></label>
+    <label><input type="checkbox" name="heroku" value="access-control"><span class="tooltip">Configure Access Control<span class="tooltiptext">Set up access control measures to restrict unauthorized access to resources.</span></span></label>
+    <label><input type="checkbox" name="heroku" value="security-scanning"><span class="tooltip">Perform Regular Security Scanning<span class="tooltiptext">Regularly scan the application for vulnerabilities and security issues.</span></span></label>
+    
+    <h3>DigitalOcean</h3>
+    <label><input type="checkbox" name="digitalocean" value="firewall"><span class="tooltip">Configure Firewall Rules<span class="tooltiptext">Set up firewall rules to control inbound and outbound traffic.</span></span></label>
+    <label><input type="checkbox" name="digitalocean" value="ssh-keys"><span class="tooltip">Use SSH Keys for Authentication<span class="tooltiptext">Configure SSH key-based authentication for secure access to servers.</span></span></label>
+    <label><input type="checkbox" name="digitalocean" value="updates"><span class="tooltip">Keep Software Up to Date<span class="tooltiptext">Regularly update the operating system and installed software to patch vulnerabilities.</span></span></label>
+    <label><input type="checkbox" name="digitalocean" value="backups"><span class="tooltip">Enable Regular Backups<span class="tooltiptext">Set up regular backups to protect against data loss.</span></span></label>
+  </div>
+  
+  <button id="simulate">Simulate</button>
+  
+  <div id="result"></div>
+  
+  <div id="hints">
+    <h2>Hints:</h2>
+    <ul>
+      <li>Enable multi-factor authentication for enhanced security.</li>
+      <li>Configure SSL/TLS to encrypt data in transit.</li>
+      <li>Set up access control measures to restrict unauthorized access.</li>
+      <li>Regularly update software and dependencies to patch vulnerabilities.</li>
+      <!-- Add more hints here -->
+    </ul>
+  </div>
+  
+  <script>
+    // Add your JavaScript code here
+    
+    // Function to check the selected services and settings based on difficulty level
+    function checkSelection() {
+      var difficulty = document.getElementById('level').value;
+      var selectedAWSSettings = getSelectedSettings('aws');
+      var selectedCloudflareSettings = getSelectedSettings('cloudflare');
+      var selectedAuth0Settings = getSelectedSettings('auth0');
+      var selectedHerokuSettings = getSelectedSettings('heroku');
+      var selectedDigitalOceanSettings = getSelectedSettings('digitalocean');
+      
+      // Perform checks based on difficulty level and selected options
+      var result = '';
+      if (difficulty === 'easy') {
+        // Easy mode checks
+        if (selectedAWSSettings.includes('vpc') && selectedCloudflareSettings.includes('ssl')) {
+          result = '<p class="correct">Congratulations! Your application is secure.</p>';
+        } else {
+          result = '<p class="incorrect">Oops! Your application was hacked. Make sure to enable VPC and configure SSL/TLS.</p>';
+        }
+      } else if (difficulty === 'medium') {
+        // Medium mode checks
+        if (selectedAWSSettings.includes('vpc') && selectedCloudflareSettings.includes('ssl') && selectedAuth0Settings.includes('mfa')) {
+          result = '<p class="correct">Well done! Your application is protected.</p>';
+        } else {
+          result = '<p class="incorrect">Oh no! Your application had a security breach.</p>';
+        }
+      } else if (difficulty === 'hard') {
+        // Hard mode checks
+        if (selectedAWSSettings.includes('vpc') && selectedAWSSettings.includes('encryption') && selectedCloudflareSettings.includes('ssl') && selectedCloudflareSettings.includes('firewall') && selectedAuth0Settings.includes('mfa') && selectedAuth0Settings.includes('password-policy') && selectedHerokuSettings.includes('logging') && selectedDigitalOceanSettings.includes('updates')) {
+          result = '<p class="correct">Excellent! Your application is highly secure.</p>';
+        } else {
+          result = '<p class="incorrect">Uh-oh! Your application suffered a data leak. p>';
+        }
+      }
+      
+      // Display the result in the "result" div
+      document.getElementById('result').innerHTML = result;
+      
+      // Update the difficulty level dropdown with checkmarks
+      var levelOptions = document.getElementById('level').options;
+      for (var i = 0; i < levelOptions.length; i++) {
+        if (levelOptions[i].value === difficulty && result.includes('correct')) {
+          levelOptions[i].text += ' ✓';
+        }
+      }
+    }
+    
+    // Function to get the selected settings for a specific service
+    function getSelectedSettings(serviceName) {
+      var settings = document.getElementsByName(serviceName);
+      var selectedSettings = [];
+      for (var i = 0; i < settings.length; i++) {
+        if (settings[i].checked) {
+          selectedSettings.push(settings[i].value);
+        }
+      }
+      return selectedSettings;
+    }
+    
+    // Add event listener to the simulate button
+    document.getElementById('simulate').addEventListener('click', checkSelection);
+  </script>
+</body>
+</html>

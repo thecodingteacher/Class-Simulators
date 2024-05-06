@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Server Simulator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .server {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+    .server h2 {
+      margin-top: 0;
+    }
+    .server p {
+      margin-bottom: 10px;
+    }
+    .server button {
+      padding: 5px 10px;
+      margin-right: 5px;
+    }
+    .server .output {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .troubleshooting {
+      margin-top: 10px;
+    }
+    .troubleshooting h3 {
+      margin-bottom: 5px;
+    }
+    .scenario {
+      margin-top: 10px;
+    }
+    .scenario h3 {
+      margin-bottom: 5px;
+    }
+    .feedback {
+      margin-top: 10px;
+      font-style: italic;
+    }
+    .scenario-list {
+      margin-top: 20px;
+    }
+    .scenario-list h3 {
+      margin-bottom: 10px;
+    }
+    .scenario-list ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    .scenario-list li {
+      margin-bottom: 5px;
+      cursor: pointer;
+    }
+    .scenario-list li.completed {
+      text-decoration: line-through;
+      color: green;
+    }
+    .scenario-list li.completed::after {
+      content: " ✓";
+    }
+    .explanation {
+      margin-top: 30px;
+      padding: 10px;
+      background-color: #f0f0f0;
+    }
+    .explanation h2 {
+      margin-top: 0;
+    }
+    .explanation p {
+      margin-bottom: 10px;
+    }
+    .explanation ul {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Server Simulator</h1>
+
+  <div class="server">
+    <h2>Print Server</h2>
+    <p>A print server is a device or software that manages printers on a network. It receives print jobs from client computers and sends them to the appropriate printer.</p>
+    <button onclick="toggleServer('print')">Turn <span id="printServerStatus">On</span></button>
+    <button onclick="printDocument()">Print Document</button>
+    <div class="output" id="printOutput"></div>
+    <div id="printRequests"></div>
+    <div class="troubleshooting">
+      <h3>Troubleshooting</h3>
+      <button onclick="troubleshoot('print', 'restartPrinter')">Restart Printer</button>
+      <button onclick="troubleshoot('print', 'restartPrintServer')">Restart Print Server</button>
+      <button onclick="troubleshoot('print', 'clearPrintQueue')">Clear Print Queue</button>
+      <button onclick="troubleshoot('print', 'checkPrinterConnection')">Check Printer Connection</button>
+      <button onclick="troubleshoot('print', 'updatePrinterDriver')">Update Printer Driver</button>
+      <button onclick="troubleshoot('print', 'replacePrinter')">Replace Printer</button>
+    </div>
+    <div class="scenario">
+      <h3>Scenario</h3>
+      <p id="printScenario"></p>
+    </div>
+    <div class="feedback" id="printFeedback"></div>
+  </div>
+
+  <div class="server">
+    <h2>Mail Server</h2>
+    <p>A mail server is a computer system that sends and receives email messages. It uses protocols such as SMTP, POP3, and IMAP to handle email communication.</p>
+    <button onclick="toggleServer('mail')">Turn <span id="mailServerStatus">On</span></button>
+    <button onclick="sendEmail()">Send Email</button>
+    <div class="output" id="mailOutput"></div>
+    <div id="mailRequests"></div>
+    <div class="troubleshooting">
+      <h3>Troubleshooting</h3>
+      <button onclick="troubleshoot('mail', 'restartMailServer')">Restart Mail Server</button>
+      <button onclick="troubleshoot('mail', 'checkEmailSettings')">Check Email Settings</button>
+      <button onclick="troubleshoot('mail', 'resetEmailPassword')">Reset Email Password</button>
+      <button onclick="troubleshoot('mail', 'checkSpamFilters')">Check Spam Filters</button>
+      <button onclick="troubleshoot('mail', 'updateMailServerSoftware')">Update Mail Server Software</button>
+      <button onclick="troubleshoot('mail', 'increaseMailboxQuota')">Increase Mailbox Quota</button>
+    </div>
+    <div class="scenario">
+      <h3>Scenario</h3>
+      <p id="mailScenario"></p>
+    </div>
+    <div class="feedback" id="mailFeedback"></div>
+  </div>
+
+  <div class="server">
+    <h2>Web Server</h2>
+    <p>A web server is a computer system that hosts websites and delivers web pages to client browsers. It processes HTTP requests and sends back the requested content.</p>
+    <button onclick="toggleServer('web')">Turn <span id="webServerStatus">On</span></button>
+    <button onclick="loadWebPage()">Load Web Page</button>
+    <div class="output" id="webOutput"></div>
+    <div id="webRequests"></div>
+    <div class="troubleshooting">
+      <h3>Troubleshooting</h3>
+      <button onclick="troubleshoot('web', 'restartWebServer')">Restart Web Server</button>
+      <button onclick="troubleshoot('web', 'checkDNSSettings')">Check DNS Settings</button>
+      <button onclick="troubleshoot('web', 'clearBrowserCache')">Clear Browser Cache</button>
+      <button onclick="troubleshoot('web', 'checkFirewallSettings')">Check Firewall Settings</button>
+      <button onclick="troubleshoot('web', 'updateWebServerSoftware')">Update Web Server Software</button>
+      <button onclick="troubleshoot('web', 'optimizeWebContent')">Optimize Web Content</button>
+    </div>
+    <div class="scenario">
+      <h3>Scenario</h3>
+      <p id="webScenario"></p>
+    </div>
+    <div class="feedback" id="webFeedback"></div>
+  </div>
+
+  <div class="scenario-list">
+    <h3>Scenarios</h3>
+    <ul id="scenarioList"></ul>
+  </div>
+
+  <div class="explanation">
+    <h2>Why Use Different Servers?</h2>
+    <p>In a network environment, different servers are used to handle specific tasks and provide specialized services. Here's why:</p>
+    <ul>
+      <li><strong>Separation of Concerns:</strong> Each server is dedicated to a specific function, such as printing, email, or web hosting. This allows for better organization, management, and security of the network.</li>
+      <li><strong>Performance:</strong> By distributing the workload across multiple servers, each server can focus on its specific task and perform it efficiently. This improves overall network performance and prevents a single server from becoming overwhelmed.</li>
+      <li><strong>Scalability:</strong> As the network grows and demands increase, individual servers can be scaled up or additional servers can be added to handle the increased load. This allows for flexibility and growth without impacting the entire network.</li>
+      <li><strong>Reliability:</strong> If one server encounters issues or goes offline, the other servers can continue functioning independently. This ensures that the network remains operational even if one component fails.</li>
+      <li><strong>Security:</strong> Separating servers based on their functions allows for better security management. Each server can have its own security measures, access controls, and monitoring, reducing the risk of a single vulnerability affecting the entire network.</li>
+    </ul>
+    <p>By using different servers for specific tasks, organizations can achieve better performance, scalability, reliability, and security in their network infrastructure.</p>
+  </div>
+
+  <script>
+    const servers = {
+      print: true,
+      mail: true,
+      web: true
+    };
+
+    const requests = {
+      print: 0,
+      mail: 0,
+      web: 0
+    };
+
+    const scenarios = {
+      print: [
+        { difficulty: 'Easy', description: 'The printer is not responding. Restart the printer to resolve the issue.', solution: 'restartPrinter' },
+        { difficulty: 'Medium', description: 'Print jobs are stuck in the queue. Clear the print queue and restart the print server.', solution: 'clearPrintQueue' },
+        { difficulty: 'Hard', description: 'The printer is producing low-quality prints. Update the printer driver and check the printer settings.', solution: 'updatePrinterDriver' }
+      ],
+      mail: [
+        { difficulty: 'Easy', description: 'Users are unable to send emails. Check the email settings and restart the mail server.', solution: 'restartMailServer' },
+        { difficulty: 'Medium', description: 'Incoming emails are being marked as spam. Adjust the spam filter settings and whitelist legitimate senders.', solution: 'checkSpamFilters' },
+        { difficulty: 'Hard', description: 'The mail server is running out of storage space. Increase the mailbox quota and archive old emails.', solution: 'increaseMailboxQuota' }
+      ],
+      web: [
+        { difficulty: 'Easy', description: 'The website is not loading. Check the DNS settings and restart the web server.', solution: 'restartWebServer' },
+        { difficulty: 'Medium', description: 'Some website pages are returning 404 errors. Check the file paths and update broken links.', solution: 'checkDNSSettings' },
+        { difficulty: 'Hard', description: 'The website is loading slowly. Optimize web content, enable caching, and update the web server software.', solution: 'optimizeWebContent' }
+      ]
+    };
+
+    let currentScenario = {
+      print: 0,
+      mail: 0,
+      web: 0
+    };
+
+    const serverErrors = {
+      print: ['Paper Jam', 'Low Toner', 'Printer Offline', 'Print Spooler Error'],
+      mail: ['SMTP Connection Failed', 'Mailbox Quota Exceeded', 'Email Bounce', 'Spam Filter Blocking'],
+      web: ['404 Not Found', '500 Internal Server Error', 'Slow Page Load', 'DNS Resolution Failure']
+    };
+
+    const troubleshootingSteps = {
+      print: {
+        restartPrinter: 'Restarting the printer can resolve common printing issues.',
+        restartPrintServer: 'Restarting the print server can help clear any stuck print jobs and resolve connectivity issues.',
+        clearPrintQueue: 'Clearing the print queue can remove any stuck or corrupted print jobs.',
+        checkPrinterConnection: 'Checking the printer connection ensures that the printer is properly connected to the network.',
+        updatePrinterDriver: 'Updating the printer driver can resolve compatibility issues and improve printing performance.',
+        replacePrinter: 'If the printer is faulty or outdated, replacing it may be necessary.'
+      },
+      mail: {
+        restartMailServer: 'Restarting the mail server can resolve connectivity issues and clear any stuck email processes.',
+        checkEmailSettings: 'Checking email settings ensures that the server is configured correctly for sending and receiving emails.',
+        resetEmailPassword: 'Resetting email passwords can resolve authentication issues and restore access to email accounts.',
+        checkSpamFilters: 'Checking spam filters can help identify and resolve issues with legitimate emails being marked as spam.',
+        updateMailServerSoftware: 'Updating the mail server software can improve performance, security, and compatibility.',
+        increaseMailboxQuota: 'Increasing mailbox quotas can prevent issues related to insufficient storage space for emails.'
+      },
+      web: {
+        restartWebServer: 'Restarting the web server can resolve issues related to unresponsive or slow-loading websites.',
+        checkDNSSettings: 'Checking DNS settings ensures that the website is properly mapped to the correct IP address.',
+        clearBrowserCache: 'Clearing the browser cache can resolve issues related to outdated or corrupted website data.',
+        checkFirewallSettings: 'Checking firewall settings ensures that the necessary ports are open for web traffic.',
+updateWebServerSoftware: 'Updating the web server software can improve performance, security, and compatibility.',
+optimizeWebContent: 'Optimizing web content, such as compressing images and minifying code, can improve website loading speed.'
+}
+};
+
+function toggleServer(server) {
+  servers[server] = !servers[server];
+  document.getElementById(`${server}ServerStatus`).textContent = servers[server] ? 'On' : 'Off';
+}
+
+function printDocument() {
+  if (!servers.print) {
+    document.getElementById("printOutput").textContent = "Print server is turned off. Please turn it on to print.";
+    return;
+  }
+
+  const printOutput = document.getElementById("printOutput");
+  printOutput.textContent = "Processing print job...";
+  requests.print++;
+  updateRequestsDisplay("print");
+
+  setTimeout(() => {
+    if (Math.random() < 0.8) {
+      printOutput.textContent = "Print job successfully sent to the printer.";
+    } else {
+      printOutput.textContent = "Error: Printer not responding. Please troubleshoot the issue.";
+    }
+    requests.print--;
+    updateRequestsDisplay("print");
+  }, 2000);
+}
+
+function sendEmail() {
+  if (!servers.mail) {
+    document.getElementById("mailOutput").textContent = "Mail server is turned off. Please turn it on to send emails.";
+    return;
+  }
+
+  const mailOutput = document.getElementById("mailOutput");
+  mailOutput.textContent = "Sending email...";
+  requests.mail++;
+  updateRequestsDisplay("mail");
+
+  setTimeout(() => {
+    if (Math.random() < 0.9) {
+      mailOutput.textContent = "Email successfully sent.";
+    } else {
+      mailOutput.textContent = "Error: Failed to send email. Please troubleshoot the issue.";
+    }
+    requests.mail--;
+    updateRequestsDisplay("mail");
+  }, 2000);
+}
+
+function loadWebPage() {
+  if (!servers.web) {
+    document.getElementById("webOutput").textContent = "Web server is turned off. Please turn it on to load web pages.";
+    return;
+  }
+
+  const webOutput = document.getElementById("webOutput");
+  webOutput.textContent = "Loading web page...";
+  requests.web++;
+  updateRequestsDisplay("web");
+
+  setTimeout(() => {
+    if (Math.random() < 0.95) {
+      webOutput.textContent = "Web page loaded successfully.";
+    } else {
+      webOutput.textContent = "Error: Failed to load web page. Please troubleshoot the issue.";
+    }
+    requests.web--;
+    updateRequestsDisplay("web");
+  }, 2000);
+}
+
+function updateRequestsDisplay(server) {
+  const requestsDisplay = document.getElementById(`${server}Requests`);
+  requestsDisplay.innerHTML = '';
+
+  for (let i = 0; i < requests[server]; i++) {
+    const request = document.createElement('div');
+    request.className = 'request';
+    request.style.left = `${Math.random() * 100}%`;
+    requestsDisplay.appendChild(request);
+  }
+}
+
+function simulateError(server) {
+  const errors = serverErrors[server];
+  const randomIndex = Math.floor(Math.random() * errors.length);
+  const error = errors[randomIndex];
+  const outputElement = document.getElementById(`${server}Output`);
+  outputElement.textContent = `Error: ${error}. Please troubleshoot the issue.`;
+}
+
+function loadScenario(server) {
+  const scenario = scenarios[server][currentScenario[server]];
+  const scenarioElement = document.getElementById(`${server}Scenario`);
+  scenarioElement.textContent = scenario.description;
+}
+
+function completeScenario(server) {
+  const scenarioList = document.getElementById('scenarioList');
+  const listItem = document.createElement('li');
+  listItem.textContent = `${server.charAt(0).toUpperCase() + server.slice(1)} Server - ${scenarios[server][currentScenario[server]].difficulty}`;
+  listItem.classList.add('completed');
+  scenarioList.appendChild(listItem);
+
+  currentScenario[server]++;
+  if (currentScenario[server] < scenarios[server].length) {
+    loadScenario(server);
+  } else {
+    const scenarioElement = document.getElementById(`${server}Scenario`);
+    scenarioElement.textContent = 'All scenarios completed for this server.';
+  }
+}
+
+function troubleshoot(server, solution) {
+  const outputElement = document.getElementById(`${server}Output`);
+  const feedbackElement = document.getElementById(`${server}Feedback`);
+
+  if (servers[server]) {
+    if (scenarios[server][currentScenario[server]].solution === solution) {
+      outputElement.textContent = `Troubleshooting step "${solution}" resolved the issue. ${server.charAt(0).toUpperCase() + server.slice(1)} server is now functioning properly.`;
+      feedbackElement.textContent = 'Issue resolved! Great job troubleshooting.';
+      completeScenario(server);
+    } else {
+      outputElement.textContent = `Troubleshooting step "${solution}" did not resolve the issue. Please try another step.`;
+      feedbackElement.textContent = troubleshootingSteps[server][solution];
+    }
+  } else {
+    outputElement.textContent = `${server.charAt(0).toUpperCase() + server.slice(1)} server is turned off. Please turn it on to perform troubleshooting.`;
+    feedbackElement.textContent = '';
+  }
+}
+
+// Load initial scenarios
+loadScenario('print');
+loadScenario('mail');
+loadScenario('web');
+
+// Simulate random errors for each server
+setInterval(() => {
+  if (Math.random() < 0.1 && servers.print) {
+    simulateError('print');
+  }
+  if (Math.random() < 0.1 && servers.mail) {
+    simulateError('mail');
+  }
+  if (Math.random() < 0.1 && servers.web) {
+    simulateError('web');
+  }
+}, 5000);
+
+</script>
+</body>
+</html>

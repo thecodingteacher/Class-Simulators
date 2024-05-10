@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fortnite EBNF Diagram Simulator</title>
+  <style>
+    .symbol {
+      display: inline-block;
+      padding: 5px;
+      margin: 5px;
+      border: 1px solid black;
+      cursor: move;
+    }
+    .diagram {
+      border: 1px solid black;
+      padding: 10px;
+      min-height: 100px;
+    }
+    table {
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid black;
+      padding: 5px;
+    }
+    .firework {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background-color: #ff0000;
+      animation: firework 1s ease-out;
+    }
+
+    @keyframes firework {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Fortnite EBNF Diagram Simulator</h1>
+  <p>Welcome to the Fortnite EBNF Diagram Simulator! In this simulator, you will learn how to create EBNF diagrams related to Fortnite gameplay elements and mechanics.</p>
+  <h2>Explanation</h2>
+  <p>EBNF (Extended Backus-Naur Form) is a notation used to describe the syntax of programming languages and other formal languages. In this simulator, we'll use EBNF to define the structure of Fortnite gameplay elements.</p>
+  <h3>Symbol Table</h3>
+  <table>
+    <tr>
+      <th>Symbol</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td>Weapon</td>
+      <td>Represents a weapon in Fortnite (e.g., "Assault Rifle", "Shotgun")</td>
+    </tr>
+    <tr>
+      <td>Item</td>
+      <td>Represents an item in Fortnite (e.g., "Medkit", "Shield Potion")</td>
+    </tr>
+    <tr>
+      <td>Building</td>
+      <td>Represents a building structure in Fortnite (e.g., "Wall", "Ramp")</td>
+    </tr>
+    <tr>
+      <td>|</td>
+      <td>Represents alternation, indicating a choice between symbols</td>
+    </tr>
+    <tr>
+      <td>[ ]</td>
+      <td>Represents optional elements, indicating that the enclosed symbols are optional</td>
+    </tr>
+    <tr>
+      <td>{ }</td>
+      <td>Represents repetition, indicating that the enclosed symbols can be repeated zero or more times</td>
+    </tr>
+  </table>
+  <h2>Challenges</h2>
+  <p>Select a challenge:</p>
+  <select id="challengeSelect" onchange="loadChallenge()">
+    <option value="easy">Easy</option>
+    <option value="medium">Medium</option>
+    <option value="hard">Hard</option>
+        <option value="hard1">Very Hard</option>
+    <option value="hard2">Exreme</option>
+
+  </select>
+  <p id="challengeDescription"></p>
+  <div id="symbolContainer"></div>
+  <div id="diagram" class="diagram" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+  <button onclick="checkDiagram()">Check Diagram</button>
+  <button onclick="showHint()">Hint</button>
+  <p id="result"></p>
+
+  <script>
+    var challenges = {
+      easy: {
+        description: "Create a diagram for a player's inventory:",
+        symbols: ["Inventory", "=", "{", "Weapon", "|", "Item", "}"],
+        solution: "Inventory={Weapon|Item}"
+      },
+      medium: {
+        description: "Create a diagram for a player's loadout:",
+        symbols: ["Loadout", "=", "PrimaryWeapon", "SecondaryWeapon", "[", "BuildingMaterial", "]"],
+        solution: "Loadout=PrimaryWeaponSecondaryWeapon[BuildingMaterial]"
+      },
+      hard: {
+        description: "Create a diagram for a Fortnite match:",
+        symbols: ["Match", "=", "LootPhase", "{", "CombatPhase", "}", "VictoryPhase"],
+        solution: "Match=LootPhase{CombatPhase}VictoryPhase"
+      },
+       hard1: {
+        description: "Create a diagram for a Fortnite player's actions: ",
+        symbols: ["PlayerAction", "=", "Movement", "|", "Shooting", "|", "Building", "|", "Healing"],
+        solution: "PlayerAction=Movement|Shooting|Building|Healing"
+      },
+      hard2: {
+        description: "Create a diagram for a Fortnite storm cycle: ",
+        symbols: ["StormCycle", "=", "EarlyGame", "{", "MidGame", "}", "LateGame", "(", "SafeZone", ")", "*"],
+        solution: "StormCycle=EarlyGame{MidGame}LateGame(SafeZone)*"
+      }
+    };
+
+    function loadChallenge() {
+      var challengeSelect = document.getElementById("challengeSelect");
+      var challengeName = challengeSelect.value;
+      var challenge = challenges[challengeName];
+
+      document.getElementById("challengeDescription").innerText = challenge.description;
+
+      var symbolContainer = document.getElementById("symbolContainer");
+      symbolContainer.innerHTML = "";
+
+      challenge.symbols.forEach(function(symbol) {
+        var symbolElement = document.createElement("div");
+        symbolElement.className = "symbol";
+        symbolElement.draggable = true;
+        symbolElement.ondragstart = drag;
+        symbolElement.innerText = symbol;
+        symbolContainer.appendChild(symbolElement);
+      });
+
+      document.getElementById("diagram").innerHTML = "";
+      document.getElementById("result").innerText = "";
+    }
+
+    function allowDrop(ev) {
+      ev.preventDefault();
+    }
+
+    function drag(ev) {
+      ev.dataTransfer.setData("text", ev.target.innerText);
+    }
+
+    function drop(ev) {
+      ev.preventDefault();
+      var data = ev.dataTransfer.getData("text");
+      var symbolElement = document.createElement("span");
+      symbolElement.innerText = data;
+      ev.target.appendChild(symbolElement);
+    }
+
+     function checkDiagram() {
+      var diagram = document.getElementById("diagram").innerText;
+      var result = document.getElementById("result");
+      var challengeName = document.getElementById("challengeSelect").value;
+      var challenge = challenges[challengeName];
+
+      if (diagram === challenge.solution) {
+        result.innerText = "Correct! The diagram is valid.";
+        createFireworks();
+      } else {
+        result.innerText = "Incorrect." }
+    }
+
+    function createFireworks() {
+      var fireworksContainer = document.createElement("div");
+      fireworksContainer.style.position = "absolute";
+      fireworksContainer.style.top = "50%";
+      fireworksContainer.style.left = "50%";
+      fireworksContainer.style.transform = "translate(-50%, -50%)";
+      document.body.appendChild(fireworksContainer);
+
+      var numFireworks = 20;
+      for (var i = 0; i < numFireworks; i++) {
+        var firework = document.createElement("div");
+        firework.className = "firework";
+        var color = getRandomColor();
+        firework.style.backgroundColor = color;
+        firework.style.boxShadow = "0 0 5px " + color;
+        firework.style.left = Math.random() * 200 - 100 + "px";
+        firework.style.top = Math.random() * 200 - 100 + "px";
+        fireworksContainer.appendChild(firework);
+      }
+
+      setTimeout(function() {
+        document.body.removeChild(fireworksContainer);
+      }, 1000);
+    }
+
+    function getRandomColor() {
+      var letters = "0123456789ABCDEF";
+      var color = "#";
+      for (var i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+    function showHint() {
+      var challengeName = document.getElementById("challengeSelect").value;
+      var challenge = challenges[challengeName];
+      var hint = "Hint: " + challenge.description;
+      alert(hint);
+    }
+
+    // Load the initial challenge
+    loadChallenge();
+  </script>
+</body>
+</html>

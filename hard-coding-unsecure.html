@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Health Site</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Welcome to Health Site</h1>
+    <p>A drop of blood to do all the health testing.</p>
+    <nav>
+        <a href="#home">Home</a>
+        <a href="#about">About</a>
+        <a href="#login">Login</a>
+    </nav>
+
+    <div id="home">
+        <h2>Send a Message</h2>
+        <form action="#" method="POST">
+            <label for="message">Message:</label><br>
+            <textarea id="message" name="message" rows="4" cols="50"></textarea><br>
+            <input type="submit" value="Send" onclick="sendMessage(); return false;">
+        </form>
+        <div id="message-output"></div>
+    </div>
+
+    <div id="about" style="display: none;">
+        <h1>About Health Site</h1>
+        <p>We are a health testing company that provides comprehensive health analysis with just a drop of blood.</p>
+    </div>
+
+    <div id="login" style="display: none;">
+        <h1>Login</h1>
+        <form action="#" method="POST" onsubmit="return checkPassword();">
+            <label for="username">Username:</label><br>
+            <input type="text" id="username" name="username"><br>
+            <label for="password">Password:</label><br>
+            <input type="password" id="password" name="password"><br><br>
+            <input type="submit" value="Login">
+        </form>
+    </div>
+
+    <div id="admin_dashboard" style="display: none;">
+        <h1>Admin Dashboard</h1>
+        <p>Welcome, Admin!</p>
+        <p>This is the admin dashboard.</p>
+        <button onclick="deleteAllRecords();">Delete All Database Records</button>
+    </div>
+
+    <script>
+        // Initialize local storage with important data
+        localStorage.setItem("name", "John Doe");
+        localStorage.setItem("institutionId", "ABC123");
+        localStorage.setItem("customerId", "CUS456");
+        localStorage.setItem("paymentId", "PAY789");
+        localStorage.setItem("analyticsId", "ANA012");
+
+        function sendMessage() {
+            var message = document.getElementById("message").value;
+            document.getElementById("message-output").innerHTML = message;
+        }
+
+        function checkPassword() {
+            var username = document.getElementById("username").value;
+            var password = document.getElementById("password").value;
+
+            if ((username === "admin" && password === "Qwertz432") || (username === "super-admin" && password === "superlols123")) {
+                // Simulate an unencrypted API endpoint
+                var apiEndpoint = "http://example.com/api/login?username=" + username + "&password=" + password;
+                console.log("Sending request to: " + apiEndpoint);
+
+                // Show the admin dashboard
+                document.getElementById("login").style.display = "none";
+                document.getElementById("admin_dashboard").style.display = "block";
+            } else {
+                alert("Invalid username or password.");
+            }
+
+            return false;
+        }
+
+        function deleteAllRecords() {
+            // Simulate deleting all database records
+            console.log("Deleting all database records...");
+            alert("All database records have been deleted!");
+        }
+
+        // Navigation handling
+        var links = document.querySelectorAll("nav a");
+        for (var i = 0; i < links.length; i++) {
+            links[i].addEventListener("click", function(event) {
+                event.preventDefault();
+                var target = this.getAttribute("href").substring(1);
+                var pages = document.querySelectorAll("div[id]");
+                for (var j = 0; j < pages.length; j++) {
+                    pages[j].style.display = "none";
+                }
+                document.getElementById(target).style.display = "block";
+            });
+        }
+    </script>
+</body>
+</html>

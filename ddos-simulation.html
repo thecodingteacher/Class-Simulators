@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DDoS Attack Simulator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    #explanation {
+      margin-bottom: 20px;
+    }
+
+    #simulator {
+      display: flex;
+      justify-content: space-around;
+    }
+
+    .device {
+      padding: 10px 20px;
+      margin-bottom: 10px;
+      position: relative;
+    }
+
+    .device::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 0;
+      height: 0;
+      background-color: rgba(255, 0, 0, 0.3);
+      border-radius: 50%;
+      opacity: 0;
+      transition: width 0.5s, height 0.5s, opacity 0.5s;
+    }
+
+    .device.active::before {
+      width: 200px;
+      height: 200px;
+      opacity: 1;
+    }
+
+    #server {
+      border: 1px solid black;
+      padding: 20px;
+      position: relative;
+    }
+
+    #server-status {
+      font-weight: bold;
+    }
+
+    .request {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background-color: red;
+      border-radius: 50%;
+      opacity: 0;
+      transition: transform 1s, opacity 1s;
+    }
+
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+    }
+
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 200px;
+      background-color: #555;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -100px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <h1>DDoS Attack Simulator</h1>
+  <div id="explanation">
+    <p>A DDoS attack is an attempt to make an online service unavailable by overwhelming it with traffic from multiple sources. In this simulator, you can control the strength of the attack by turning on/off devices that send requests to the target server.</p>
+  </div>
+  <div>
+    <label for="server-select">Select Server:</label>
+    <select id="server-select" onchange="changeServer()">
+      <option value="normal">Normal Server</option>
+      <option value="big">Big Server</option>
+    </select>
+  </div>
+  <div>
+    <h3>Cloudflare Protection Settings</h3>
+    <label class="tooltip">
+      <input type="checkbox" id="rate-limiting" onchange="updateCloudflareSettings()"> Rate Limiting
+      <span class="tooltiptext">Limits the number of requests from a single IP address within a specific time frame.</span>
+    </label>
+    <br>
+    <label class="tooltip">
+      <input type="checkbox" id="challenge-page" onchange="updateCloudflareSettings()"> Challenge Page
+      <span class="tooltiptext">Presents a challenge page to verify the legitimacy of the request before allowing access to the server.</span>
+    </label>
+    <br>
+    <label class="tooltip">
+      <input type="checkbox" id="geo-blocking" onchange="updateCloudflareSettings()"> Geo-Blocking
+      <span class="tooltiptext">Blocks traffic from specific countries or regions known for high levels of malicious activity.</span>
+    </label>
+  </div>
+  <div id="simulator">
+    <div id="devices"></div>
+    <div id="server">
+      <p>Target Server</p>
+      <div id="server-status">Status: Normal</div>
+    </div>
+  </div>
+
+  <script>
+    let activeDevices = 0;
+    const serverStatus = document.getElementById('server-status');
+    const server = document.getElementById('server');
+    const devicesContainer = document.getElementById('devices');
+    let serverCapacity = 5;
+    let cloudflareSettings = {
+      rateLimiting: false,
+      challengePage: false,
+      geoBlocking: false
+    };
+
+    function changeServer() {
+      const serverSelect = document.getElementById('server-select');
+      const selectedServer = serverSelect.value;
+
+      if (selectedServer === 'normal') {
+        serverCapacity = 5;
+      } else if (selectedServer === 'big') {
+        serverCapacity = 10;
+      }
+
+      updateServerStatus();
+    }
+
+    function updateCloudflareSettings() {
+      cloudflareSettings.rateLimiting = document.getElementById('rate-limiting').checked;
+      cloudflareSettings.challengePage = document.getElementById('challenge-page').checked;
+      cloudflareSettings.geoBlocking = document.getElementById('geo-blocking').checked;
+    }
+
+    function createDevices() {
+      for (let i = 1; i <= 20; i++) {
+        const device = document.createElement('button');
+        device.classList.add('device');
+        device.textContent = `Device ${i}`;
+        device.onclick = function() {
+          toggleDevice(this);
+        };
+        devicesContainer.appendChild(device);
+      }
+    }
+
+    function toggleDevice(device) {
+      if (device.classList.contains('active')) {
+        device.classList.remove('active');
+        activeDevices--;
+      } else {
+        device.classList.add('active');
+        activeDevices++;
+      }
+      updateServerStatus();
+    }
+
+    function sendRequests() {
+      const devices = document.querySelectorAll('.device.active');
+      devices.forEach(device => {
+        const request = document.createElement('div');
+        request.classList.add('request');
+        device.appendChild(request);
+
+        const deviceRect = device.getBoundingClientRect();
+        const serverRect = server.getBoundingClientRect();
+
+        const startX = deviceRect.left + deviceRect.width / 2;
+        const startY = deviceRect.top + deviceRect.height / 2;
+        const endX = serverRect.left + serverRect.width / 2;
+        const endY = serverRect.top + serverRect.height / 2;
+
+        const diffX = endX - startX;
+        const diffY = endY - startY;
+
+        request.style.transform = `translate(${diffX}px, ${diffY}px)`;
+        request.style.opacity = '1';
+
+        setTimeout(() => {
+          device.removeChild(request);
+        }, 1000);
+      });
+    }
+
+    function updateServerStatus() {
+      let effectiveDevices = activeDevices;
+
+      if (cloudflareSettings.rateLimiting) {
+        effectiveDevices = Math.min(effectiveDevices, 5);
+      }
+
+      if (cloudflareSettings.challengePage) {
+        effectiveDevices = Math.floor(effectiveDevices / 2);
+      }
+
+      if (cloudflareSettings.geoBlocking) {
+        effectiveDevices = Math.floor(effectiveDevices * 0.8);
+      }
+
+      if (effectiveDevices === 0) {
+        serverStatus.textContent = 'Status: Normal';
+        serverStatus.style.color = 'green';
+      } else if (effectiveDevices <= serverCapacity) {
+        serverStatus.textContent = 'Status: Under Attack (Handling)';
+        serverStatus.style.color = 'orange';
+      } else {
+        serverStatus.textContent = 'Status: Under Attack (Overloaded)';
+        serverStatus.style.color = 'red';
+      }
+    }
+
+    createDevices();
+    setInterval(sendRequests, 1000);
+  </script>
+</body>
+</html>

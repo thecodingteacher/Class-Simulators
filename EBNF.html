@@ -101,27 +101,28 @@
     var challenges = {
       easy: {
         description: "Create a diagram for a player's inventory:",
-        symbols: ["Inventory", "=", "{", "Weapon", "|", "Item", "}"],
+        symbols: ["{", "|", "Weapon", "Item", "}", "Inventory", "="],
         solution: "Inventory={Weapon|Item}"
       },
       medium: {
         description: "Create a diagram for a player's loadout:",
-        symbols: ["Loadout", "=", "PrimaryWeapon", "SecondaryWeapon", "[", "BuildingMaterial", "]"],
+            symbols: ["[", "BuildingMaterial", "]", "Loadout", "=", "SecondaryWeapon", "PrimaryWeapon"],
         solution: "Loadout=PrimaryWeaponSecondaryWeapon[BuildingMaterial]"
       },
       hard: {
         description: "Create a diagram for a Fortnite match:",
-        symbols: ["Match", "=", "LootPhase", "{", "CombatPhase", "}", "VictoryPhase"],
+    symbols: ["{", "CombatPhase", "}", "VictoryPhase", "Match", "=", "LootPhase"],
         solution: "Match=LootPhase{CombatPhase}VictoryPhase"
       },
        hard1: {
         description: "Create a diagram for a Fortnite player's actions: ",
-        symbols: ["PlayerAction", "=", "Movement", "|", "Shooting", "|", "Building", "|", "Healing"],
+    symbols: ["PlayerAction", "=", "|", "Movement", "Building", "Shooting", "Healing"],
         solution: "PlayerAction=Movement|Shooting|Building|Healing"
       },
       hard2: {
         description: "Create a diagram for a Fortnite storm cycle: ",
-        symbols: ["StormCycle", "=", "EarlyGame", "{", "MidGame", "}", "LateGame", "(", "SafeZone", ")", "*"],
+            symbols: ["*", "EarlyGame", "{", "MidGame", "}", "(", "SafeZone", ")", "LateGame", "StormCycle", "="],
+
         solution: "StormCycle=EarlyGame{MidGame}LateGame(SafeZone)*"
       }
     };

@@ -30,6 +30,9 @@
       align-items: center;
       font-size: 18px;
     }
+    .diagram .box.start {
+      background-color: #c7f0c7;
+    }
     table {
       border-collapse: collapse;
       margin-bottom: 20px;
@@ -61,9 +64,16 @@ Copy code@keyframes firework {
 <body>
   <h1>Bloons TD Railroad Diagram Creator</h1>
   <p>Welcome to the Bloons TD Railroad Diagram Creator! In this tool, you will learn how to create complex railroad diagrams related to Bloons TD gameplay elements and mechanics.</p>
-  <h2>Explanation</h2>
-  <p>Railroad diagrams are a graphical representation of the structure of a formal language or syntax. They consist of symbols and connectors that define the valid sequences and choices within the language.</p>
-  <h3>Symbol Table</h3>
+  <h2>Instructions</h2>
+  <ol>
+    <li>Select a challenge from the dropdown menu.</li>
+    <li>Drag and drop the symbols from the symbol container to the grid to create the railroad diagram.</li>
+    <li>Follow the starting point indicated for each challenge.</li>
+    <li>Double-click a symbol in the grid to remove it.</li>
+    <li>Click the "Check Diagram" button to verify your solution.</li>
+    <li>If you need a hint, click the "Hint" button.</li>
+  </ol>
+  <h2>Symbol Table</h2>
   <table>
     <tr>
       <th>Symbol Name</th>
@@ -116,39 +126,46 @@ Copy code@keyframes firework {
     <option value="challenge5">Challenge 5</option>
   </select>
   <p id="challengeDescription"></p>
+  <p id="startingPoint"></p>
   <div id="symbolContainer"></div>
   <div id="diagram" class="diagram" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
   <button onclick="checkDiagram()">Check Diagram</button>
   <button onclick="showHint()">Hint</button>
   <p id="result"></p>
   <script>
-    var challenges = {
-      challenge1: {
-        description: "Create a diagram for selecting and placing a monkey tower:",
-        symbols: ["[Select Tower]", "→", "---┬---", "&nbsp;&nbsp;&nbsp;└───", "(Dart Monkey)", "(Tack Shooter)", "(Boomerang Thrower)", "→", "[Place Tower]"],
-        solution: ["[Select Tower]", "→", "---┬---", "&nbsp;&nbsp;&nbsp;└───", "(Dart Monkey)", "(Tack Shooter)", "(Boomerang Thrower)", "→", "[Place Tower]"]
-      },
-      challenge2: {
-        description: "Create a diagram for upgrading a monkey tower:",
-        symbols: ["[Monkey Tower]", "→", "---{ Optional }---", "(Upgrade 1)", "→", "---{ Optional }---", "(Upgrade 2)", "→", "---{ Optional }---", "(Upgrade 3)", "→"],
-        solution: ["[Monkey Tower]", "→", "---{ Optional }---", "(Upgrade 1)", "→", "---{ Optional }---", "(Upgrade 2)", "→", "---{ Optional }---", "(Upgrade 3)", "→"]
-      },
-      challenge3: {
+  var challenges = {
+    challenge1: {
+        description: "Create a simple diagram for placing a monkey tower:",
+        symbols: ["[Place Tower]", "→", "[Monkey Tower]"],
+        startingPoint: "Start at [Monkey Tower]",
+        solution: ["[Monkey Tower]", "→", "[Place Tower]"]
+    },
+    challenge2: {
+        description: "Create a diagram for selecting a monkey tower:",
+        symbols: ["(Dart Monkey)", "→", "[Select Tower]", "→"],
+        startingPoint: "Start at [Select Tower]",
+        solution: ["[Select Tower]", "→", "(Dart Monkey)", "→"]
+    },
+    challenge3: {
         description: "Create a diagram for a sequence of bloon waves with increasing difficulty:",
-        symbols: ["[Easy Bloon Wave]", "→", "[Medium Bloon Wave]", "→", "[Hard Bloon Wave]", "→", "↻"],
+        symbols: ["↻", "[Hard Bloon Wave]", "→", "[Medium Bloon Wave]", "→", "[Easy Bloon Wave]", "→"],
+        startingPoint: "Start at [Easy Bloon Wave]",
         solution: ["[Easy Bloon Wave]", "→", "[Medium Bloon Wave]", "→", "[Hard Bloon Wave]", "→", "↻"]
-      },
-      challenge4: {
+    },
+    challenge4: {
         description: "Create a diagram for using a monkey tower ability:",
-        symbols: ["[Monkey Tower]", "→", "---{ Optional }---", "(Upgrade to Ability)", "→", "[Activate Ability]", "→", "↻"],
+        symbols: ["↻", "[Activate Ability]", "→", "(Upgrade to Ability)", "→", "---{ Optional }---", "→", "[Monkey Tower]"],
+        startingPoint: "Start at [Monkey Tower]",
         solution: ["[Monkey Tower]", "→", "---{ Optional }---", "(Upgrade to Ability)", "→", "[Activate Ability]", "→", "↻"]
-      },
-      challenge5: {
+    },
+    challenge5: {
         description: "Create a diagram for a complex game flow with multiple paths and elements:",
-        symbols: ["[Start Game]", "→", "(Select Map)", "→", "(Place Towers)", "→", "---┬---", "&nbsp;&nbsp;&nbsp;└───", "[Bloon Waves]", "↻", "(Upgrade Towers)", "---{ Optional }---", "(Use Abilities)", "→", "---┬---", "&nbsp;&nbsp;&nbsp;└───", "[Win]", "[Lose]", "→", "[End Game]"],
+        symbols: ["[Lose]", "→", "---┬---", "&nbsp;&nbsp;&nbsp;└───", "(Use Abilities)", "→", "---{ Optional }---", "(Upgrade Towers)", "↻", "[Bloon Waves]", "&nbsp;&nbsp;&nbsp;└───", "---┬---", "(Place Towers)", "→", "(Select Map)", "→", "[Start Game]", "→", "[End Game]", "→", "[Win]"],
+        startingPoint: "Start at [Start Game]",
         solution: ["[Start Game]", "→", "(Select Map)", "→", "(Place Towers)", "→", "---┬---", "&nbsp;&nbsp;&nbsp;└───", "[Bloon Waves]", "↻", "(Upgrade Towers)", "---{ Optional }---", "(Use Abilities)", "→", "---┬---", "&nbsp;&nbsp;&nbsp;└───", "[Win]", "[Lose]", "→", "[End Game]"]
-      }
-    };
+    }
+};
+
 
     function loadChallenge() {
       var challengeSelect = document.getElementById("challengeSelect");
@@ -156,6 +173,7 @@ Copy code@keyframes firework {
       var challenge = challenges[challengeName];
 
       document.getElementById("challengeDescription").innerText = challenge.description;
+      document.getElementById("startingPoint").innerText = challenge.startingPoint;
 
       var symbolContainer = document.getElementById("symbolContainer");
       symbolContainer.innerHTML = "";
@@ -181,6 +199,7 @@ Copy code@keyframes firework {
           box.className = "box";
           box.setAttribute("data-row", i);
           box.setAttribute("data-col", j);
+          box.ondblclick = removeSymbol;
           diagramContainer.appendChild(box);
         }
       }
@@ -211,6 +230,13 @@ Copy code@keyframes firework {
       var box = ev.target;
       if (box.classList.contains("box")) {
         box.innerHTML = data;
+      }
+    }
+
+    function removeSymbol(ev) {
+      var box = ev.target;
+      if (box.classList.contains("box")) {
+        box.innerHTML = "";
       }
     }
 

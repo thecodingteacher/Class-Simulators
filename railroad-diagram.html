@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bloons TD Railroad Diagram Creator</title>
+  <style>
+    .symbol {
+      display: inline-block;
+      padding: 10px;
+      margin: 5px;
+      border: 1px solid black;
+      cursor: move;
+      text-align: center;
+      width: 120px;
+    }
+    .diagram {
+      border: 1px solid black;
+      padding: 10px;
+      min-height: 400px;
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      grid-template-rows: repeat(10, 1fr);
+      gap: 10px;
+    }
+    .diagram .box {
+      border: 1px dashed gray;
+      background-color: #f1f1f1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 18px;
+    }
+    table {
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid black;
+      padding: 5px;
+    }
+    .firework {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background-color: #ff0000;
+      animation: firework 1s ease-out;
+    }
+Copy code@keyframes firework {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+  </style>
+</head>
+<body>
+  <h1>Bloons TD Railroad Diagram Creator</h1>
+  <p>Welcome to the Bloons TD Railroad Diagram Creator! In this tool, you will learn how to create complex railroad diagrams related to Bloons TD gameplay elements and mechanics.</p>
+  <h2>Explanation</h2>
+  <p>Railroad diagrams are a graphical representation of the structure of a formal language or syntax. They consist of symbols and connectors that define the valid sequences and choices within the language.</p>
+  <h3>Symbol Table</h3>
+  <table>
+    <tr>
+      <th>Symbol Name</th>
+      <th>Visual Representation</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td>Terminal</td>
+      <td>[Terminal]</td>
+      <td>Contains literal text or characters; represented by a box.</td>
+    </tr>
+    <tr>
+      <td>Non-terminal</td>
+      <td>(Non-terminal)</td>
+      <td>References to other rules; represented by an oval or circle.</td>
+    </tr>
+    <tr>
+      <td>Line (Path)</td>
+      <td>---→</td>
+      <td>Connects symbols, representing the flow of syntax; shown as a line with an arrow.</td>
+    </tr>
+    <tr>
+      <td>Arrow</td>
+      <td>→</td>
+      <td>Indicates the direction of progression; simple arrow.</td>
+    </tr>
+    <tr>
+      <td>Branch (Choice)</td>
+      <td>---┬---<br>&nbsp;&nbsp;&nbsp;└───</td>
+      <td>Represents a selection between multiple options; shown as a split in the path with branches.</td>
+    </tr>
+    <tr>
+      <td>Repetition (Loop)</td>
+      <td>↻</td>
+      <td>Indicates repeated elements; shown as a loop symbol.</td>
+    </tr>
+    <tr>
+      <td>Optional</td>
+      <td>---{ Optional }---</td>
+      <td>Indicates optional elements; shown as text in curly braces along a dashed line.</td>
+    </tr>
+  </table>
+  <h2>Challenges</h2>
+  <p>Select a challenge:</p>
+  <select id="challengeSelect" onchange="loadChallenge()">
+    <option value="challenge1">Challenge 1</option>
+    <option value="challenge2">Challenge 2</option>
+    <option value="challenge3">Challenge 3</option>
+    <option value="challenge4">Challenge 4</option>
+    <option value="challenge5">Challenge 5</option>
+  </select>
+  <p id="challengeDescription"></p>
+  <div id="symbolContainer"></div>
+  <div id="diagram" class="diagram" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+  <button onclick="checkDiagram()">Check Diagram</button>
+  <button onclick="showHint()">Hint</button>
+  <p id="result"></p>
+  <script>
+    var challenges = {
+      challenge1: {
+        description: "Create a diagram for selecting and placing a monkey tower:",
+        symbols: ["[Select Tower]", "→", "---┬---", "&nbsp;&nbsp;&nbsp;└───", "(Dart Monkey)", "(Tack Shooter)", "(Boomerang Thrower)", "→", "[Place Tower]"],
+        solution: ["[Select Tower]", "→", "---┬---", "&nbsp;&nbsp;&nbsp;└───", "(Dart Monkey)", "(Tack Shooter)", "(Boomerang Thrower)", "→", "[Place Tower]"]
+      },
+      challenge2: {
+        description: "Create a diagram for upgrading a monkey tower:",
+        symbols: ["[Monkey Tower]", "→", "---{ Optional }---", "(Upgrade 1)", "→", "---{ Optional }---", "(Upgrade 2)", "→", "---{ Optional }---", "(Upgrade 3)", "→"],
+        solution: ["[Monkey Tower]", "→", "---{ Optional }---", "(Upgrade 1)", "→", "---{ Optional }---", "(Upgrade 2)", "→", "---{ Optional }---", "(Upgrade 3)", "→"]
+      },
+      challenge3: {
+        description: "Create a diagram for a sequence of bloon waves with increasing difficulty:",
+        symbols: ["[Easy Bloon Wave]", "→", "[Medium Bloon Wave]", "→", "[Hard Bloon Wave]", "→", "↻"],
+        solution: ["[Easy Bloon Wave]", "→", "[Medium Bloon Wave]", "→", "[Hard Bloon Wave]", "→", "↻"]
+      },
+      challenge4: {
+        description: "Create a diagram for using a monkey tower ability:",
+        symbols: ["[Monkey Tower]", "→", "---{ Optional }---", "(Upgrade to Ability)", "→", "[Activate Ability]", "→", "↻"],
+        solution: ["[Monkey Tower]", "→", "---{ Optional }---", "(Upgrade to Ability)", "→", "[Activate Ability]", "→", "↻"]
+      },
+      challenge5: {
+        description: "Create a diagram for a complex game flow with multiple paths and elements:",
+        symbols: ["[Start Game]", "→", "(Select Map)", "→", "(Place Towers)", "→", "---┬---", "&nbsp;&nbsp;&nbsp;└───", "[Bloon Waves]", "↻", "(Upgrade Towers)", "---{ Optional }---", "(Use Abilities)", "→", "---┬---", "&nbsp;&nbsp;&nbsp;└───", "[Win]", "[Lose]", "→", "[End Game]"],
+        solution: ["[Start Game]", "→", "(Select Map)", "→", "(Place Towers)", "→", "---┬---", "&nbsp;&nbsp;&nbsp;└───", "[Bloon Waves]", "↻", "(Upgrade Towers)", "---{ Optional }---", "(Use Abilities)", "→", "---┬---", "&nbsp;&nbsp;&nbsp;└───", "[Win]", "[Lose]", "→", "[End Game]"]
+      }
+    };
+
+    function loadChallenge() {
+      var challengeSelect = document.getElementById("challengeSelect");
+      var challengeName = challengeSelect.value;
+      var challenge = challenges[challengeName];
+
+      document.getElementById("challengeDescription").innerText = challenge.description;
+
+      var symbolContainer = document.getElementById("symbolContainer");
+      symbolContainer.innerHTML = "";
+
+      var symbols = challenge.symbols.slice();
+      shuffleArray(symbols);
+
+      symbols.forEach(function(symbol) {
+        var symbolElement = document.createElement("div");
+        symbolElement.className = "symbol";
+        symbolElement.draggable = true;
+        symbolElement.ondragstart = drag;
+        symbolElement.innerHTML = symbol;
+        symbolContainer.appendChild(symbolElement);
+      });
+
+      var diagramContainer = document.getElementById("diagram");
+      diagramContainer.innerHTML = "";
+
+      for (var i = 0; i < 10; i++) {
+        for (var j = 0; j < 10; j++) {
+          var box = document.createElement("div");
+          box.className = "box";
+          box.setAttribute("data-row", i);
+          box.setAttribute("data-col", j);
+          diagramContainer.appendChild(box);
+        }
+      }
+
+      document.getElementById("result").innerText = "";
+    }
+
+    function shuffleArray(array) {
+      for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+      }
+    }
+
+    function allowDrop(ev) {
+      ev.preventDefault();
+    }
+
+    function drag(ev) {
+      ev.dataTransfer.setData("text", ev.target.innerHTML);
+    }
+
+    function drop(ev) {
+      ev.preventDefault();
+      var data = ev.dataTransfer.getData("text");
+      var box = ev.target;
+      if (box.classList.contains("box")) {
+        box.innerHTML = data;
+      }
+    }
+
+    function checkDiagram() {
+      var diagramContainer = document.getElementById("diagram");
+      var boxes = diagramContainer.getElementsByClassName("box");
+      var diagram = Array.from(boxes).map(function(box) {
+        return box.innerHTML;
+      }).filter(function(symbol) {
+        return symbol !== "";
+      });
+
+      var result = document.getElementById("result");
+      var challengeName = document.getElementById("challengeSelect").value;
+      var challenge = challenges[challengeName];
+
+      if (JSON.stringify(diagram) === JSON.stringify(challenge.solution)) {
+        result.innerText = "Correct! The diagram is valid.";
+        createFireworks();
+      } else {
+        result.innerText = "Incorrect. Please try again.";
+      }
+    }
+
+    function createFireworks() {
+      var fireworksContainer = document.createElement("div");
+      fireworksContainer.style.position = "absolute";
+      fireworksContainer.style.top = "50%";
+      fireworksContainer.style.left = "50%";
+      fireworksContainer.style.transform = "translate(-50%, -50%)";
+      document.body.appendChild(fireworksContainer);
+
+      var numFireworks = 20;
+      for (var i = 0; i < numFireworks; i++) {
+        var firework = document.createElement("div");
+        firework.className = "firework";
+        var color = getRandomColor();
+        firework.style.backgroundColor = color;
+        firework.style.boxShadow = "0 0 5px " + color;
+        firework.style.left = Math.random() * 200 - 100 + "px";
+        firework.style.top = Math.random() * 200 - 100 + "px";
+        fireworksContainer.appendChild(firework);
+      }
+
+      setTimeout(function() {
+        document.body.removeChild(fireworksContainer);
+      }, 1000);
+    }
+
+    function getRandomColor() {
+      var letters = "0123456789ABCDEF";
+      var color = "#";
+      for (var i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+
+    function showHint() {
+      var challengeName = document.getElementById("challengeSelect").value;
+      var challenge = challenges[challengeName];
+      var hint = "Hint: " + challenge.description;
+      alert(hint);
+    }
+
+    // Load the initial challenge
+    loadChallenge();
+  </script>
+</body>
+</html>

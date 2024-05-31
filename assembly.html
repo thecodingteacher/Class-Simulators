@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Assembly Language Simulator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .simulator {
+      margin-bottom: 30px;
+      padding: 20px;
+      background-color: #f4f4f4;
+      border-radius: 5px;
+    }
+    .definitions {
+      margin-bottom: 30px;
+      padding: 20px;
+      background-color: #e9e9e9;
+      border-radius: 5px;
+    }
+    .challenge {
+      margin-bottom: 30px;
+      padding: 20px;
+      background-color: #d4e4ff;
+      border-radius: 5px;
+    }
+    h1, h2, h3 {
+      color: #333;
+    }
+    textarea {
+      width: 100%;
+      padding: 10px;
+      font-family: monospace;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    pre {
+      background-color: #fff;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .hint {
+      display: none;
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f1f1f1;
+      border-radius: 5px;
+    }
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #e6ffe6;
+      border-radius: 5px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Assembly Language Simulator</h1>
+
+  <div class="simulator">
+    <h2>Simulator</h2>
+    <textarea id="assemblyCode" rows="10" cols="50"></textarea><br>
+    <button onclick="runCode()">Run Code</button>
+    <pre id="output"></pre>
+  </div>
+
+  <div class="definitions">
+    <h2>Definitions</h2>
+    <ul>
+      <li>MOV: Move data between registers or between a register and memory</li>
+      <li>ADD: Add two values and store the result in a register</li>
+      <li>SUB: Subtract one value from another and store the result in a register</li>
+      <li>JMP: Jump to a specified label</li>
+      <li>CMP: Compare two values</li>
+      <li>JE: Jump if equal (after comparison)</li>
+      <li>JNE: Jump if not equal (after comparison)</li>
+    </ul>
+  </div>
+
+  <div class="challenge">
+    <h2>Challenges</h2>
+    <h3>Example: Calculate Remaining Bullets</h3>
+    <p>Write assembly code to calculate the remaining bullets after firing a certain number of shots.</p>
+    <pre>
+MOV r1, 30
+MOV r2, 5
+SUB r1, r1, r2
+    </pre>
+
+    <h3>Challenge 1: Calculate Player's Score</h3>
+    <p>Write assembly code to calculate the player's score by adding points for each elimination.</p>
+    <pre>
+MOV r1, 0
+MOV r2, 3
+; Write your code here
+    </pre>
+    <button onclick="showHint(1)">Hint</button>
+    <div id="hint1" class="hint">
+      Hint: Use the ADD instruction to add the number of eliminations to the score.
+    </div>
+    <div id="result1" class="result"></div>
+
+    <h3>Challenge 2: Determine Winning Team</h3>
+    <p>Write assembly code to compare the scores of two teams and determine the winning team.</p>
+    <pre>
+MOV r1, 75
+MOV r2, 80
+; Write your code here
+    </pre>
+    <button onclick="showHint(2)">Hint</button>
+    <div id="hint2" class="hint">
+      Hint: Use the CMP instruction to compare the scores and JE or JNE to jump based on the comparison.
+    </div>
+    <div id="result2" class="result"></div>
+
+    <h3>Challenge 3: Calculate Building Materials</h3>
+    <p>Write assembly code to calculate the total building materials by adding wood, brick, and metal.</p>
+    <pre>
+MOV r1, 100
+MOV r2, 50
+MOV r3, 30
+; Write your code here
+    </pre>
+    <button onclick="showHint(3)">Hint</button>
+    <div id="hint3" class="hint">
+      Hint: Use the ADD instruction to add the values of wood, brick, and metal.
+    </div>
+    <div id="result3" class="result"></div>
+  </div>
+
+  <script>
+    function runCode() {
+      var code = document.getElementById('assemblyCode').value;
+      var output = document.getElementById('output');
+      
+      // Clear previous output
+      output.innerHTML = '';
+
+      // Simulate assembly code execution
+      var lines = code.split('\n');
+      var registers = {
+        r1: 0,
+        r2: 0,
+        r3: 0,
+        r4: 0,
+        r5: 0
+      };
+      var labels = {};
+
+      // First pass: Extract labels
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (line.endsWith(':')) {
+          var label = line.slice(0, -1);
+          labels[label] = i;
+        }
+      }
+
+      // Second pass: Execute instructions
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (line.endsWith(':') || line.startsWith(';')) {
+          continue;
+        }
+
+        var parts = line.split(/[,\s]+/);
+        var instruction = parts[0].toUpperCase();
+        var operands = parts.slice(1).map(function(operand) {
+          return operand.trim();
+        });
+
+        switch (instruction) {
+          case 'MOV':
+            registers[operands[0]] = parseInt(operands[1]);
+            break;
+          case 'ADD':
+            registers[operands[0]] = registers[operands[1]] + registers[operands[2]];
+            break;
+          case 'SUB':
+            registers[operands[0]] = registers[operands[1]] - registers[operands[2]];
+            break;
+          case 'JMP':
+            i = labels[operands[0]] - 1;
+            break;
+          case 'CMP':
+            registers['CMP'] = registers[operands[0]] - registers[operands[1]];
+            break;
+          case 'JE':
+            if (registers['CMP'] === 0) {
+              i = labels[operands[0]] - 1;
+            }
+            break;
+          case 'JNE':
+            if (registers['CMP'] !== 0) {
+              i = labels[operands[0]] - 1;
+            }
+            break;
+          default:
+            if (instruction !== '') {
+              output.innerHTML += 'Unknown instruction: ' + instruction + '<br>';
+            }
+        }
+      }
+
+      // Display register values
+      output.innerHTML += '<br>Register Values:<br>';
+      for (var key in registers) {
+        if (key !== 'CMP') {
+          output.innerHTML += key + ': ' + registers[key] + '<br>';
+        }
+      }
+
+      // Mark student work
+      markChallenge(1, registers.r1);
+      markChallenge(2, registers.r1, registers.r2);
+      markChallenge(3, registers.r1);
+    }
+
+    function showHint(challengeNumber) {
+      var hintElement = document.getElementById('hint' + challengeNumber);
+      hintElement.style.display = 'block';
+    }
+
+    function markChallenge(challengeNumber, value1, value2) {
+      var resultElement = document.getElementById('result' + challengeNumber);
+      resultElement.style.display = 'block';
+
+      if (challengeNumber === 1) {
+        if (value1 === 9) {
+          resultElement.innerHTML = 'Challenge 1: Correct!';
+        } else {
+          resultElement.innerHTML = 'Challenge 1: Incorrect. Expected score: 9';
+        }
+      } else if (challengeNumber === 2) {
+        if (value1 < value2) {
+          resultElement.innerHTML = 'Challenge 2: Correct! Team 2 wins.';
+        } else if (value1 > value2) {
+          resultElement.innerHTML = 'Challenge 2: Correct! Team 1 wins.';
+        } else {
+          resultElement.innerHTML = 'Challenge 2: Correct! It\'s a tie.';
+        }
+      } else if (challengeNumber === 3) {
+        if (value1 === 180) {
+          resultElement.innerHTML = 'Challenge 3: Correct!';
+        } else {
+          resultElement.innerHTML = 'Challenge 3: Incorrect. Expected total materials: 180';
+        }
+      }
+    }
+  </script>
+</body>
+</html>

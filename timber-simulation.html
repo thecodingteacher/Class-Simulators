@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wood Crafting Master: Expert Challenge</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0e6d2;
+            color: #3e2723;
+        }
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+        .wood-types, .objects, .crafting-area, .crafted-items, .instructions {
+            background-color: #d7ccc8;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .wood-types, .objects {
+            width: 25%;
+        }
+        .crafting-area {
+            width: 40%;
+            order: -1;
+        }
+        .crafted-items, .instructions {
+            width: 95%;
+        }
+        h2 {
+            text-align: center;
+            color: #4e342e;
+        }
+        .wood-item, .object-item {
+            cursor: move;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #bcaaa4;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        .wood-item:hover, .object-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .wood-item img, .object-item img {
+            width: 50px;
+            height: 50px;
+            margin-right: 10px;
+            border-radius: 5px;
+        }
+        #crafting-zone {
+            border: 3px dashed #8d6e63;
+            height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            color: #5d4037;
+        }
+        #craft-button, #toggle-mode {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #795548;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        #craft-button:hover, #toggle-mode:hover {
+            background-color: #5d4037;
+        }
+        #wood-info {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #efebe9;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .crafted-item {
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #a5d6a7;
+            border-radius: 5px;
+        }
+        .crafted-item::before {
+            content: '✓';
+            margin-right: 10px;
+            color: #2e7d32;
+        }
+        #attempts, #timer {
+            text-align: center;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+        .expert-mode .wood-item, .expert-mode .object-item {
+            background-color: #78909c;
+        }
+        .mode-complete {
+            color: #2e7d32;
+            font-weight: bold;
+        }
+        .mode-complete::after {
+            content: ' ✓';
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h2>Wood Crafting Master: Expert Challenge</h2>
+        <ol>
+            <li>Drag a wood type to the crafting area.</li>
+            <li>Drag an object to the crafting area.</li>
+            <li>Click the "Craft Item" button to see if the combination is correct.</li>
+            <li>Try to craft all possible combinations!</li>
+        </ol>
+        <h3>Expert Mode Instructions:</h3>
+        <ol>
+            <li>Wood types are hidden - only their properties are shown.</li>
+            <li>You have 5 minutes to complete all combinations.</li>
+            <li>Use your knowledge of wood properties to match them with the correct objects!</li>
+        </ol>
+    </div>
+    <div class="game-container">
+        <div class="wood-types">
+            <h2>Wood Types</h2>
+            <div id="wood-list"></div>
+        </div>
+        <div class="crafting-area">
+            <h2>Crafting Area</h2>
+            <div id="crafting-zone">Drop wood and object here</div>
+            <div id="wood-info"></div>
+            <button id="craft-button">Craft Item</button>
+        </div>
+        <div class="objects">
+            <h2>Objects</h2>
+            <div id="object-list"></div>
+        </div>
+    </div>
+    <div class="crafted-items">
+        <h2>Crafted Items</h2>
+        <div id="crafted-list"></div>
+    </div>
+    <div id="attempts"></div>
+    <div id="timer"></div>
+    <button id="toggle-mode">Toggle Expert Mode</button>
+    <div id="mode-status">
+        <span id="standard-mode-status">Standard Mode</span> |
+        <span id="expert-mode-status">Expert Mode</span>
+    </div>
+
+    <script>
+        const woodTypes = [
+            { name: 'Pine', image: 'https://example.com/pine.jpg', properties: 'Softwood with a straight grain, light, easy to work with', uses: ['House Construction'] },
+            { name: 'Cedar', image: 'https://example.com/cedar.jpg', properties: 'Aromatic softwood, naturally resistant to decay', uses: ['Chests', 'Deck Planks'] },
+            { name: 'Spruce', image: 'https://example.com/spruce.jpg', properties: 'Lightweight softwood, high strength-to-weight ratio', uses: ['Kitchen Cabinets'] },
+            { name: 'Redwood', image: 'https://example.com/redwood.jpg', properties: 'Durable softwood, resistant to insects and decay', uses: ['Fences', 'Outdoor Furniture'] },
+            { name: 'Plywood', image: 'https://example.com/plywood.jpg', properties: 'Engineered wood, strong and stable', uses: ['Table Tops', 'Door Fronts', 'Drawers'] },
+            { name: 'MDF', image: 'https://example.com/mdf.jpg', properties: 'Medium-density fiberboard, smooth surface, uniform density', uses: ['Table Tops'] },
+            { name: 'Particle Board', image: 'https://example.com/particleboard.jpg', properties: 'Engineered wood product, affordable, consistent', uses: ['Plastic Coated Furniture'] },
+            { name: 'Hardboard', image: 'https://example.com/hardboard.jpg', properties: 'High-density fiberboard, smooth surface, water-resistant', uses: ['Door Panels', 'Cabinet Backs'] }
+        ];
+
+        const objects = [
+            'House Construction', 'Chests', 'Deck Planks', 'Kitchen Cabinets', 'Fences', 'Outdoor Furniture',
+            'Table Tops', 'Door Fronts', 'Drawers', 'Plastic Coated Furniture', 'Door Panels', 'Cabinet Backs'
+        ];
+
+        const woodList = document.getElementById('wood-list');
+        const objectList = document.getElementById('object-list');
+        const craftingZone = document.getElementById('crafting-zone');
+        const woodInfo = document.getElementById('wood-info');
+        const craftButton = document.getElementById('craft-button');
+        const craftedList = document.getElementById('crafted-list');
+        const attemptsDisplay = document.getElementById('attempts');
+        const timerDisplay = document.getElementById('timer');
+        const toggleModeButton = document.getElementById('toggle-mode');
+        const standardModeStatus = document.getElementById('standard-mode-status');
+        const expertModeStatus = document.getElementById('expert-mode-status');
+
+        let currentWood = null;
+        let currentObject = null;
+        let craftedItems = new Set();
+        let attempts = parseInt(localStorage.getItem('woodCraftingAttempts')) || 0;
+        let expertMode = false;
+        let timeLeft = 300; // 5 minutes
+        let timerInterval;
+        let standardModeComplete = false;
+        let expertModeComplete = false;
+
+        function updateAttempts() {
+            attempts++;
+            localStorage.setItem('woodCraftingAttempts', attempts);
+            attemptsDisplay.textContent = `Total Attempts: ${attempts}`;
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert('Time\'s up! Game over.');
+                    resetGame();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `Time Left: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function resetGame() {
+            craftedItems.clear();
+            updateCraftedList();
+            timeLeft = 300;
+            updateTimerDisplay();
+            renderWoodTypes();
+            renderObjects();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function renderWoodTypes() {
+            woodList.innerHTML = '';
+            const shuffledWoods = shuffleArray([...woodTypes]);
+            shuffledWoods.forEach(wood => {
+                const woodItem = document.createElement('div');
+                woodItem.className = 'wood-item';
+                woodItem.draggable = true;
+                woodItem.innerHTML = expertMode ? 
+                    `<img src="${wood.image}" alt="Mystery Wood"> ${wood.properties}` :
+                    `<img src="${wood.image}" alt="${wood.name}"> ${wood.name}`;
+                woodItem.addEventListener('dragstart', (e) => {
+                    currentWood = wood;
+                    e.dataTransfer.setData('text/plain', 'wood');
+                });
+                woodList.appendChild(woodItem);
+            });
+        }
+
+        function renderObjects() {
+            objectList.innerHTML = '';
+            const shuffledObjects = shuffleArray([...objects]);
+            shuffledObjects.forEach(object => {
+                const objectItem = document.createElement('div');
+                objectItem.className = 'object-item';
+                objectItem.draggable = true;
+                objectItem.innerHTML = object;
+                objectItem.addEventListener('dragstart', (e) => {
+                    currentObject = object;
+                    e.dataTransfer.setData('text/plain', 'object');
+                });
+                objectList.appendChild(objectItem);
+            });
+        }
+
+        craftingZone.addEventListener('dragover', (e) => e.preventDefault());
+
+        craftingZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const data = e.dataTransfer.getData('text/plain');
+            if (data === 'wood' && currentWood) {
+                craftingZone.innerHTML = `Wood: ${expertMode ? 'Mystery Wood' : currentWood.name}`;
+                woodInfo.innerHTML = `<strong>Properties:</strong> ${currentWood.properties}`;
+            } else if (data === 'object' && currentObject) {
+                craftingZone.innerHTML += `<br>Object: ${currentObject}`;
+            }
+        });
+
+        craftButton.addEventListener('click', () => {
+            if (currentWood && currentObject) {
+                updateAttempts();
+                if (currentWood.uses.includes(currentObject)) {
+                    alert(`Congratulations! You successfully crafted ${currentObject} using ${currentWood.name}!`);
+                    craftedItems.add(`${currentObject} (${currentWood.name})`);
+                    updateCraftedList();
+                } else {
+                    alert(`Oops! ${currentWood.name} is not typically used for ${currentObject}. Try again!`);
+                }
+                resetCraftingArea();
+            } else {
+                alert('Please drag both a wood type and an object to the crafting area before crafting.');
+            }
+        });
+
+        function resetCraftingArea() {
+            currentWood = null;
+            currentObject = null;
+            craftingZone.innerHTML = 'Drop wood and object here';
+            woodInfo.innerHTML = '';
+        }
+
+        function updateCraftedList() {
+            craftedList.innerHTML = '';
+            craftedItems.forEach(item => {
+                const craftedItem = document.createElement('div');
+                craftedItem.className = 'crafted-item';
+                craftedItem.textContent = item;
+                craftedList.appendChild(craftedItem);
+            });
+            checkGameCompletion();
+        }
+
+        function checkGameCompletion() {
+            const totalCombinations = woodTypes.reduce((acc, wood) => acc + wood.uses.length, 0);
+            if (craftedItems.size === totalCombinations) {
+                if (expertMode) {
+                    expertModeComplete = true;
+                    expertModeStatus.classList.add('mode-complete');
+                    alert('Congratulations! You have completed Expert Mode!');
+                } else {
+                    standardModeComplete = true;
+                    standardModeStatus.classList.add('mode-complete');
+                    alert('Congratulations! You have completed Standard Mode!');
+                }
+                clearInterval(timerInterval);
+            }
+        }
+
+        toggleModeButton.addEventListener('click', () => {
+            expertMode = !expertMode;
+            document.body.classList.toggle('expert-mode');
+            resetGame();
+            if (expertMode) {
+                startTimer();
+            } else {
+                clearInterval(timerInterval);
+                timerDisplay.textContent = '';
+            }
+            alert(expertMode ? 'Expert Mode activated! Good luck!' : 'Returning to Standard Mode.');
+        });
+
+        renderWoodTypes();
+        renderObjects();
+        updateAttempts();
+    </script>
+</body>
+</html>

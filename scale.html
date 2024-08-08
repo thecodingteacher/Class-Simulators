@@ -152,7 +152,7 @@
 
         function updateCalculations() {
             const originalSizeInMeters = objects[objectTypeSelect.value].size;
-            const newSizeInMeters = Math.round(originalSizeInMeters / currentScale);
+            const newSizeInMeters = (originalSizeInMeters / currentScale);
             const calculations = `
                 Original size: ${originalSizeInMeters} meters
                 New size: ${newSizeInMeters} meters
@@ -181,7 +181,7 @@
             const randomObject = objectKeys[Math.floor(Math.random() * objectKeys.length)];
             const scale = challengeScales[currentQuestion];
             const originalWidth = objects[randomObject].size;
-            const originalHeight = Math.round(originalWidth * (Math.random() * 0.5 + 0.75)); // Random aspect ratio between 1:1 and 1:1.25
+            const originalHeight = (originalWidth * (Math.random() * 0.5 + 0.75)); // Random aspect ratio between 1:1 and 1:1.25
 
             challengeQuestion.innerHTML = `
                 Question ${currentQuestion + 1}/6: A ${objects[randomObject].name.toLowerCase()} in Roblox has a width of ${originalWidth} meters and a height of ${originalHeight} meters.
@@ -201,8 +201,8 @@
 
         function checkAnswer() {
             const scale = parseInt(challengeQuestion.dataset.scale);
-            const correctWidth = Math.round(parseInt(challengeQuestion.dataset.width) / scale);
-            const correctHeight = Math.round(parseInt(challengeQuestion.dataset.height) / scale);
+            const correctWidth = (parseInt(challengeQuestion.dataset.width) / scale);
+            const correctHeight = (parseInt(challengeQuestion.dataset.height) / scale);
 
             const userWidth = parseInt(document.getElementById('widthInput').value);
             const userHeight = parseInt(document.getElementById('heightInput').value);

@@ -53,7 +53,7 @@
         }
         .inputGroup input[type="number"] {
             margin-left: 10px;
-            width: 80px;
+            width: 60px;
         }
     </style>
 </head>
@@ -89,11 +89,11 @@
         <p id="challengeQuestion"></p>
         <div class="inputGroup">
             <label for="widthInput">Width (m):</label>
-            <input type="number" id="widthInput" step="0.1" min="0" max="100">
+            <input type="number" id="widthInput" min="1" max="100">
         </div>
         <div class="inputGroup">
             <label for="heightInput">Height (m):</label>
-            <input type="number" id="heightInput" step="0.1" min="0" max="100">
+            <input type="number" id="heightInput" min="1" max="100">
         </div>
         <button onclick="checkAnswer()">Submit Answer</button>
         <p id="feedback"></p>
@@ -115,7 +115,7 @@
 
         const objects = {
             cube: { size: 2, color: '#ff0000', name: 'Cube' },
-            person: { size: 1.8, color: '#00ff00', name: 'Person' },
+            person: { size: 2, color: '#00ff00', name: 'Person' },
             tree: { size: 15, color: '#008000', name: 'Tree' },
             house: { size: 10, color: '#0000ff', name: 'House' }
         };
@@ -154,9 +154,9 @@
             const originalSizeInMeters = objects[objectTypeSelect.value].size;
             const newSizeInMeters = originalSizeInMeters / currentScale;
             const calculations = `
-                Original size: ${originalSizeInMeters.toFixed(1)} meters
-                New size: ${newSizeInMeters.toFixed(1)} meters
-                Calculation: ${originalSizeInMeters.toFixed(1)} ÷ ${currentScale} = ${newSizeInMeters.toFixed(1)} meters
+                Original size: ${originalSizeInMeters} meters
+                New size: ${newSizeInMeters.toFixed(2)} meters
+                Calculation: ${originalSizeInMeters} ÷ ${currentScale} = ${newSizeInMeters.toFixed(2)} meters
             `;
             calculationsElement.innerText = calculations;
         }
@@ -180,13 +180,13 @@
             const objectKeys = Object.keys(objects);
             const randomObject = objectKeys[Math.floor(Math.random() * objectKeys.length)];
             const scale = challengeScales[currentQuestion];
-            const originalWidth = objects[randomObject].size;
-            const originalHeight = originalWidth * (Math.random() * 0.5 + 0.75); // Random aspect ratio between 1:1 and 1:1.25
+            const originalWidth = Math.floor(Math.random() * 10) + 5; // Random width between 5 and 14
+            const originalHeight = Math.floor(originalWidth * (Math.random() * 0.5 + 1)); // Random height between 1x and 1.5x the width
 
             challengeQuestion.innerHTML = `
-                Question ${currentQuestion + 1}/6: A ${objects[randomObject].name.toLowerCase()} in Roblox has a width of ${originalWidth.toFixed(1)} meters and a height of ${originalHeight.toFixed(1)} meters.
+                Question ${currentQuestion + 1}/6: A ${objects[randomObject].name.toLowerCase()} in Roblox has a width of ${originalWidth} meters and a height of ${originalHeight} meters.
                 If we scale it down by 1:${scale}, what would be its new dimensions?
-                Use the input fields below to enter your answer. Round to one decimal place if necessary.
+                Use the input fields below to enter your answer. Round down to the nearest whole number.
             `;
 
             challengeQuestion.dataset.object = randomObject;
@@ -201,13 +201,13 @@
 
         function checkAnswer() {
             const scale = parseInt(challengeQuestion.dataset.scale);
-            const correctWidth = parseFloat(challengeQuestion.dataset.width) / scale;
-            const correctHeight = parseFloat(challengeQuestion.dataset.height) / scale;
+            const correctWidth = Math.floor(parseInt(challengeQuestion.dataset.width) / scale);
+            const correctHeight = Math.floor(parseInt(challengeQuestion.dataset.height) / scale);
 
-            const userWidth = parseFloat(document.getElementById('widthInput').value);
-            const userHeight = parseFloat(document.getElementById('heightInput').value);
+            const userWidth = parseInt(document.getElementById('widthInput').value);
+            const userHeight = parseInt(document.getElementById('heightInput').value);
 
-            if (Math.abs(userWidth - correctWidth) < 0.05 && Math.abs(userHeight - correctHeight) < 0.05) {
+            if (userWidth === correctWidth && userHeight === correctHeight) {
                 feedback.textContent = "Correct! You're on your way to becoming a Roblox SIGMA!";
                 feedback.style.color = "green";
                 currentQuestion++;
@@ -218,7 +218,7 @@
                     setTimeout(generateQuestion, 2000);
                 }
             } else {
-                feedback.textContent = `Not quite. The correct answer was ${correctWidth.toFixed(1)} meters wide and ${correctHeight.toFixed(1)} meters tall. Try again!`;
+                feedback.textContent = "Not quite right. Try again!";
                 feedback.style.color = "red";
             }
         }

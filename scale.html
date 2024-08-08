@@ -25,9 +25,7 @@
             left: 10px;
             width: 50px;
             height: 100px;
-            background-image: url('data:image/png;base64,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');
-            background-size: contain;
-            background-repeat: no-repeat;
+            background-color: #00ff00;
         }
         #objectToScale {
             position: absolute;
@@ -47,9 +45,6 @@
         }
         #challengeArea {
             display: none;
-        }
-        input[type="range"] {
-            width: 200px;
         }
         .inputGroup {
             display: flex;
@@ -94,13 +89,11 @@
         <p id="challengeQuestion"></p>
         <div class="inputGroup">
             <label for="widthInput">Width (m):</label>
-            <input type="range" id="widthInput" min="0" max="100" step="1" oninput="updateWidthValue(this.value)">
-            <input type="number" id="widthNumber" min="0" max="100" oninput="updateWidthSlider(this.value)">
+            <input type="number" id="widthInput" min="0" max="100">
         </div>
         <div class="inputGroup">
             <label for="heightInput">Height (m):</label>
-            <input type="range" id="heightInput" min="0" max="100" step="1" oninput="updateHeightValue(this.value)">
-            <input type="number" id="heightNumber" min="0" max="100" oninput="updateHeightSlider(this.value)">
+            <input type="number" id="heightInput" min="0" max="100">
         </div>
         <button onclick="checkAnswer()">Submit Answer</button>
         <p id="feedback"></p>
@@ -127,7 +120,7 @@
             house: { size: 30, color: '#0000ff', name: 'House' }
         };
 
-        const challengeScales = [2, 5, 10, 10, 20, 0]; // 0 represents random scale
+        const challengeScales = [2, 5, 10, 10, 20, Math.floor(Math.random() * 3 + 2) * 5];
 
         function setScale(scale) {
             currentScale = scale;
@@ -175,6 +168,8 @@
             setScale(currentScale);
         }
 
+        let currentQuestion = 0;
+
         function startChallenge() {
             challengeArea.style.display = 'block';
             currentQuestion = 0;
@@ -184,46 +179,30 @@
         function generateQuestion() {
             const objectKeys = Object.keys(objects);
             const randomObject = objectKeys[Math.floor(Math.random() * objectKeys.length)];
-            const scale = challengeScales[currentQuestion] === 0 ? [2, 5, 10, 20][Math.floor(Math.random() * 4)] : challengeScales[currentQuestion];
+            const scale = challengeScales[currentQuestion];
             const originalWidth = objects[randomObject].size;
             const originalHeight = Math.round(originalWidth * (Math.random() * 0.5 + 0.75)); // Random aspect ratio between 1:1 and 1:1.25
 
             challengeQuestion.innerHTML = `
                 Question ${currentQuestion + 1}/6: A ${objects[randomObject].name.toLowerCase()} in Roblox has a width of ${originalWidth} meters and a height of ${originalHeight} meters.
                 If we scale it down by 1:${scale}, what would be its new dimensions?
-                Use the sliders or input fields below to input your answer.
+                Use the input fields below to enter your answer.
             `;
 
-           challengeQuestion.dataset.width = originalWidth;
+            challengeQuestion.dataset.object = randomObject;
+            challengeQuestion.dataset.scale = scale;
+            challengeQuestion.dataset.width = originalWidth;
             challengeQuestion.dataset.height = originalHeight;
 
-            // Reset sliders and input fields
-            document.getElementById('widthInput').value = 0;
-            document.getElementById('heightInput').value = 0;
-            document.getElementById('widthNumber').value = 0;
-            document.getElementById('heightNumber').value = 0;
-        }
-
-        function updateWidthValue(val) {
-            document.getElementById('widthNumber').value = val;
-        }
-
-        function updateHeightValue(val) {
-            document.getElementById('heightNumber').value = val;
-        }
-
-        function updateWidthSlider(val) {
-            document.getElementById('widthInput').value = val;
-        }
-
-        function updateHeightSlider(val) {
-            document.getElementById('heightInput').value = val;
+            // Reset input fields
+            document.getElementById('widthInput').value = '';
+            document.getElementById('heightInput').value = '';
         }
 
         function checkAnswer() {
-            const scale = parseFloat(challengeQuestion.dataset.scale);
-            const correctWidth = Math.round(parseFloat(challengeQuestion.dataset.width) / scale);
-            const correctHeight = Math.round(parseFloat(challengeQuestion.dataset.height) / scale);
+            const scale = parseInt(challengeQuestion.dataset.scale);
+            const correctWidth = Math.round(parseInt(challengeQuestion.dataset.width) / scale);
+            const correctHeight = Math.round(parseInt(challengeQuestion.dataset.height) / scale);
 
             const userWidth = parseInt(document.getElementById('widthInput').value);
             const userHeight = parseInt(document.getElementById('heightInput').value);
@@ -244,13 +223,10 @@
             }
         }
 
-        let currentQuestion = 0;
-
         // Initialize with cube at 1:1 scale
         changeObject();
         setScale(1);
-
-        // Add event listeners for the sliders and input fields
+                // Add event listeners for the sliders and input fields
         document.getElementById('widthInput').addEventListener('input', function() {
             updateWidthValue(this.value);
         });

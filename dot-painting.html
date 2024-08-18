@@ -248,7 +248,7 @@
         function animate() {
             requestAnimationFrame(animate);
             if (isRotating) {
-                prism.rotation.y += 0.01;
+                prism.rotation.y += 0.001;
             }
             renderer.render(scene, camera);
         }

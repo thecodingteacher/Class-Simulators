@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aboriginal Dot Painting Simulator with SVG Stencils</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-family: Arial, sans-serif;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Aboriginal Dot Painting Simulator<br>Click to paint, Right-click to erase<br>Use arrow keys to change faces</div>
+    <script>
+        let scene, camera, renderer, prism, raycaster, mouse;
+        let currentColor = new THREE.Color(1, 0, 0);
+        let dotSize = 0.02;
+        let isErasing = false;
+        let dots = [];
+        let currentStencil = null;
+        let stencilMesh = null;
+        let currentFace = 0;
+        let isRotating = false;
+
+        const stencils = {
+            none: null,
+            turtle: "M63.4 57.9c-.9-.9-2.3-.9-3.2 0L48.6 69.5c-3.4 3.4-8.9 3.4-12.3 0L24.7 57.9c-.9-.9-2.3-.9-3.2 0-.9.9-.9 2.3 0 3.2l11.6 11.6c2.6 2.6 6 3.9 9.4 3.9s6.8-1.3 9.4-3.9l11.6-11.6c.8-.9.8-2.3-.1-3.2zM49.1 36.3c0-5.4-4.4-9.7-9.7-9.7s-9.7 4.4-9.7 9.7 4.4 9.7 9.7 9.7 9.7-4.3 9.7-9.7zm-15.5 0c0-3.2 2.6-5.8 5.8-5.8s5.8 2.6 5.8 5.8-2.6 5.8-5.8 5.8-5.8-2.6-5.8-5.8z",
+            snake: "M94.5 40.3c-3.3-3.3-7.7-5.1-12.4-5.1-4.7 0-9.1 1.8-12.4 5.1-.8.8-.8 2 0 2.8.8.8 2 .8 2.8 0 2.6-2.6 6-4 9.6-4s7.1 1.4 9.6 4c.4.4.9.6 1.4.6.5 0 1-.2 1.4-.6.8-.8.8-2.1 0-2.8zm-34 10.2c-2.6-2.6-6-4-9.6-4s-7.1 1.4-9.6 4c-.8.8-.8 2 0 2.8.8.8 2 .8 2.8 0 1.8-1.8 4.2-2.8 6.8-2.8s5 1 6.8 2.8c.4.4.9.6 1.4.6.5 0 1-.2 1.4-.6.8-.7.8-2 0-2.8zm17-5.1c-4.7 0-9.1 1.8-12.4 5.1-.8.8-.8 2 0 2.8.8.8 2 .8 2.8 0 2.6-2.6 6-4 9.6-4s7.1 1.4 9.6 4c.4.4.9.6 1.4.6.5 0 1-.2 1.4-.6.8-.8.8-2 0-2.8-3.3-3.3-7.7-5.1-12.4-5.1z",
+            fish: "M68.5 47.3c-1.2 0-2.1 1-2.1 2.1 0 1.2 1 2.1 2.1 2.1 1.2 0 2.1-1 2.1-2.1 0-1.2-.9-2.1-2.1-2.1zm-13.8-5.5c-3.6 0-6.5 2.9-6.5 6.5s2.9 6.5 6.5 6.5 6.5-2.9 6.5-6.5-2.9-6.5-6.5-6.5zm0 9.7c-1.8 0-3.2-1.4-3.2-3.2s1.4-3.2 3.2-3.2 3.2 1.4 3.2 3.2-1.4 3.2-3.2 3.2zm33-14.1c-3.5-2.9-8.5-5.7-13.9-7.9-12.7-5.1-24.9-5.3-33.7-.6-4.2 2.3-7.1 5.4-8.6 9.2-4.3.4-8.9 2.1-12.4 5.7-.6.6-.6 1.6 0 2.2.3.3.7.5 1.1.5.4 0 .8-.2 1.1-.5 3.3-3.3 7.6-4.8 11.7-4.9 0 3-.4 7.3-3.2 10.8-3.8 4.7-5.8 10.3-5.8 16.1 0 .9.7 1.6 1.6 1.6s1.6-.7 1.6-1.6c0-5.1 1.7-9.9 5-14.1 2.8-3.5 3.9-7.5 4.3-10.9C37 46.2 44.2 50 54.7 54.5c12.7 5.1 24.9 5.3 33.7.6 4.9-2.6 8-6.4 9.1-11.2 1.8-7.5-1.8-14.5-10.8-21.5-2.2-1.7-4.7-3.3-7.3-4.8-.8-.4-1.8-.2-2.2.6-.4.8-.2 1.8.6 2.2 2.5 1.4 4.8 2.9 6.9 4.5 7.9 6.1 11 11.8 9.5 17.9-.8 3.6-3.2 6.5-7.1 8.6-7.6 4-18.4 3.8-30-1-11.4-4.9-19-9-24.9-12.7 7.7-3.3 18.3-2.5 29.5 2.3 5.1 2.1 9.8 4.7 13.1 7.4.7.6 1.7.5 2.2-.2.6-.7.5-1.7-.2-2.2z",
+            canoe: "M89.1 35.1c-.9-1.4-2.5-2.2-4.1-2.2H51.6L22.1 21.5c-1.8-.7-3.8-.3-5.2 1.1-1.4 1.4-1.8 3.4-1.1 5.2L21 44.4c-4.7 1.3-8.2 5.8-8.2 11 0 6.3 5.1 11.4 11.4 11.4h24.3c4.9 0 9.1-3.1 10.7-7.4h18.4c2.9 0 5.2-2.3 5.2-5.2v-5.2h2.1c1.7 0 3.2-.8 4.1-2.2 1-1.4 1.2-3.1.6-4.7l-4.7-11.6c-.5-1.6-1.8-2.8-3.4-3.3-.3 0-.5-.1-.8-.1zM24.2 63.6c-4.5 0-8.2-3.7-8.2-8.2s3.7-8.2 8.2-8.2 8.2 3.7 8.2 8.2-3.7 8.2-8.2 8.2zm55.5-16.4H58.9c-1.7 0-3.1 1.4-3.1 3.1s1.4 3.1 3.1 3.1h17.6v2.1c0 1.1-.9 2.1-2.1 2.1H54.8c-.9-5.4-5.6-9.6-11.2-9.6-1.8 0-3.6.4-5.1 1.2l-4.6-15.4 27.8 10.8c.3.1.6.2.9.2H85c.3 0 .5.1.6.3.1.2.1.4 0 .7l-4.7 11.6c-.1.2-.3.3-.5.3h-2.1v-5.2c0-1.7-1.4-3.1-3.1-3.1-1.7-.1-3.1 1.3-3.1 3z"
+        };
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x333333);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            const geometry = new THREE.BoxGeometry(2, 1.5, 0.5);
+            const material = new THREE.MeshPhongMaterial({ color: 0xDDDDDD });
+            prism = new THREE.Mesh(geometry, material);
+            scene.add(prism);
+
+            camera.position.set(0, 0, 2);
+            camera.lookAt(prism.position);
+
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            renderer.domElement.addEventListener('mousedown', onMouseDown, false);
+            renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+            renderer.domElement.addEventListener('mouseup', onMouseUp, false);
+            renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault(), false);
+            document.addEventListener('keydown', onKeyDown, false);
+
+            window.addEventListener('resize', onWindowResize, false);
+
+            setupGUI();
+            animate();
+        }
+
+        function setupGUI() {
+            const gui = new dat.GUI();
+            const params = {
+                color: '#FF0000',
+                dotSize: 0.02,
+                clearDots: resetPrism,
+                stencil: 'none',
+                toggleRotation: toggleRotation
+            };
+
+            gui.addColor(params, 'color').onChange((value) => currentColor.set(value));
+            gui.add(params, 'dotSize', 0.01, 0.05).onChange((value) => dotSize = value);
+            gui.add(params, 'clearDots');
+            gui.add(params, 'stencil', Object.keys(stencils)).onChange(changeStencil);
+            gui.add(params, 'toggleRotation').name('Toggle Rotation');
+        }
+
+        function toggleRotation() {
+            isRotating = !isRotating;
+        }
+
+        function changeStencil(stencilName) {
+            if (stencilMesh) {
+                prism.remove(stencilMesh);
+            }
+
+            currentStencil = stencils[stencilName];
+
+            if (currentStencil) {
+                const shape = new THREE.Shape();
+                const svgPath = new window.Path2D(currentStencil);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'white';
+                ctx.fill(svgPath);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                const material = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    transparent: true,
+                    opacity: 0.5,
+                    side: THREE.DoubleSide
+                });
+
+                const geometry = new THREE.PlaneGeometry(1, 1);
+                stencilMesh = new THREE.Mesh(geometry, material);
+                updateStencilPosition();
+                prism.add(stencilMesh);
+            }
+        }
+
+        function updateStencilPosition() {
+            if (stencilMesh) {
+                switch(currentFace) {
+                    case 0: stencilMesh.rotation.set(0, 0, 0); stencilMesh.position.set(0, 0, 0.251); break; // Front
+                    case 1: stencilMesh.rotation.set(0, Math.PI, 0); stencilMesh.position.set(0, 0, -0.251); break; // Back
+                    case 2: stencilMesh.rotation.set(-Math.PI/2, 0, 0); stencilMesh.position.set(0, 0.751, 0); break; // Top
+                    case 3: stencilMesh.rotation.set(Math.PI/2, 0, 0); stencilMesh.position.set(0, -0.751, 0); break; // Bottom
+                    case 4: stencilMesh.rotation.set(0, Math.PI/2, 0); stencilMesh.position.set(1.001, 0, 0); break; // Right
+                    case 5: stencilMesh.rotation.set(0, -Math.PI/2, 0); stencilMesh.position.set(-1.001, 0, 0); break; // Left
+                }
+            }
+        }
+
+        function onKeyDown(event) {
+            switch(event.key) {
+                case 'ArrowRight': currentFace = (currentFace + 1) % 6; break;
+                case 'ArrowLeft': currentFace = (currentFace - 1 + 6) % 6; break;
+                case 'ArrowUp': currentFace = (currentFace - 2 + 6) % 6; break;
+                case 'ArrowDown': currentFace = (currentFace + 2) % 6; break;
+            }
+            updateStencilPosition();
+            rotatePrismToFace(currentFace);
+        }
+
+        function rotatePrismToFace(faceIndex) {
+            const rotations = [
+                { x: 0, y: 0, z: 0 },      // Front
+                { x: 0, y: Math.PI, z: 0 }, // Back
+                { x: -Math.PI/2, y: 0, z: 0 }, // Top
+                { x: Math.PI/2, y: 0, z: 0 },  // Bottom
+                { x: 0, y: -Math.PI/2, z: 0 }, // Right
+                { x: 0, y: Math.PI/2, z: 0 }   // Left
+            ];
+
+            const rotation = rotations[faceIndex];
+            prism.rotation.set(rotation.x, rotation.y, rotation.z);
+        }
+
+        function onMouseDown(event) {
+            isErasing = event.button === 2;  // Right-click
+            addOrRemoveDot(event);
+        }
+
+        function onMouseMove(event) {
+            if (event.buttons !== 0) {
+                addOrRemoveDot(event);
+            }
+        }
+
+        function onMouseUp() {
+            isErasing = false;
+        }
+
+        function addOrRemoveDot(event) {
+            event.preventDefault();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(prism);
+
+            if (intersects.length > 0) {
+                const intersectionPoint = intersects[0].point;
+                const faceIndex = intersects[0].faceIndex;
+                
+                if (isErasing) {
+                    removeDotNear(intersectionPoint);
+                } else {
+                    addDot(intersectionPoint, faceIndex);
+                }
+            }
+        }
+
+        function addDot(position, faceIndex) {
+            const dotGeometry = new THREE.CircleGeometry(dotSize, 32);
+            const dotMaterial = new THREE.MeshPhongMaterial({ color: currentColor, side: THREE.DoubleSide });
+            const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+
+            const localPosition = prism.worldToLocal(position.clone());
+            dot.position.copy(localPosition);
+
+            const normalAttribute = prism.geometry.getAttribute('normal');
+            const normal = new THREE.Vector3(
+                normalAttribute.getX(faceIndex * 3),
+                normalAttribute.getY(faceIndex * 3),
+                normalAttribute.getZ(faceIndex * 3)
+            );
+            dot.lookAt(localPosition.clone().add(normal));
+
+            prism.add(dot);
+            dots.push(dot);
+        }
+
+        function removeDotNear(position) {
+            const localPosition = prism.worldToLocal(position.clone());
+            const threshold = dotSize * 2;
+            for (let i = dots.length - 1; i >= 0; i--) {
+                if (localPosition.distanceTo(dots[i].position) < threshold) {
+                    prism.remove(dots[i]);
+                    dots.splice(i, 1);
+                    break;
+                }
+            }
+        }
+
+        function resetPrism() {
+            dots.forEach(dot => prism.remove(dot));
+            dots = [];
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (isRotating) {
+                prism.rotation.y += 0.01;
+            }
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
+</body>
+</html>

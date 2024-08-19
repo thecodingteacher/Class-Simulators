@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zombie Survival Rectangle Drawing Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+        #gameCanvas {
+            border: 2px solid #4CAF50;
+            margin-bottom: 20px;
+        }
+        .ruler {
+            position: relative;
+            background-color: rgba(76, 175, 80, 0.3);
+        }
+        #horizontalRuler {
+            width: 800px;
+            height: 30px;
+            background: linear-gradient(to right, #4CAF50 1px, transparent 1px) 0 0 / 50px 30px repeat-x;
+        }
+        #verticalRuler {
+            width: 30px;
+            height: 400px;
+            background: linear-gradient(to bottom, #4CAF50 1px, transparent 1px) 0 0 / 30px 50px repeat-y;
+            position: absolute;
+            left: -30px;
+            top: 0;
+        }
+        .ruler span {
+            position: absolute;
+            font-size: 12px;
+            color: #4CAF50;
+        }
+        #horizontalRuler span {
+            top: -20px;
+        }
+        #verticalRuler span {
+            left: -25px;
+            transform: rotate(-90deg);
+            transform-origin: right;
+        }
+        #controls, #resizeControls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        button, input {
+            margin: 0 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        input {
+            width: 60px;
+            background-color: #2c3e50;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #instructions, #question {
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 18px;
+            color: #4CAF50;
+        }
+        #tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px;
+            border-radius: 3px;
+            font-size: 14px;
+            pointer-events: none;
+        }
+        #nextButton {
+            position: relative;
+        }
+        #nextButton::after {
+            content: "🔒";
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+        }
+        #nextButton.unlocked::after {
+            content: "";
+        }
+        .zoneInputs {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .zoneInputs label {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Zombie Survival Rectangle Drawing Game</h1>
+    <div id="instructions"></div>
+    <div id="question"></div>
+    <div style="position: relative;">
+        <div id="verticalRuler" class="ruler">
+            <span style="top: 0;">0m</span>
+            <span style="top: 125px;">2.5m</span>
+            <span style="top: 250px;">5m</span>
+            <span style="top: 375px;">7.5m</span>
+        </div>
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div id="tooltip" style="display: none;"></div>
+    </div>
+    <div id="horizontalRuler" class="ruler">
+        <span style="left: 0;">0m</span>
+        <span style="left: 250px;">5m</span>
+        <span style="left: 500px;">10m</span>
+        <span style="left: 750px;">15m</span>
+    </div>
+    <div id="resizeControls">
+        <div class="zoneInputs">
+            <label>Zone 1:</label>
+            <input type="number" id="widthInput1" step="0.1" min="0" max="16" placeholder="Width">
+            <input type="number" id="heightInput1" step="0.1" min="0" max="8" placeholder="Height">
+        </div>
+        <div class="zoneInputs">
+            <label>Zone 2:</label>
+            <input type="number" id="widthInput2" step="0.1" min="0" max="16" placeholder="Width">
+            <input type="number" id="heightInput2" step="0.1" min="0" max="8" placeholder="Height">
+        </div>
+        <button id="resizeButton">Update Safe Zones</button>
+    </div>
+    <div id="controls">
+        <button id="checkButton">Check Safe Zone</button>
+        <button id="nextButton">Next Challenge</button>
+        <button id="resetButton">Reset</button>
+        <button id="changeQuestionButton">Change Question</button>
+    </div>
+Copy<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const instructionsElement = document.getElementById('instructions');
+    const questionElement = document.getElementById('question');
+    const checkButton = document.getElementById('checkButton');
+    const nextButton = document.getElementById('nextButton');
+    const resetButton = document.getElementById('resetButton');
+    const resizeButton = document.getElementById('resizeButton');
+    const changeQuestionButton = document.getElementById('changeQuestionButton');
+    const widthInput1 = document.getElementById('widthInput1');
+    const heightInput1 = document.getElementById('heightInput1');
+    const widthInput2 = document.getElementById('widthInput2');
+    const heightInput2 = document.getElementById('heightInput2');
+    const tooltip = document.getElementById('tooltip');
+
+    let currentChallenge = 0;
+    let challenges = [];
+    let isDrawing = false;
+    let startX, startY, endX, endY;
+    let zombies = [];
+    let survivors = [];
+    let safeZones = [];
+    let isChallengeCompleted = false;
+
+    function generateChallenge(type) {
+    switch (type) {
+        case 'shelter':
+        case 'rooms':
+            return {
+                type: type,
+                width: Math.floor(Math.random() * 5) + 3,
+                height: Math.floor(Math.random() * 5) + 3,
+                scale: 1,
+                description: type === 'shelter' ? "Draw a safe shelter" : "Design a two-room bunker",
+                question: `How big should the ${type === 'shelter' ? 'shelter' : 'two-room bunker'} be?`
+            };
+        case 'scale':
+            const scale = [2, 5, 10, 20][Math.floor(Math.random() * 4)];
+            return {
+                type: 'scale',
+                width: Math.floor(Math.random() * 30) + 10,
+                height: Math.floor(Math.random() * 30) + 10,
+                scale: scale,
+                description: `Scale ${scale === 2 ? 'down' : 'up'} the safe zone`,
+                question: `What's the ${scale === 2 ? 'scaled-down' : 'scaled-up'} size of the safe zone?`
+            };
+             case 'twoZones':
+        const scales = [1, 2, 5, 10];
+        const scale1 = scales[Math.floor(Math.random() * scales.length)];
+        const scale2 = scales[Math.floor(Math.random() * scales.length)];
+        const width1 = Math.floor(Math.random() * 15) + 5;
+        const height1 = Math.floor(Math.random() * 10) + 5;
+        const width2 = Math.floor(Math.random() * 15) + 5;
+        const height2 = Math.floor(Math.random() * 10) + 5;
+        return {
+            type: 'twoZones',
+            width1: width1,
+            height1: height1,
+            scale1: scale1,
+            width2: width2,
+            height2: height2,
+            scale2: scale2,
+            description: "Design two safe zones at different scales",
+            question: `Create two safe zones:\n1) ${width1} x ${height1}, 1:${scale1} scale\n2) ${width2} x ${height2}, 1:${scale2} scale`
+        };
+}
+}
+
+    function generateChallenges() {
+        challenges = [
+            generateChallenge('shelter'),
+           // generateChallenge('scale'),
+          //generateChallenge('scale'),
+          //generateChallenge('rooms'),
+            generateChallenge('scale'),
+            generateChallenge('twoZones'),
+            generateChallenge('twoZones')
+        ];
+    }
+function displayChallenge() {
+    const challenge = challenges[currentChallenge];
+    let instructions = `Zombie Challenge ${currentChallenge + 1}: ${challenge.description}`;
+    let question = challenge.question;
+
+    switch (challenge.type) {
+        case 'shelter':
+        case 'rooms':
+            question = `${question} ${challenge.width}m x ${challenge.height}m`;
+            break;
+        case 'scale':
+            question = `${question} ${challenge.width}m x ${challenge.height}m scaled ${challenge.scale === 2 ? 'down' : 'up'} 1:${challenge.scale}`;
+            break;
+        case 'twoZones':
+            question = question.replace('WIDTH1', challenge.width1)
+                               .replace('HEIGHT1', challenge.height1)
+                               .replace('WIDTH2', challenge.width2)
+                               .replace('HEIGHT2', challenge.height2);
+            break;
+    }
+
+    instructionsElement.textContent = instructions;
+    questionElement.textContent = question;
+
+    // Show/hide input fields based on challenge type
+    if (challenge.type === 'twoZones') {
+        document.querySelector('.zoneInputs:nth-child(2)').style.display = 'flex';
+    } else {
+        document.querySelector('.zoneInputs:nth-child(2)').style.display = 'none';
+    }
+}
+
+    function drawBackground() {
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function drawZombies() {
+        ctx.fillStyle = '#27ae60';
+        zombies.forEach(zombie => {
+            ctx.save();
+            ctx.translate(zombie.x, zombie.y);
+            ctx.rotate(zombie.angle);
+            
+            // Draw zombie body
+            ctx.beginPath();
+            ctx.arc(0, 0, 10, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Draw zombie arms
+            ctx.strokeStyle = '#27ae60';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(15, -5);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-15, 5);
+            ctx.stroke();
+            
+            ctx.restore();
+        });
+    }
+
+    function drawSurvivors() {
+        ctx.fillStyle = '#3498db';
+        survivors.forEach(survivor => {
+            ctx.beginPath();
+            ctx.arc(survivor.x, survivor.y, 8, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+    }
+
+    function drawSafeZones() {
+        safeZones.forEach((zone, index) => {
+            ctx.fillStyle = 'rgba(52, 152, 219, 0.3)';
+            ctx.fillRect(zone.x, zone.y, zone.width, zone.height);
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(zone.x, zone.y, zone.width, zone.height);
+            
+            // Draw zone number
+            ctx.fillStyle = '#fff';
+            ctx.font = '20px Arial';
+            ctx.fillText(index + 1, zone.x + 10, zone.y + 30);
+        });
+    }
+
+    function moveZombies() {
+        zombies.forEach(zombie => {
+            let newX = zombie.x + Math.cos(zombie.angle) * zombie.speed;
+            let newY = zombie.y + Math.sin(zombie.angle) * zombie.speed;
+            
+            if (!isInAnySafeZone(newX, newY)) {
+                zombie.x = newX;
+                zombie.y = newY;
+            } else {
+                zombie.angle = Math.random() * 2 * Math.PI;
+            }
+            
+            // Bounce off walls
+            if (zombie.x < 0 || zombie.x > canvas.width) {
+                zombie.angle = Math.PI - zombie.angle;
+            }
+            if (zombie.y < 0 || zombie.y > canvas.height) {
+                zombie.angle = -zombie.angle;
+            }
+            
+            // Keep zombies within canvas
+            zombie.x = Math.max(0, Math.min(canvas.width, zombie.x));
+            zombie.y = Math.max(0, Math.min(canvas.height, zombie.y));
+            
+            // Randomly change direction
+            if (Math.random() < 0.02) {
+                zombie.angle += (Math.random() - 0.5) * Math.PI / 2;
+            }
+        });
+    }
+
+    function moveSurvivors() {
+        survivors.forEach(survivor => {
+            let newX = survivor.x + (Math.random() - 0.5) * 2;
+            let newY = survivor.y + (Math.random() - 0.5) * 2;
+            
+            if (isInAnySafeZone(newX, newY)) {
+                survivor.x = newX;
+                survivor.y = newY;
+            }
+        });
+    }
+
+    function isInAnySafeZone(x, y) {
+        return safeZones.some(zone => 
+            x >= zone.x && x <= zone.x + zone.width &&
+            y >= zone.y && y <= zone.y + zone.height
+        );
+    }
+
+    function createZombies() {
+        zombies = [];
+        for (let i = 0; i < 10; i++) {
+            zombies.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                angle: Math.random() * 2 * Math.PI,
+                speed: 1 + Math.random()
+            });
+        }
+    }
+
+    function createSurvivors() {
+        survivors = [];
+        safeZones.forEach(zone => {
+            for (let i = 0; i < 3; i++) {
+                survivors.push({
+                    x: zone.x + Math.random() * zone.width,
+                    y: zone.y + Math.random() * zone.height
+                });
+            }
+        });
+    }
+
+    function clearCanvas() {
+        drawBackground();
+        drawSafeZones();
+        drawZombies();
+        drawSurvivors();
+    }
+
+    function startDrawing(e) {
+        isDrawing = true;
+        [startX, startY] = [e.offsetX, e.offsetY];
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        [endX, endY] = [e.offsetX, e.offsetY];
+        
+        // Snap to grid (0.1m = 5 pixels)
+        endX = Math.round(endX / 5) * 5;
+        endY = Math.round(endY / 5) * 5;
+        
+        clearCanvas();
+        
+        // Draw the new safe zone
+        ctx.fillStyle = 'rgba(231, 76, 60, 0.3)';
+        ctx.fillRect(
+            Math.min(startX, endX),
+            Math.min(startY, endY),
+            Math.abs(endX - startX),
+            Math.abs(endY - startY)
+        );
+        
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(
+            Math.min(startX, endX),
+            Math.min(startY, endY),
+            Math.abs(endX - startX),
+            Math.abs(endY - startY)
+        );
+        
+        updateTooltip(e.offsetX, e.offsetY);
+    }
+
+    function stopDrawing() {
+        if (isDrawing) {
+            isDrawing = false;
+            const newZone = {
+                x: Math.min(startX, endX),
+                y: Math.min(startY, endY),
+                width: Math.abs(endX - startX),
+                height: Math.abs(endY - startY)
+            };
+            safeZones.push(newZone);
+            createSurvivors();
+            clearCanvas();
+            updateInputs();
+        }
+    }
+
+    function updateTooltip(x, y) {
+        const width = Math.abs(endX - startX) / 50;
+        const height = Math.abs(endY - startY) / 50;
+        tooltip.style.display = 'block';
+        tooltip.style.left = `${x + 10}px`;
+        tooltip.style.top = `${y + 10}px`;
+        tooltip.textContent = `${width.toFixed(1)}m x ${height.toFixed(1)}m`;
+    }
+
+    function hideTooltip() {
+        tooltip.style.display = 'none';
+    }
+
+    function updateInputs() {
+        if (safeZones.length > 0) {
+            widthInput1.value = (safeZones[0].width / 50).toFixed(1);
+            heightInput1.value = (safeZones[0].height / 50).toFixed(1);
+        }
+        if (safeZones.length > 1) {
+            widthInput2.value = (safeZones[1].width / 50).toFixed(1);
+            heightInput2.value = (safeZones[1].height / 50).toFixed(1);
+        }
+    }
+
+  function checkAnswer() {
+    const challenge = challenges[currentChallenge];
+    
+    if (challenge.type === 'twoZones') {
+        if (safeZones.length !== 2) {
+            alert('Please draw two safe zones for this challenge.');
+            return;
+        }
+        
+        const [zone1, zone2] = safeZones;
+        const width1 = zone1.width / 50 * challenge.scale1;
+        const height1 = zone1.height / 50 * challenge.scale1;
+        const width2 = zone2.width / 50 * challenge.scale2;
+        const height2 = zone2.height / 50 * challenge.scale2;
+        
+        const isZone1Correct = Math.abs(width1 - challenge.width1) <= 0.1 && Math.abs(height1 - challenge.height1) <= 0.1;
+        const isZone2Correct = Math.abs(width2 - challenge.width2) <= 0.1 && Math.abs(height2 - challenge.height2) <= 0.1;
+        
+        if (isZone1Correct && isZone2Correct) {
+            alert('Both safe zones are correct! Great job!');
+            isChallengeCompleted = true;
+            nextButton.classList.add('unlocked');
+        } else {
+            alert(`One or both safe zones are incorrect. The correct dimensions were:\n1) ${challenge.width1}m x ${challenge.height1}m at 1:${challenge.scale1} scale\n2) ${challenge.width2}m x ${challenge.height2}m at 1:${challenge.scale2} scale\nTry again!`);
+        }
+    } else {
+        if (safeZones.length !== 1) {
+            alert('Please draw one safe zone for this challenge.');
+            return;
+        }
+        
+        const zone = safeZones[0];
+        const width = zone.width / 50;
+        const height = zone.height / 50;
+        
+        const expectedWidth = challenge.width / challenge.scale;
+        const expectedHeight = challenge.height / challenge.scale;
+        
+        if (Math.abs(width - expectedWidth) <= 0.1 && Math.abs(height - expectedHeight) <= 0.1) {
+            alert(`Safe zone is correct! You've saved the survivors!`);
+            isChallengeCompleted = true;
+            nextButton.classList.add('unlocked');
+        } else {
+            alert(`The safe zone is incorrect. The correct dimensions were ${expectedWidth.toFixed(1)}m x ${expectedHeight.toFixed(1)}m. Try again!`);
+        }
+    }
+}
+
+    function nextChallenge() {
+        if (!isChallengeCompleted) {
+            alert('Please complete the current challenge before moving to the next one.');
+            return;
+        }
+        
+        currentChallenge++;
+        if (currentChallenge >= challenges.length) {
+            alert('Congratulations! All the zombies are eliminated. You are a hero!');
+            currentChallenge = 0;
+            generateChallenges();
+        }
+        resetGame();
+        displayChallenge();
+    }
+
+    function resetGame() {
+        safeZones = [];
+        createZombies();
+        survivors = [];
+        isChallengeCompleted = false;
+        nextButton.classList.remove('unlocked');
+        clearCanvas();
+        hideTooltip();
+        updateInputs();
+    }
+
+    function updateSafeZones() {
+        const width1 = parseFloat(widthInput1.value);
+        const height1 = parseFloat(heightInput1.value);
+        const width2 = parseFloat(widthInput2.value);
+        const height2 = parseFloat(heightInput2.value);
+
+        if (isNaN(width1) || isNaN(height1) || width1 <= 0 || height1 <= 0) {
+            alert('Please enter valid positive numbers for Zone 1 width and height.');
+            return;
+        }
+
+        if (width1 > 26 || height1 > 28) {
+            alert('Zone 1 cannot be larger than the game area (16m x 8m).');
+            return;
+        }
+
+        safeZones[0] = {
+            x: (canvas.width - width1 * 50) / 2,
+            y: (canvas.height - height1 * 50) / 2,
+            width: width1 * 50,
+            height: height1 * 50
+        };
+
+        if (challenges[currentChallenge].type === 'twoZones') {
+            if (isNaN(width2) || isNaN(height2) || width2 <= 0 || height2 <= 0) {
+                alert('Please enter valid positive numbers for Zone 2 width and height.');
+                return;
+            }
+
+            if (width2 > 26 || height2 > 28) {
+                alert('Zone 2 cannot be larger than the game area (16m x 8m).');
+                return;
+            }
+
+            safeZones[1] = {
+                x: (canvas.width - width2 * 50) / 2,
+                y: (canvas.height - height2 * 50) / 2,
+                width: width2 * 50,
+                height: height2 * 50
+            };
+        }
+
+        createSurvivors();
+        clearCanvas();
+    }
+
+function changeQuestion() {
+    const currentType = challenges[currentChallenge].type;
+    challenges[currentChallenge] = generateChallenge(currentType);
+    displayChallenge();
+    resetGame();
+}
+    function gameLoop() {
+        moveZombies();
+        moveSurvivors();
+        clearCanvas();
+        requestAnimationFrame(gameLoop);
+    }
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+    canvas.addEventListener('mouseleave', hideTooltip);
+
+    checkButton.addEventListener('click', checkAnswer);
+    nextButton.addEventListener('click', nextChallenge);
+    resetButton.addEventListener('click', resetGame);
+    resizeButton.addEventListener('click', updateSafeZones);
+    changeQuestionButton.addEventListener('click', changeQuestion);
+
+    generateChallenges();
+    createZombies();
+    clearCanvas();
+    displayChallenge();
+    gameLoop();
+</script>
+</body>
+</html>

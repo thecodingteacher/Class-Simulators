@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Let's Play with Size!</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive;
+            margin: 0;
+            padding: 20px;
+            background: #E3F2FD; /* Light blue background */
+            color: #333;
+        }
+        .game-canvas {
+            background: #FFFFFF;
+            border: 8px solid #42A5F5; /* Blue border */
+            border-radius: 20px;
+            margin: 20px auto;
+            display: block;
+        }
+        .fun-button {
+            background: #1E88E5; /* Blue buttons */
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 20px;
+            font-family: 'Comic Sans MS', cursive;
+            transition: all 0.3s;
+            box-shadow: 0 4px 0 #1565C0;
+        }
+        .game-title {
+            text-align: center;
+            font-size: 40px;
+            color: #1E88E5;
+            text-shadow: 2px 2px 0 #90CAF9;
+            margin: 20px 0;
+        }
+        .instruction-box {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            border: 4px solid #42A5F5;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .game-canvas {
+            background: #FFFFFF;
+            border: 8px solid #FFA7D1;
+            border-radius: 20px;
+            margin: 20px auto;
+            display: block;
+        }
+        .button-box {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .fun-button {
+            background: #FF6B9F;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 20px;
+            font-family: 'Comic Sans MS', cursive;
+            transition: all 0.3s;
+            box-shadow: 0 4px 0 #D14D7B;
+        }
+        .fun-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #D14D7B;
+        }
+        .fun-button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #D14D7B;
+        }
+        .bigger-button {
+            background: #4CAF50;
+        }
+        .smaller-button {
+            background: #FF9800;
+        }
+        .check-button {
+            background: #2196F3;
+        }
+        .game-title {
+            text-align: center;
+            font-size: 40px;
+            color: #FF6B9F;
+            text-shadow: 2px 2px 0 #FFA7D1;
+            margin: 20px 0;
+        }
+        .instruction-box {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            border: 4px solid #FFA7D1;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .score-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #FF6B9F;
+            padding: 10px 20px;
+            border-radius: 50px;
+            color: white;
+            font-size: 24px;
+        }
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 30px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+        }
+        .happy-message {
+            background: #4CAF50;
+            color: white;
+        }
+        .try-again-message {
+            background: #FF9800;
+            color: white;
+        }
+        .block-input {
+    padding: 15px;
+    font-size: 18px;
+    border: 3px solid #FFA7D1;
+    border-radius: 25px;
+    width: 200px;
+    text-align: center;
+    font-family: 'Comic Sans MS', cursive;
+}
+
+.extreme-button {
+    background: #9C27B0;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="game-title">Let's Play with Sizes! 🎈</h1>
+        <div class="score-box">Stars: <span id="score">0</span> ⭐</div>
+        
+        <div class="button-box" id="level-buttons">
+            <button class="fun-button" onclick="startGame('easy')">Easy Peasy! 😊</button>
+            <button class="fun-button" onclick="startGame('medium')">Getting Harder! 📏</button> 
+            <button class="fun-button" onclick="startGame('hard')">Challenge Time! 🌟</button>
+            <button class="fun-button" onclick="startGame('superhard')">Super Hard! 🏗️</button>
+            <button class="fun-button extreme-button" onclick="startGame('extreme')">Extreme! 🌋</button>
+        </div>
+
+        <canvas id="gameCanvas" class="game-canvas" width="800" height="400"></canvas>
+        
+        <div class="instruction-box">
+            <h2 id="current-task">Pick a level to start playing! 🎮</h2>
+            <p id="task-help"></p>
+        </div>
+
+        <div class="button-box" id="game-controls" style="display: none;">
+            <button class="fun-button bigger-button" onclick="makeItBigger()">Make it Bigger! ⬆️</button>
+            <button class="fun-button smaller-button" onclick="makeItSmaller()">Make it Smaller! ⬇️</button>
+            <button class="fun-button check-button" onclick="checkMyAnswer()">Check My Answer! ✨</button>
+        </div>
+
+        <!-- Add this div for manual input -->
+        <div class="input-container" id="manual-input" style="display: none;">
+            <input type="number" id="block-input" class="block-input" placeholder="Enter number of blocks">
+            <button class="fun-button" onclick="setBlocksManually()">Set Blocks! 🔨</button>
+        </div>
+    </div>
+
+    <div id="message" class="message-box"></div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let gameObjects = [];
+        let gridSize = 40; // Bigger grid for kids
+        let currentLevel = '';
+        let score = 0;
+        let targetSize = 1;
+        let currentQuestionIndex = 0;
+
+
+        // Add this before your existing game logic
+class CaterpillarSegment {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    draw() {
+        // Draw body segment
+        ctx.beginPath();
+        ctx.fillStyle = '#66B2FF'; // Pink color for the body
+        ctx.arc(
+            this.x * gridSize + gridSize/2,
+            this.y * gridSize + gridSize/2,
+            gridSize/2 - 2,
+            0,
+            Math.PI * 2
+        );
+        ctx.fill();
+        
+        // Draw outline
+        ctx.strokeStyle = '#D14D7B';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Draw cute face on the first segment
+        if (gameObjects.indexOf(this) === 0) {
+            // Eyes
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(
+                this.x * gridSize + gridSize/3,
+                this.y * gridSize + gridSize/3,
+                gridSize/8,
+                0,
+                Math.PI * 2
+            );
+            ctx.arc(
+                this.x * gridSize + gridSize*2/3,
+                this.y * gridSize + gridSize/3,
+                gridSize/8,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+            
+            // Pupils
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(
+                this.x * gridSize + gridSize/3,
+                this.y * gridSize + gridSize/3,
+                gridSize/16,
+                0,
+                Math.PI * 2
+            );
+            ctx.arc(
+                this.x * gridSize + gridSize*2/3,
+                this.y * gridSize + gridSize/3,
+                gridSize/16,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+            
+            // Smile
+            ctx.beginPath();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.arc(
+                this.x * gridSize + gridSize/2,
+                this.y * gridSize + gridSize/2,
+                gridSize/4,
+                0,
+                Math.PI
+            );
+            ctx.stroke();
+        }
+    }
+}
+
+          const questions = {
+        easy: [
+            {
+                task: "Make the caterpillar twice as long! 🐛",
+                help: "Current length: 4 blocks. Make it 8 blocks!",
+                target: 2,
+                startSize: 4,
+                checkAnswer: (currentSize, startSize) => currentSize === 8
+            },
+            {
+                task: "Make the caterpillar half as long! 🐛",
+                help: "Current length: 6 blocks. Make it 3 blocks!",
+                target: 0.5,
+                startSize: 6,
+                checkAnswer: (currentSize, startSize) => currentSize === 3
+            },
+            {
+                task: "Triple the caterpillar's size! 🐛",
+                help: "Current length: 3 blocks. Make it 9 blocks!",
+                target: 3,
+                startSize: 3,
+                checkAnswer: (currentSize, startSize) => currentSize === 9
+            }
+        ],
+        medium: [
+            {
+                task: "Scale 1:2 - Half Size Caterpillar! 🐛",
+                help: "Make a half-size model. Start: 8 blocks, Target: 4 blocks",
+                target: 0.5,
+                startSize: 8,
+                checkAnswer: (currentSize, startSize) => currentSize === 4
+            },
+            {
+                task: "Scale 2:1 - Double Size Caterpillar! 🐛",
+                help: "Make a double-size model. Start: 3 blocks, Target: 6 blocks",
+                target: 2,
+                startSize: 3,
+                checkAnswer: (currentSize, startSize) => currentSize === 6
+            },
+            {
+                task: "Scale 1:4 - Quarter Size Caterpillar! 🐛",
+                help: "Make it one-fourth size. Start: 12 blocks, Target: 3 blocks",
+                target: 0.25,
+                startSize: 12,
+                checkAnswer: (currentSize, startSize) => currentSize === 3
+            }
+        ],
+        hard: [
+            {
+                task: "Scale 1:5 - Make a model caterpillar! 📏",
+                help: "Real size: 10 blocks. Make it one-fifth size!",
+                target: 0.2,
+                startSize: 10,
+                checkAnswer: (currentSize, startSize) => currentSize === 2
+            },
+            {
+                task: "Scale 1:3 - Shrink it down! 📐",
+                help: "Real size: 9 blocks. Make it one-third size!",
+                target: 0.333,
+                startSize: 9,
+                checkAnswer: (currentSize, startSize) => currentSize === 3
+            },
+            {
+                task: "Scale 3:1 - Size it up! 📏",
+                help: "Start with 4 blocks. Make it three times bigger!",
+                target: 3,
+                startSize: 4,
+                checkAnswer: (currentSize, startSize) => currentSize === 12
+            }
+        ],
+        superhard: [
+            {
+                task: "Architectural Scale 1:25! 🏗️",
+                help: "Real size: 25 blocks. Scale it down to 1:25!",
+                target: 0.04,
+                startSize: 25,
+                checkAnswer: (currentSize, startSize) => currentSize === 1
+            },
+            {
+                task: "Engineering Scale 1:50! 📐",
+                help: "Real size: 50 blocks. Scale it down to 1:50!",
+                target: 0.02,
+                startSize: 50,
+                checkAnswer: (currentSize, startSize) => currentSize === 1
+            },
+            {
+                task: "Blueprint Scale 1:75! 📝",
+                help: "Real size: 75 blocks. Scale it down to 1:75!",
+                target: 0.0133,
+                startSize: 75,
+                checkAnswer: (currentSize, startSize) => currentSize === 1
+            },
+            {
+                task: "Complex Scale 1:20! 🔍",
+                help: "Real size: 40 blocks. Scale it down to 1:20!",
+                target: 0.05,
+                startSize: 40,
+                checkAnswer: (currentSize, startSize) => currentSize === 2
+            },
+              {
+            task: "Architectural Scale 1:25! 🏗️",
+            help: "Real size: 25 blocks. Scale it down to 1:25!",
+            target: 0.04,
+            startSize: 25,
+            checkAnswer: (currentSize) => currentSize === 1
+        },
+        {
+            task: "Engineering Scale 1:100! 📐",
+            help: "Real size: 100 blocks. Scale it down to 1:100!",
+            target: 0.01,
+            startSize: 100,
+            checkAnswer: (currentSize) => currentSize === 1
+        },
+        {
+            task: "Complex Scale 3:20! 🔍",
+            help: "Start with 20 blocks. Scale it to 3:20 ratio!",
+            target: 0.15,
+            startSize: 20,
+            checkAnswer: (currentSize) => currentSize === 3
+        }, 
+        {
+        task: "Scale Down 1:10! 🏗️",
+        help: "Real size: 450 blocks. Scale it down to 1:10!",
+        target: 0.1,
+        startSize: 450,
+        checkAnswer: (currentSize) => currentSize === 45
+    },
+    {
+        task: "Scale Up 10:1! ⬆️",
+        help: "Model size: 35 blocks at 10:1 scale. Calculate full size!",
+        target: 10,
+        startSize: 35,
+        checkAnswer: (currentSize) => currentSize === 350
+    },
+    {
+        task: "Scale Down 1:25! 📐",
+        help: "Real size: 1250 blocks. Scale it down to 1:25!",
+        target: 0.04,
+        startSize: 1250,
+        checkAnswer: (currentSize) => currentSize === 50
+    },
+    {
+        task: "Scale Up 25:1! ⬆️",
+        help: "Model size: 24 blocks at 25:1 scale. Calculate full size!",
+        target: 25,
+        startSize: 24,
+        checkAnswer: (currentSize) => currentSize === 600
+    },
+    {
+        task: "Scale Down 1:50! 📏",
+        help: "Real size: 2750 blocks. Scale it down to 1:50!",
+        target: 0.02,
+        startSize: 2750,
+        checkAnswer: (currentSize) => currentSize === 55
+    },
+    {
+        task: "Scale Up 50:1! 🔍",
+        help: "Model size: 42 blocks at 50:1 scale. Calculate full size!",
+        target: 50,
+        startSize: 42,
+        checkAnswer: (currentSize) => currentSize === 2100
+    },
+    {
+        task: "Scale Down 1:100! 🗺️",
+        help: "Real size: 4800 blocks. Scale it down to 1:100!",
+        target: 0.01,
+        startSize: 4800,
+        checkAnswer: (currentSize) => currentSize === 48
+    },
+    {
+        task: "Scale Up 100:1! 🔬",
+        help: "Model size: 56 blocks at 100:1 scale. Calculate full size!",
+        target: 100,
+        startSize: 56,
+        checkAnswer: (currentSize) => currentSize === 5600
+    },
+    {
+        task: "Scale Down 1:250! 🌆",
+        help: "Real size: 7500 blocks. Scale it down to 1:250!",
+        target: 0.004,
+        startSize: 7500,
+        checkAnswer: (currentSize) => currentSize === 30
+    },
+    {
+        task: "Scale Up 250:1! 🔭",
+        help: "Model size: 28 blocks at 250:1 scale. Calculate full size!",
+        target: 250,
+        startSize: 28,
+        checkAnswer: (currentSize) => currentSize === 7000
+    },
+    {
+        task: "Scale Down 1:500! 🏘️",
+        help: "Real size: 12500 blocks. Scale it down to 1:500!",
+        target: 0.002,
+        startSize: 12500,
+        checkAnswer: (currentSize) => currentSize === 25
+    },
+    {
+        task: "Scale Up 500:1! 📈",
+        help: "Model size: 64 blocks at 500:1 scale. Calculate full size!",
+        target: 500,
+        startSize: 64,
+        checkAnswer: (currentSize) => currentSize === 32000
+    }
+        ]
+    };
+
+    // Updated answer checking function
+    function setBlocksManually() {
+    const input = document.getElementById('block-input');
+    const blocks = parseInt(input.value);
+    
+    if (blocks >= 1 && blocks <= 100) {
+        gameObjects = [];
+        const startY = Math.floor(canvas.height / gridSize / 2);
+        
+        for(let i = 0; i < blocks; i++) {
+            gameObjects.push(new CaterpillarSegment(2 + i, startY));
+        }
+        
+        input.value = '';
+    } else {
+        alert('Please enter a number between 1 and 100! 🎯');
+    }
+}
+
+// Update the startGame function
+function startGame(level) {
+    currentLevel = level;
+    document.getElementById('game-controls').style.display = 'flex';
+    document.getElementById('manual-input').style.display = 'flex';
+    
+    // Get random question
+    const levelQuestions = questions[level];
+    currentQuestionIndex = Math.floor(Math.random() * levelQuestions.length);
+    const currentQuestion = levelQuestions[currentQuestionIndex];
+    
+    document.getElementById('current-task').textContent = currentQuestion.task;
+    document.getElementById('task-help').textContent = currentQuestion.help;
+    
+    targetSize = currentQuestion.target;
+    initializeGame(currentQuestion.startSize);
+    
+    drawGame();
+}
+
+// Update the checkMyAnswer function
+function checkMyAnswer() {
+    const currentSize = gameObjects.length;
+    const currentQuestion = getCurrentQuestion();
+    const isCorrect = currentQuestion.checkAnswer(currentSize);
+    
+    const message = document.getElementById('message');
+    if (isCorrect) {
+        message.textContent = `🎉 PERFECT! You solved the ${currentLevel} challenge!`;
+        message.className = 'message-box happy-message';
+        score += getScoreForLevel(currentLevel);
+        document.getElementById('score').textContent = score;
+    } else {
+        const expectedSize = Math.round(currentQuestion.startSize * currentQuestion.target * 100) / 100;
+        message.textContent = `Current: ${currentSize} blocks. Target: ≈${expectedSize} blocks. Keep trying! 💪`;
+        message.className = 'message-box try-again-message';
+    }
+    
+    message.style.display = 'block';
+    setTimeout(() => {
+        message.style.display = 'none';
+        if (isCorrect) {
+            startGame(currentLevel);
+        }
+    }, 2000);
+}
+
+
+    function getScoreForLevel(level) {
+        switch(level) {
+            case 'easy': return 10;
+            case 'medium': return 20;
+            case 'hard': return 30;
+            case 'superhard': return 50;
+            default: return 10;
+        }
+    }
+
+    function getCurrentQuestion() {
+        return questions[currentLevel][currentQuestionIndex];
+    }
+
+    // Add to your existing buttons:
+
+    // Add these helper functions for clear scaling visualization
+    function updateVisualization() {
+        const currentQuestion = getCurrentQuestion();
+        const currentSize = gameObjects.length;
+        const targetSize = Math.round(currentQuestion.startSize * currentQuestion.target);
+        
+        document.getElementById('task-help').innerHTML = `
+            Original Size: ${currentQuestion.startSize} blocks<br>
+            Current Size: ${currentSize} blocks<br>
+            Target Size: ${targetSize} blocks<br>
+            Scale: ${currentQuestion.target}x
+        `;
+    }
+
+
+        function initializeGame(startSize) {
+            gameObjects = [];
+            const startY = Math.floor(canvas.height / gridSize / 2);
+            
+            for(let i = 0; i < startSize; i++) {
+                gameObjects.push(new CaterpillarSegment(2 + i, startY));
+            }
+        }
+
+        function makeItBigger() {
+            if (gameObjects.length < 12) {
+                const last = gameObjects[gameObjects.length - 1];
+                gameObjects.push(new CaterpillarSegment(last.x + 1, last.y));
+            }
+        }
+
+        function makeItSmaller() {
+            if (gameObjects.length > 1) {
+                gameObjects.pop();
+            }
+        }
+
+        function drawGame() {
+            // Clear canvas
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw grid
+            ctx.strokeStyle = '#E0E0E0';
+            ctx.lineWidth = 1;
+            for(let i = 0; i <= canvas.width; i += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for(let i = 0; i <= canvas.height; i += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+            
+            // Draw caterpillar
+            gameObjects.forEach(obj => obj.draw());
+            
+            requestAnimationFrame(drawGame);
+        }
+
+       
+
+        // Start the game loop
+        drawGame();
+    </script>
+</body>
+</html>

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Analogue vs. Digital Waves Activity</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+    .container {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+    }
+    canvas {
+      display: block;
+      margin: 10px auto;
+      background-color: #fff;
+      border: 1px solid #ccc;
+    }
+    .mode-select, .answer-section, .example-section {
+      text-align: center;
+      margin: 20px;
+    }
+    label {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 1em;
+      margin: 5px;
+      cursor: pointer;
+      border: none;
+      background-color: #4285f4;
+      color: white;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #357ae8;
+    }
+    input[type="text"] {
+      padding: 5px;
+      font-size: 1em;
+      width: 300px;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    code {
+      background: #eee;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Analogue vs. Digital Waves Activity</h1>
+  
+  <div class="container">
+    <p>
+      In this activity you will see waveforms that encode a secret binary message. In <strong>Easy Mode</strong> the message is only 12 bits long and is shown as two signals—a clear <em>Digital Wave</em> (blue) and a smooth <em>Analogue Wave</em> (red). In <strong>Hard Mode</strong> the message is 16 bits long and is drawn as a completely different, highly distorted <em>Hard Wave</em> (purple).
+    </p>
+    <p>
+      Use the grid to help you count each bit (each column is one bit; the top, near y = 50, represents a “1” and the bottom, near y = 150, a “0”).
+    </p>
+    
+    <div class="mode-select">
+      <label>Mode:</label>
+      <input type="radio" id="easyMode" name="mode" value="easy" checked>
+      <label for="easyMode">Easy (12 bits)</label>
+      <input type="radio" id="hardMode" name="mode" value="hard">
+      <label for="hardMode">Hard (16 bits)</label>
+    </div>
+    
+    <!-- Easy Mode Canvases -->
+    <div id="easyWaves">
+      <h2>Digital Wave</h2>
+      <canvas id="digitalCanvas"></canvas>
+      
+      <h2>Analogue Wave</h2>
+      <canvas id="analogCanvas"></canvas>
+      
+      <div class="example-section">
+        <h2>Example: How to Read a Digital Wave</h2>
+        <canvas id="exampleCanvas"></canvas>
+        <p>
+          In the example above each column (width = 20 pixels) is one bit. Read the wave: if it’s near the top, it’s a “1”; if near the bottom, it’s a “0”. For instance, this example represents: <strong>01010010</strong>.
+        </p>
+      </div>
+    </div>
+    
+    <!-- Hard Mode Canvas -->
+    <div id="hardWaveContainer" style="display: none;">
+      <h2>Hard Wave</h2>
+      <canvas id="hardCanvas"></canvas>
+    </div>
+    
+    <!-- Answer Section -->
+    <div class="answer-section">
+      <p>
+        <strong>Secret Message (in binary):</strong>
+        <br>(Type the exact binary string, e.g., <code>01010010...</code>)
+      </p>
+      <input type="text" id="userAnswer" placeholder="Enter binary answer here">
+      <br>
+      <button onclick="checkAnswers()">Check Answer</button>
+      <button onclick="showAnswer()">Show Answer</button>
+      <button onclick="toggleExtraNoise()">Noise</button>
+    </div>
+  </div>
+  
+  <script>
+    // ----------------------------
+    // Global Variables & Settings
+    // ----------------------------
+    // Secret messages for each mode
+    const easyMessage = "010100101101";      // 12 bits for Easy Mode
+    const hardMessage = "1100101011110010";   // 16 bits for Hard Mode
+    let currentMessage = "";
+    
+    // Drawing parameters
+    const bitWidth = 20;             // pixels per bit
+    const highLevel = 50;            // y-coordinate for bit "1"
+    const lowLevel  = 150;           // y-coordinate for bit "0"
+    
+    // Global mode: "easy" or "hard"
+    let mode = "easy";
+    // Extra noise toggle (for the Noise button)
+    let extraNoise = false;
+    
+    // Get canvas elements
+    const digitalCanvas = document.getElementById("digitalCanvas");
+    const analogCanvas  = document.getElementById("analogCanvas");
+    const hardCanvas    = document.getElementById("hardCanvas");
+    const exampleCanvas = document.getElementById("exampleCanvas");
+    
+    // Get container elements
+    const easyWavesContainer = document.getElementById("easyWaves");
+    const hardWaveContainer  = document.getElementById("hardWaveContainer");
+    
+    // ----------------------------
+    // Event Listener for Mode Selection
+    // ----------------------------
+    var modeRadios = document.getElementsByName("mode");
+    for (let radio of modeRadios) {
+      radio.addEventListener("change", function() {
+        mode = this.value;
+        drawAllWaves();
+      });
+    }
+    
+    // ----------------------------
+    // Utility: Draw a Grid on a Canvas
+    // ----------------------------
+    function drawGrid(ctx, width, height, spacingX, spacingY) {
+      ctx.save();
+      ctx.strokeStyle = "#ddd";
+      ctx.lineWidth = 0.5;
+      // Vertical grid lines (each bit boundary)
+      for (let x = 0; x <= width; x += spacingX) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      // Horizontal grid lines
+      for (let y = 0; y <= height; y += spacingY) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    
+    // ----------------------------
+    // Drawing Functions for Easy Mode
+    // ----------------------------
+    function drawDigitalWave() {
+      const ctx = digitalCanvas.getContext("2d");
+      ctx.clearRect(0, 0, digitalCanvas.width, digitalCanvas.height);
+      drawGrid(ctx, digitalCanvas.width, digitalCanvas.height, bitWidth, 20);
+      
+      ctx.strokeStyle = "blue";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      
+      let levels = [];
+      for (let i = 0; i < currentMessage.length; i++) {
+        let base = (currentMessage[i] === '1') ? highLevel : lowLevel;
+        // If extraNoise is active, add additional random distortion
+        if (extraNoise) {
+          base += Math.random() * 10 - 5; // offset between -5 and 5
+        }
+        levels.push(base);
+      }
+      
+      let x = 0;
+      ctx.moveTo(x, levels[0]);
+      for (let i = 0; i < currentMessage.length; i++) {
+        let currentLevel = levels[i];
+        ctx.lineTo(x + bitWidth, currentLevel);
+        x += bitWidth;
+        if (i < currentMessage.length - 1 && levels[i+1] !== currentLevel) {
+          ctx.lineTo(x, levels[i+1]);
+        }
+      }
+      ctx.stroke();
+    }
+    
+    function analogueValue(x) {
+      let i = Math.floor(x / bitWidth);
+      let t = (x % bitWidth) / bitWidth;
+      let currentBit = currentMessage[i];
+      let nextBit = (i < currentMessage.length - 1) ? currentMessage[i+1] : currentBit;
+      let currentLevel = (currentBit === '1') ? highLevel : lowLevel;
+      let nextLevel = (nextBit === '1') ? highLevel : lowLevel;
+      
+      let baseValue;
+      if (currentBit === nextBit) {
+        baseValue = currentLevel;
+      } else {
+        baseValue = currentLevel + (nextLevel - currentLevel) * (0.5 - 0.5 * Math.cos(Math.PI * t));
+      }
+      // Base noise amplitude; double it if extra noise is applied
+      let noiseAmplitude = extraNoise ? 10 : 5;
+      let noise = noiseAmplitude * Math.sin(2 * Math.PI * (x / 30));
+      return baseValue + noise;
+    }
+    
+    function drawAnalogWave() {
+      const ctx = analogCanvas.getContext("2d");
+      ctx.clearRect(0, 0, analogCanvas.width, analogCanvas.height);
+      drawGrid(ctx, analogCanvas.width, analogCanvas.height, bitWidth, 20);
+      
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, analogueValue(0));
+      for (let x = 0; x <= analogCanvas.width; x++) {
+        ctx.lineTo(x, analogueValue(x));
+      }
+      ctx.stroke();
+    }
+    
+    function drawExampleWave() {
+      // This example uses an 8-bit binary string for demonstration.
+      const exampleBinary = "01010010";
+      const ctx = exampleCanvas.getContext("2d");
+      exampleCanvas.width = exampleBinary.length * bitWidth;
+      exampleCanvas.height = 120;
+      ctx.clearRect(0, 0, exampleCanvas.width, exampleCanvas.height);
+      drawGrid(ctx, exampleCanvas.width, exampleCanvas.height, bitWidth, 20);
+      
+      let levels = [];
+      for (let i = 0; i < exampleBinary.length; i++) {
+        let base = (exampleBinary[i] === '1') ? highLevel : lowLevel;
+        levels.push(base);
+      }
+      
+      ctx.strokeStyle = "green";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      let x = 0;
+      ctx.moveTo(x, levels[0]);
+      for (let i = 0; i < exampleBinary.length; i++) {
+        let currentLevel = levels[i];
+        ctx.lineTo(x + bitWidth, currentLevel);
+        x += bitWidth;
+        if (i < exampleBinary.length - 1 && levels[i+1] !== currentLevel) {
+          ctx.lineTo(x, levels[i+1]);
+        }
+      }
+      ctx.stroke();
+      
+      // Annotate each bit above its column.
+      ctx.fillStyle = "black";
+      ctx.font = "14px Arial";
+      for (let i = 0; i < exampleBinary.length; i++) {
+        let digit = exampleBinary[i];
+        let textX = i * bitWidth + bitWidth / 2 - 5;
+        ctx.fillText(digit, textX, 20);
+      }
+    }
+    
+    // ----------------------------
+    // Drawing Functions for Hard Mode
+    // ----------------------------
+    function hardWaveValue(x) {
+      let i = Math.floor(x / bitWidth);
+      let t = (x % bitWidth) / bitWidth;
+      let currentBit = currentMessage[i];
+      let nextBit = (i < currentMessage.length - 1) ? currentMessage[i+1] : currentBit;
+      let currentLevel = (currentBit === '1') ? highLevel : lowLevel;
+      let nextLevel = (nextBit === '1') ? highLevel : lowLevel;
+      
+      let baseValue;
+      if (currentBit === nextBit) {
+        baseValue = currentLevel;
+      } else {
+        baseValue = currentLevel + (nextLevel - currentLevel) * (0.5 - 0.5 * Math.cos(Math.PI * t));
+      }
+      // In hard mode, add a random noise component.
+      let noiseAmplitude = extraNoise ? 30 : 15;
+      let noise = noiseAmplitude * (Math.random() - 0.5);
+      return baseValue + noise;
+    }
+    
+    function drawHardWave() {
+      const ctx = hardCanvas.getContext("2d");
+      ctx.clearRect(0, 0, hardCanvas.width, hardCanvas.height);
+      drawGrid(ctx, hardCanvas.width, hardCanvas.height, bitWidth, 20);
+      
+      ctx.strokeStyle = "purple";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, hardWaveValue(0));
+      for (let x = 0; x <= hardCanvas.width; x++) {
+        ctx.lineTo(x, hardWaveValue(x));
+      }
+      ctx.stroke();
+    }
+    
+    // ----------------------------
+    // Redraw All Waves Based on Mode
+    // ----------------------------
+    function drawAllWaves() {
+      if (mode === "easy") {
+        currentMessage = easyMessage;
+        // Show Easy Mode containers; hide Hard Mode container.
+        easyWavesContainer.style.display = "block";
+        hardWaveContainer.style.display = "none";
+        
+        // Update canvas dimensions for the current message length.
+        digitalCanvas.width = currentMessage.length * bitWidth;
+        digitalCanvas.height = 200;
+        analogCanvas.width = currentMessage.length * bitWidth;
+        analogCanvas.height = 200;
+        
+        drawDigitalWave();
+        drawAnalogWave();
+        drawExampleWave();
+      } else if (mode === "hard") {
+        currentMessage = hardMessage;
+        // Hide Easy Mode containers; show Hard Mode container.
+        easyWavesContainer.style.display = "none";
+        hardWaveContainer.style.display = "block";
+        
+        hardCanvas.width = currentMessage.length * bitWidth;
+        hardCanvas.height = 200;
+        
+        drawHardWave();
+      }
+    }
+    
+    // ----------------------------
+    // Button Functions
+    // ----------------------------
+    function toggleExtraNoise() {
+      extraNoise = !extraNoise;
+      drawAllWaves();
+    }
+    
+    function checkAnswers() {
+      const userAnswer = document.getElementById("userAnswer").value.trim();
+      if (userAnswer === currentMessage) {
+        alert("Correct! You've decoded the secret binary message.");
+      } else {
+        alert("That's not correct. Try again!");
+      }
+    }
+    
+    function showAnswer() {
+      document.getElementById("userAnswer").value = currentMessage;
+      alert("The secret binary message is: " + currentMessage);
+    }
+    
+    // ----------------------------
+    // Initial Draw on Page Load
+    // ----------------------------
+    drawAllWaves();
+  </script>
+</body>
+</html>

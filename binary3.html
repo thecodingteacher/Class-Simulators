@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Binary to Decimal Game</title>
+  <style>
+    /* Overall Page Styling */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #e0eafc, #cfdef3);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    /* Mode Button Styling */
+    .mode-button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    .mode-button:hover {
+      background-color: #45a049;
+      transform: scale(1.05);
+    }
+    .tick {
+      font-size: 20px;
+      color: green;
+      margin-left: 10px;
+    }
+    /* Game Container Styling */
+    #game {
+      margin-top: 20px;
+      padding: 20px;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      background-color: white;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 300px;
+      text-align: center;
+    }
+    #binary-display {
+      font-size: 36px;
+      margin: 20px;
+      letter-spacing: 3px;
+      color: #333;
+    }
+    /* Instructions Styling */
+    #instructions {
+      margin: 20px auto;
+      max-width: 800px;
+      background-color: #fff;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-align: left;
+    }
+    #instructions h2 {
+      color: #4CAF50;
+    }
+    /* Table Styling (for Easy Mode) */
+    table {
+      margin: 10px auto;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
+    }
+    /* Input and Button Styling */
+    input[type="number"] {
+      padding: 8px;
+      font-size: 16px;
+      width: 150px;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    #submit-answer {
+      padding: 8px 12px;
+      font-size: 16px;
+      margin-left: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #2196F3;
+      color: white;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    #submit-answer:hover {
+      background-color: #1976D2;
+      transform: scale(1.05);
+    }
+    /* Feedback Message Styling */
+    #feedback {
+      margin: 20px;
+      font-size: 18px;
+      height: 24px;
+      text-align: center;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Binary to Decimal Game</h1>
+  
+  <!-- Mode Selection -->
+  <div id="mode-selection">
+    <button class="mode-button" id="easy-mode">Easy Mode</button>
+    <span class="tick" id="tick-easy"></span>
+    <button class="mode-button" id="hard-mode">Hard Mode</button>
+    <span class="tick" id="tick-hard"></span>
+    <button class="mode-button" id="sigma-mode">Sigma Mode</button>
+    <span class="tick" id="tick-sigma"></span>
+  </div>
+  
+  <!-- Instructions -->
+  <div id="instructions"></div>
+  
+  <!-- Game Area -->
+  <div id="game" style="display:none;">
+    <div id="binary-display"></div>
+    <input type="number" id="decimal-input" placeholder="Enter decimal value" />
+    <button id="submit-answer">Submit</button>
+    <div id="feedback"></div>
+  </div>
+  
+  <script>
+    // Global Variables
+    let currentMode = "";
+    let currentNumber = 0;
+    const modeScores = {
+      easy: 0,
+      hard: 0,
+      sigma: 0
+    };
+
+    // DOM Element References
+    const instructionsDiv = document.getElementById("instructions");
+    const gameDiv = document.getElementById("game");
+    const binaryDisplay = document.getElementById("binary-display");
+    const decimalInput = document.getElementById("decimal-input");
+    const submitAnswerBtn = document.getElementById("submit-answer");
+    const feedbackDiv = document.getElementById("feedback");
+    const tickEasy = document.getElementById("tick-easy");
+    const tickHard = document.getElementById("tick-hard");
+    const tickSigma = document.getElementById("tick-sigma");
+
+    // Mode Button Event Listeners
+    document.getElementById("easy-mode").addEventListener("click", () => startMode("easy"));
+    document.getElementById("hard-mode").addEventListener("click", () => startMode("hard"));
+    document.getElementById("sigma-mode").addEventListener("click", () => startMode("sigma"));
+
+    // Start the selected mode and show mode-specific instructions
+    function startMode(mode) {
+      currentMode = mode;
+      gameDiv.style.display = "block";
+      decimalInput.value = "";
+      feedbackDiv.textContent = "";
+      
+      if (mode === "easy") {
+        instructionsDiv.innerHTML = `
+          <h2>Easy Mode Instructions</h2>
+          <p>You will see an 8‑bit binary number below. Your task is to convert it to its decimal equivalent by adding the values corresponding to each bit that is 1.</p>
+          <p>Refer to the table below to understand the bit positions and their values:</p>
+          <table>
+            <tr>
+              <th>2<sup>7</sup></th>
+              <th>2<sup>6</sup></th>
+              <th>2<sup>5</sup></th>
+              <th>2<sup>4</sup></th>
+              <th>2<sup>3</sup></th>
+              <th>2<sup>2</sup></th>
+              <th>2<sup>1</sup></th>
+              <th>2<sup>0</sup></th>
+            </tr>
+            <tr>
+              <td>128</td>
+              <td>64</td>
+              <td>32</td>
+              <td>16</td>
+              <td>8</td>
+              <td>4</td>
+              <td>2</td>
+              <td>1</td>
+            </tr>
+          </table>
+          <p>For example, the binary number <strong>01000001</strong> is calculated as 64 + 1 = 65.</p>
+        `;
+      } else if (mode === "hard") {
+        instructionsDiv.innerHTML = `
+          <h2>Hard Mode Instructions</h2>
+          <p>Convert the given 8‑bit binary number to its decimal equivalent. No hints are provided in this mode. Good luck!</p>
+        `;
+      } else if (mode === "sigma") {
+        instructionsDiv.innerHTML = `
+          <h2>Sigma Mode (Super Hard) Instructions</h2>
+          <p>This mode is extra challenging! Convert the binary number to its decimal equivalent without any hints. In Sigma Mode, you will see a 10‑bit binary number.</p>
+        `;
+      }
+      
+      // Generate the first question for the selected mode
+      generateQuestion();
+    }
+
+    // Generate a random binary number based on the current mode and display its binary representation
+    function generateQuestion() {
+      let binaryString = "";
+      if (currentMode === "sigma") {
+        // 10-bit binary number: random number from 0 to 1023
+        currentNumber = Math.floor(Math.random() * 1024);
+        binaryString = currentNumber.toString(2).padStart(10, '0');
+      } else {
+        // 8-bit binary number: random number from 0 to 255
+        currentNumber = Math.floor(Math.random() * 256);
+        binaryString = currentNumber.toString(2).padStart(8, '0');
+      }
+      binaryDisplay.textContent = binaryString;
+      decimalInput.value = "";
+      decimalInput.focus();
+      feedbackDiv.textContent = "";
+    }
+
+    // Check the submitted answer
+    submitAnswerBtn.addEventListener("click", checkAnswer);
+    decimalInput.addEventListener("keyup", (event) => {
+      if (event.key === "Enter") {
+        checkAnswer();
+      }
+    });
+
+    function checkAnswer() {
+      const userAnswer = parseInt(decimalInput.value, 10);
+      if (isNaN(userAnswer)) {
+        feedbackDiv.textContent = "Please enter a valid number.";
+        return;
+      }
+      if (userAnswer === currentNumber) {
+        feedbackDiv.textContent = "Correct!";
+        modeScores[currentMode]++;
+        // If 5 correct answers are reached in this mode, mark it as completed
+        if (modeScores[currentMode] >= 5) {
+          markModeCompleted(currentMode);
+        }
+        // Wait a moment and then generate a new question
+        setTimeout(generateQuestion, 1000);
+      } else {
+        feedbackDiv.textContent = "Incorrect, try again.";
+      }
+    }
+
+    // Mark the current mode as completed (i.e. 5 correct answers) with a tick
+    function markModeCompleted(mode) {
+      if (mode === "easy") {
+        tickEasy.textContent = "✓";
+      } else if (mode === "hard") {
+        tickHard.textContent = "✓";
+      } else if (mode === "sigma") {
+        tickSigma.textContent = "✓";
+      }
+    }
+  </script>
+</body>
+</html>

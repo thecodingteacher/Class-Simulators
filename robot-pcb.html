@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Robot Vacuum & PCB Building Activity</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 20px;
+      background: #f0f4f8;
+      color: #333;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    #instructions {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 16px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    #activityButtons {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #activityButtons button {
+      font-size: 16px;
+      padding: 10px 20px;
+      margin: 0 10px;
+      cursor: pointer;
+      border: none;
+      background: #1976d2;
+      color: white;
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+    #activityButtons button:hover {
+      background: #1565c0;
+    }
+    .parts {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 20px auto;
+      max-width: 800px;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .component {
+      width: 100px;
+      height: 100px;
+      margin: 10px;
+      border: 2px solid #555;
+      background-color: #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      user-select: none;
+      font-weight: bold;
+      text-align: center;
+      padding: 5px;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+    .component:active {
+      background-color: #ddd;
+    }
+    .assembly {
+      margin: 20px auto;
+      max-width: 600px;
+      text-align: center;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .dropzone {
+      fill: none;
+      stroke: #888;
+      stroke-dasharray: 4;
+      pointer-events: all;
+    }
+    #feedback {
+      text-align: center;
+      margin: 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    /* Custom tooltip styling */
+    #tooltip {
+      position: absolute;
+      display: none;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    /* PCB info box for Sigma Mode */
+    #pcbInfo {
+      max-width: 600px;
+      margin: 20px auto;
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #90caf9;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <h1>Robot Vacuum & PCB Building Activity</h1>
+  <div id="instructions">
+    <p>Welcome! Choose a mode below to start the activity:</p>
+    <ul style="list-style-type:none; padding:0;">
+      <li><strong>Easy Robot:</strong> Drag and drop the labeled components onto the robot vacuum diagram.</li>
+      <li><strong>Hard Robot:</strong> Assemble the robot vacuum without hints. Once you correctly place the Control Board, build its PCB by dragging internal components.</li>
+      <li><strong>Sigma Mode:</strong> Learn about PCB design. Drag six PCB components onto the board layout. Hover over each drop zone to see a helpful clue!</li>
+    </ul>
+    <p>Feedback will be provided for every action. Good luck!</p>
+  </div>
+  
+  <div id="activityButtons">
+    <button id="easyBtn" onclick="showActivity('easy')">Easy Robot</button>
+    <button id="hardBtn" onclick="showActivity('hard')">Hard Robot</button>
+    <button id="sigmaBtn" onclick="showActivity('sigma')">Sigma Mode</button>
+  </div>
+  
+  <div id="feedback"></div>
+  
+  <!-- Custom tooltip element -->
+  <div id="tooltip"></div>
+  
+  <!-- Easy Robot Activity -->
+  <div id="easyActivity">
+    <h2>Easy Robot Assembly</h2>
+    <p>Drag the components from the palette to the matching drop zones on the robot vacuum.</p>
+    <div id="easyParts" class="parts">
+      <div class="component" draggable="true" id="controlBoardEasy">Control Board<br>(PCB)</div>
+      <div class="component" draggable="true" id="obstacleSensorEasy">Obstacle Sensor</div>
+      <div class="component" draggable="true" id="batteryPackEasy">Battery Pack</div>
+    </div>
+    <div id="easyAssembly" class="assembly">
+      <svg id="easySVG" width="400" height="400" style="border:1px solid #ccc; background-color:#fafafa;">
+         <!-- Robot Vacuum Base -->
+         <circle cx="200" cy="200" r="150" fill="#ddd" stroke="#555" stroke-width="2"></circle>
+         <!-- Drop Zones with labels -->
+         <rect id="controlBoardZoneEasy" x="170" y="170" width="60" height="60" class="dropzone"></rect>
+         <text x="200" y="200" text-anchor="middle" alignment-baseline="middle" font-size="10" fill="#555">Control Board</text>
+         
+         <circle id="sensorZoneEasy" cx="200" cy="70" r="25" class="dropzone"></circle>
+         <text x="200" y="70" text-anchor="middle" alignment-baseline="middle" font-size="10" fill="#555">Obstacle Sensor</text>
+         
+         <rect id="batteryZoneEasy" x="170" y="300" width="60" height="30" class="dropzone"></rect>
+         <text x="200" y="315" text-anchor="middle" alignment-baseline="middle" font-size="10" fill="#555">Battery Pack</text>
+      </svg>
+    </div>
+  </div>
+  
+  <!-- Hard Robot Activity -->
+  <div id="hardActivity" style="display:none;">
+    <h2>Hard Robot Assembly</h2>
+    <p>Drag the external components to the correct drop zones on the robot vacuum. Once the Control Board is placed, build its PCB by dragging the internal components.</p>
+    <div id="hardParts" class="parts">
+      <div class="component" draggable="true" id="controlBoardHard">Control Board<br>(PCB)</div>
+      <div class="component" draggable="true" id="ultrasonicSensorHard">Ultrasonic Sensor</div>
+      <div class="component" draggable="true" id="infraredSensorHard">Infrared Sensor</div>
+      <div class="component" draggable="true" id="batteryPackHard">Battery Pack</div>
+      <div class="component" draggable="true" id="sideBrushHard">Side Brush</div>
+      <div class="component" draggable="true" id="leftWheelHard">Left Wheel</div>
+      <div class="component" draggable="true" id="rightWheelHard">Right Wheel</div>
+    </div>
+    <div id="hardAssembly" class="assembly">
+      <svg id="hardSVG" width="500" height="400" style="border:1px solid #ccc; background-color:#fafafa;">
+         <!-- Robot Vacuum Base -->
+         <rect x="50" y="50" width="400" height="300" fill="#ddd" stroke="#555" stroke-width="2"></rect>
+         <!-- External Drop Zones (repositioned for no overlap) -->
+         <rect id="controlBoardZoneHard" x="220" y="60" width="60" height="40" class="dropzone"></rect>
+         <circle id="ultrasonicSensorZoneHard" cx="100" cy="100" r="20" class="dropzone"></circle>
+         <circle id="infraredSensorZoneHard" cx="400" cy="100" r="20" class="dropzone"></circle>
+         <rect id="batteryZoneHard" x="210" y="290" width="60" height="30" class="dropzone"></rect>
+         <circle id="leftWheelZoneHard" cx="100" cy="280" r="20" class="dropzone"></circle>
+         <circle id="rightWheelZoneHard" cx="400" cy="280" r="20" class="dropzone"></circle>
+         <circle id="sideBrushZoneHard" cx="430" cy="180" r="15" class="dropzone"></circle>
+      </svg>
+    </div>
+    <!-- PCB Internal Components Palette (for Hard mode) -->
+    <div id="pcbParts" class="parts" style="margin-top:20px;">
+      <div class="component" draggable="true" id="microcontrollerHard">Microcontroller</div>
+      <div class="component" draggable="true" id="motorDriverHard">Motor Driver</div>
+      <div class="component" draggable="true" id="wifiModuleHard">WiFi Module</div>
+      <div class="component" draggable="true" id="voltageRegulatorHard">Voltage Regulator</div>
+    </div>
+  </div>
+  
+  <!-- Sigma Mode Activity -->
+  <div id="sigmaActivity" style="display:none;">
+    <h2>Sigma Mode: Learn About PCB Boards</h2>
+    <p>In Sigma Mode you'll learn about PCB design. A PCB (Printed Circuit Board) interconnects electronic components using copper traces on a non-conductive board. Drag the six PCB components from the palette onto the board layout. Hover over each drop zone to see a clue!</p>
+    <div id="sigmaParts" class="parts">
+      <div class="component" draggable="true" id="sigmaMicro">Microcontroller</div>
+      <div class="component" draggable="true" id="sigmaMotor">Motor Driver</div>
+      <div class="component" draggable="true" id="sigmaWiFi">WiFi Module</div>
+      <div class="component" draggable="true" id="sigmaVoltage">Voltage Regulator</div>
+      <div class="component" draggable="true" id="sigmaSensor">Sensor Chip</div>
+      <div class="component" draggable="true" id="sigmaPower">Power Connector</div>
+    </div>
+    <div id="sigmaAssembly" class="assembly">
+      <svg id="sigmaSVG" width="300" height="250" style="border:1px solid #ccc; background-color:#fafafa;">
+         <!-- PCB Board Outline -->
+         <rect x="20" y="20" width="260" height="210" fill="#eee" stroke="#555" stroke-width="2"></rect>
+         <!-- Sigma Mode Drop Zones with Data Attributes for Tooltips -->
+         <rect id="microZoneSigma" x="40" y="40" width="60" height="40" class="dropzone" data-tooltip="Central processing unit"></rect>
+         <rect id="motorZoneSigma" x="140" y="40" width="60" height="40" class="dropzone" data-tooltip="Controls motor functions"></rect>
+         <rect id="wifiZoneSigma" x="40" y="100" width="60" height="40" class="dropzone" data-tooltip="Enables wireless connectivity"></rect>
+         <rect id="voltageZoneSigma" x="140" y="100" width="60" height="40" class="dropzone" data-tooltip="Stabilizes power supply"></rect>
+         <rect id="sensorZoneSigma" x="40" y="160" width="60" height="40" class="dropzone" data-tooltip="Processes sensor data"></rect>
+         <rect id="powerZoneSigma" x="140" y="160" width="60" height="40" class="dropzone" data-tooltip="Connects external power"></rect>
+      </svg>
+    </div>
+    <div id="pcbInfo">
+      <strong>About PCB Boards:</strong>
+      <p>A Printed Circuit Board (PCB) is the backbone of modern electronics. It mechanically supports and electrically connects electronic components using conductive pathways etched from copper sheets laminated onto a non-conductive substrate. In this activity, you'll place components like the Microcontroller, Motor Driver, WiFi Module, Voltage Regulator, Sensor Chip, and Power Connector into their appropriate locations on the PCB. Use the hints provided by hovering over each drop zone to guide you!</p>
+    </div>
+  </div>
+  
+  <script>
+    // Mappings for Easy mode
+    const easyMapping = {
+      "controlBoardZoneEasy": "controlBoardEasy",
+      "sensorZoneEasy": "obstacleSensorEasy",
+      "batteryZoneEasy": "batteryPackEasy"
+    };
+    const easyFilled = {};
+    
+    // Mappings for Hard mode (external)
+    const hardMappingExternal = {
+      "controlBoardZoneHard": "controlBoardHard",
+      "ultrasonicSensorZoneHard": "ultrasonicSensorHard",
+      "infraredSensorZoneHard": "infraredSensorHard",
+      "batteryZoneHard": "batteryPackHard",
+      "leftWheelZoneHard": "leftWheelHard",
+      "rightWheelZoneHard": "rightWheelHard",
+      "sideBrushZoneHard": "sideBrushHard"
+    };
+    const hardFilledExternal = {};
+    
+    // Mappings for Hard mode (internal PCB)
+    const hardMappingInternal = {
+      "microcontrollerZoneHard": "microcontrollerHard",
+      "motorDriverZoneHard": "motorDriverHard",
+      "wifiModuleZoneHard": "wifiModuleHard",
+      "voltageRegulatorZoneHard": "voltageRegulatorHard"
+    };
+    const hardFilledInternal = {};
+    
+    // Mappings for Sigma Mode (6 drop zones)
+    const sigmaMapping = {
+      "microZoneSigma": "sigmaMicro",
+      "motorZoneSigma": "sigmaMotor",
+      "wifiZoneSigma": "sigmaWiFi",
+      "voltageZoneSigma": "sigmaVoltage",
+      "sensorZoneSigma": "sigmaSensor",
+      "powerZoneSigma": "sigmaPower"
+    };
+    const sigmaFilled = {};
+    
+    // Feedback update function
+    function updateFeedback(message, isError = false) {
+      const feedbackDiv = document.getElementById("feedback");
+      feedbackDiv.innerText = message;
+      feedbackDiv.style.color = isError ? "red" : "green";
+    }
+    
+    // Drag and drop handlers
+    function allowDrop(ev) {
+      ev.preventDefault();
+    }
+    
+    function drag(ev) {
+      ev.dataTransfer.setData("text", ev.target.id);
+    }
+    
+    // Drop handler for external components (Easy & Hard external)
+    function dropExternal(ev, mapping, filled) {
+      ev.preventDefault();
+      const zone = ev.currentTarget;
+      const zoneId = zone.id;
+      const data = ev.dataTransfer.getData("text");
+      
+      if (mapping[zoneId] !== data) {
+        updateFeedback("Incorrect component for this spot. Try again!", true);
+        return;
+      }
+      if (filled[zoneId]) {
+        updateFeedback("This spot is already filled!", true);
+        return;
+      }
+      
+      const comp = document.getElementById(data);
+      if (comp) {
+        const svg = zone.ownerSVGElement;
+        const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+        fo.setAttribute("width", "100");
+        fo.setAttribute("height", "100");
+        const bbox = zone.getBBox();
+        const x = bbox.x + bbox.width/2 - 50;
+        const y = bbox.y + bbox.height/2 - 50;
+        fo.setAttribute("x", x);
+        fo.setAttribute("y", y);
+    
+        const div = document.createElement("div");
+        div.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+        div.style.width = "100px";
+        div.style.height = "100px";
+        div.style.border = "2px solid #555";
+        div.style.backgroundColor = "#cfc";
+        div.style.display = "flex";
+        div.style.alignItems = "center";
+        div.style.justifyContent = "center";
+        div.style.fontWeight = "bold";
+        div.style.textAlign = "center";
+        div.innerText = comp.innerText;
+    
+        fo.appendChild(div);
+        svg.appendChild(fo);
+    
+        comp.style.visibility = "hidden";
+        filled[zoneId] = true;
+        updateFeedback("Correct!");
+    
+        // For Hard mode: if the Control Board is dropped, add the PCB assembly interface.
+        if(zoneId === "controlBoardZoneHard") {
+          addPCBAssemblyInterface(zone);
+        }
+        // Check completion status
+        if(mapping === easyMapping) {
+          checkCompletionEasy();
+        } else {
+          checkCompletionExternal();
+        }
+      }
+    }
+    
+    // Check completion for Easy mode
+    function checkCompletionEasy() {
+      if(Object.keys(easyFilled).length === Object.keys(easyMapping).length) {
+        document.getElementById("easyBtn").innerText = "Easy Robot ✔";
+        updateFeedback("All components in Easy mode are correctly placed!");
+      }
+    }
+    
+    // Check completion for Hard mode (external)
+    function checkCompletionExternal() {
+      if(Object.keys(hardFilledExternal).length === Object.keys(hardMappingExternal).length) {
+        document.getElementById("hardBtn").innerText = "Hard Robot ✔";
+        updateFeedback("All external components are correctly placed!");
+      }
+    }
+    
+    // Drop handler for internal PCB components in Hard mode
+    function dropInternal(ev, mapping, filled) {
+      ev.preventDefault();
+      const zone = ev.currentTarget;
+      const zoneId = zone.id;
+      const data = ev.dataTransfer.getData("text");
+      
+      if(mapping[zoneId] !== data) {
+        updateFeedback("Incorrect PCB component. Try again!", true);
+        return;
+      }
+      if(filled[zoneId]) {
+        updateFeedback("This PCB spot is already filled!", true);
+        return;
+      }
+      
+      const comp = document.getElementById(data);
+      if(comp) {
+        const svg = zone.ownerSVGElement;
+        const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+        fo.setAttribute("width", "80");
+        fo.setAttribute("height", "80");
+        const bbox = zone.getBBox();
+        const x = bbox.x + bbox.width/2 - 40;
+        const y = bbox.y + bbox.height/2 - 40;
+        fo.setAttribute("x", x);
+        fo.setAttribute("y", y);
+    
+        const div = document.createElement("div");
+        div.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+        div.style.width = "80px";
+        div.style.height = "80px";
+        div.style.border = "2px solid #555";
+        div.style.backgroundColor = "#cfc";
+        div.style.display = "flex";
+        div.style.alignItems = "center";
+        div.style.justifyContent = "center";
+        div.style.fontWeight = "bold";
+        div.style.textAlign = "center";
+        div.innerText = comp.innerText;
+    
+        fo.appendChild(div);
+        svg.appendChild(fo);
+    
+        comp.style.visibility = "hidden";
+        filled[zoneId] = true;
+        updateFeedback("Correct PCB component!");
+    
+        if(Object.keys(filled).length === Object.keys(hardMappingInternal).length) {
+          updateFeedback("All PCB components are correctly placed!");
+        }
+      }
+    }
+    
+    // Drop handler for Sigma Mode (PCB)
+    function dropSigma(ev, mapping, filled) {
+      ev.preventDefault();
+      const zone = ev.currentTarget;
+      const zoneId = zone.id;
+      const data = ev.dataTransfer.getData("text");
+      
+      if(mapping[zoneId] !== data) {
+        updateFeedback("Incorrect PCB component for Sigma Mode. Try again!", true);
+        return;
+      }
+      if(filled[zoneId]) {
+        updateFeedback("This PCB spot in Sigma Mode is already filled!", true);
+        return;
+      }
+      
+      const comp = document.getElementById(data);
+      if(comp) {
+        const svg = zone.ownerSVGElement;
+        const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+        fo.setAttribute("width", "80");
+        fo.setAttribute("height", "80");
+        const bbox = zone.getBBox();
+        const x = bbox.x + bbox.width/2 - 40;
+        const y = bbox.y + bbox.height/2 - 40;
+        fo.setAttribute("x", x);
+        fo.setAttribute("y", y);
+    
+        const div = document.createElement("div");
+        div.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+        div.style.width = "80px";
+        div.style.height = "80px";
+        div.style.border = "2px solid #555";
+        div.style.backgroundColor = "#cfc";
+        div.style.display = "flex";
+        div.style.alignItems = "center";
+        div.style.justifyContent = "center";
+        div.style.fontWeight = "bold";
+        div.style.textAlign = "center";
+        div.innerText = comp.innerText;
+    
+        fo.appendChild(div);
+        svg.appendChild(fo);
+    
+        comp.style.visibility = "hidden";
+        filled[zoneId] = true;
+        updateFeedback("Correct! PCB built successfully in Sigma Mode.");
+        
+        if(Object.keys(filled).length === Object.keys(sigmaMapping).length) {
+          document.getElementById("sigmaBtn").innerText = "Sigma Mode ✔";
+        }
+      }
+    }
+    
+    // Add the PCB assembly interface in Hard mode (internal PCB drop zones)
+    let pcbInterfaceAdded = false;
+    function addPCBAssemblyInterface(controlBoardZone) {
+      if(pcbInterfaceAdded) return;
+      pcbInterfaceAdded = true;
+      const svg = controlBoardZone.ownerSVGElement;
+      const fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+      fo.setAttribute("width", "200");
+      fo.setAttribute("height", "150");
+      const bbox = controlBoardZone.getBBox();
+      const x = bbox.x;
+      const y = bbox.y + bbox.height + 10;
+      fo.setAttribute("x", x);
+      fo.setAttribute("y", y);
+    
+      const pcbSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      pcbSVG.setAttribute("width", "200");
+      pcbSVG.setAttribute("height", "150");
+      pcbSVG.setAttribute("style", "border:1px solid #aaa; background:#fff;");
+    
+      // PCB outline
+      const pcbRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      pcbRect.setAttribute("x", "10");
+      pcbRect.setAttribute("y", "10");
+      pcbRect.setAttribute("width", "180");
+      pcbRect.setAttribute("height", "130");
+      pcbRect.setAttribute("fill", "#eee");
+      pcbRect.setAttribute("stroke", "#555");
+      pcbRect.setAttribute("stroke-width", "2");
+      pcbSVG.appendChild(pcbRect);
+    
+      // Define internal drop zones for PCB components (hidden labels)
+      const zones = [
+        { id: "microcontrollerZoneHard", type: "rect", x: 20, y: 20, width: 50, height: 30 },
+        { id: "motorDriverZoneHard", type: "rect", x: 130, y: 20, width: 50, height: 30 },
+        { id: "wifiModuleZoneHard", type: "rect", x: 20, y: 80, width: 50, height: 30 },
+        { id: "voltageRegulatorZoneHard", type: "rect", x: 130, y: 80, width: 50, height: 30 }
+      ];
+      zones.forEach(z => {
+        const zoneElem = document.createElementNS("http://www.w3.org/2000/svg", z.type);
+        zoneElem.setAttribute("id", z.id);
+        zoneElem.setAttribute("x", z.x);
+        zoneElem.setAttribute("y", z.y);
+        zoneElem.setAttribute("width", z.width);
+        zoneElem.setAttribute("height", z.height);
+        zoneElem.setAttribute("class", "dropzone");
+        zoneElem.addEventListener("dragover", allowDrop);
+        zoneElem.addEventListener("drop", function(ev) {
+          dropInternal(ev, hardMappingInternal, hardFilledInternal);
+        });
+        pcbSVG.appendChild(zoneElem);
+      });
+    
+      fo.appendChild(pcbSVG);
+      svg.appendChild(fo);
+    }
+    
+    // Setup drop zones for a given mapping and filled object using a provided drop handler
+    function setupDropZones(mapping, filled, dropHandler) {
+      for (let zoneId in mapping) {
+        const zone = document.getElementById(zoneId);
+        if(zone) {
+          zone.addEventListener("dragover", allowDrop);
+          zone.addEventListener("drop", function(ev) {
+            dropHandler(ev, mapping, filled);
+          });
+        }
+      }
+    }
+    
+    // Setup custom tooltip for Sigma Mode drop zones
+    function setupSigmaTooltips() {
+      const sigmaZones = document.querySelectorAll('#sigmaSVG .dropzone');
+      const tooltip = document.getElementById("tooltip");
+      sigmaZones.forEach(zone => {
+        zone.addEventListener("mouseenter", (e) => {
+          const hint = e.target.getAttribute("data-tooltip");
+          if(hint) {
+            tooltip.innerText = hint;
+            tooltip.style.display = "block";
+          }
+        });
+        zone.addEventListener("mousemove", (e) => {
+          tooltip.style.left = e.pageX + 10 + "px";
+          tooltip.style.top = e.pageY + 10 + "px";
+        });
+        zone.addEventListener("mouseleave", () => {
+          tooltip.style.display = "none";
+        });
+      });
+    }
+    
+    // Initialize event listeners on window load
+    window.onload = function() {
+      // Attach dragstart to all components
+      const components = document.getElementsByClassName("component");
+      for(let comp of components) {
+        comp.addEventListener("dragstart", drag);
+      }
+      // Setup Easy mode drop zones
+      setupDropZones(easyMapping, easyFilled, dropExternal);
+      // Setup Hard mode external drop zones
+      setupDropZones(hardMappingExternal, hardFilledExternal, dropExternal);
+      // Setup Sigma Mode drop zones
+      setupDropZones(sigmaMapping, sigmaFilled, dropSigma);
+      // Setup tooltips for Sigma Mode
+      setupSigmaTooltips();
+    };
+    
+    // Switch between activities
+    function showActivity(activity) {
+      // Clear feedback
+      document.getElementById("feedback").innerText = "";
+      // Show/hide activities
+      document.getElementById("easyActivity").style.display = "none";
+      document.getElementById("hardActivity").style.display = "none";
+      document.getElementById("sigmaActivity").style.display = "none";
+      
+      if(activity === "easy") {
+        document.getElementById("easyActivity").style.display = "block";
+      } else if(activity === "hard") {
+        document.getElementById("hardActivity").style.display = "block";
+      } else if(activity === "sigma") {
+        document.getElementById("sigmaActivity").style.display = "block";
+      }
+    }
+  </script>
+</body>
+</html>

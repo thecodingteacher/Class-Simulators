@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Micro:bit Light Sensor Challenge Reference</title>
+    <style>
+        :root {
+            --primary-color: #4a6da7;
+            --secondary-color: #8c9eff;
+            --accent-color: #ff8a65;
+            --background-color: #f5f7fa;
+            --text-color: #333;
+            --light-gray: #e0e0e0;
+            --success-color: #66bb6a;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            padding: 0;
+            margin: 0;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            list-style-type: none;
+            background: white;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .tab-link {
+            padding: 15px 25px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: var(--primary-color);
+        }
+        
+        .tab-link:hover {
+            background-color: #f0f5ff;
+        }
+        
+        .tab-link.active {
+            border-bottom: 3px solid var(--accent-color);
+            background-color: #f0f5ff;
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            padding: 20px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        h1, h2, h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            border-bottom: 2px solid var(--light-gray);
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        
+        h3 {
+            font-size: 1.4rem;
+            margin-top: 25px;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        pre {
+            background-color: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            position: relative;
+        }
+        
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+            display: block;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .copy-button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .checklist {
+            list-style-type: none;
+            margin-left: 0;
+        }
+        
+        .checklist li {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 10px;
+        }
+        
+        .checklist li:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 2px;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        .checklist li.checked:before {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            content: '✓';
+            color: white;
+            text-align: center;
+            line-height: 20px;
+        }
+        
+        .note {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            margin-top: 30px;
+        }
+        
+        /* SVG Styles */
+        .svg-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        /* Two column layout */
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -15px;
+        }
+        
+        .col {
+            flex: 1;
+            padding: 0 15px;
+            min-width: 300px;
+        }
+        
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab-link {
+                width: 100%;
+                text-align: center;
+                border-bottom: 1px solid var(--light-gray);
+            }
+            
+            .tab-link.active {
+                border-bottom: 1px solid var(--light-gray);
+                border-left: 3px solid var(--accent-color);
+            }
+            
+            .col {
+                flex: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Micro:bit Light Sensor Challenge</h1>
+        <p>Check Points & Indentation Guide</p>
+    </header>
+    
+    <main>
+        <ul class="tabs">
+            <li class="tab-link active" onclick="openTab(event, 'intro')">Introduction</li>
+            <li class="tab-link" onclick="openTab(event, 'sensor')">1. Sensor Reading</li>
+            <li class="tab-link" onclick="openTab(event, 'conditional')">2. Conditional Statements</li>
+            <li class="tab-link" onclick="openTab(event, 'loops')">3. Loops</li>
+            <li class="tab-link" onclick="openTab(event, 'led')">4. LED Display</li>
+            <li class="tab-link" onclick="openTab(event, 'music')">5. Music Module</li>
+            <li class="tab-link" onclick="openTab(event, 'timing')">6. Timing Functions</li>
+            <li class="tab-link" onclick="openTab(event, 'buttons')">7. Button Events</li>
+            <li class="tab-link" onclick="openTab(event, 'indentation')">8. Indentation</li>
+        </ul>
+        
+        <!-- Introduction Tab -->
+        <div id="intro" class="tab-content active">
+            <div class="card">
+                <h2>Welcome to the Micro:bit Light Sensor Challenge</h2>
+                <p>This reference document will guide you through completing the Light Sensor Challenge using your Micro:bit. The challenge involves creating a light-activated alarm system that monitors ambient light levels and triggers alerts when sudden changes are detected.</p>
+                
+                <div class="svg-container">
+                    <svg viewBox="0 0 400 200" width="400" height="200">
+                        <!-- Micro:bit board outline -->
+                        <rect x="100" y="20" width="200" height="160" rx="10" fill="#FFD700" stroke="#333" stroke-width="2"/>
+                        
+                        <!-- LED matrix -->
+                        <rect x="130" y="40" width="140" height="80" rx="5" fill="#333"/>
+                        
+                        <!-- LEDs -->
+                        <circle cx="145" cy="55" r="5" fill="red"/>
+                        <circle cx="165" cy="55" r="5" fill="red"/>
+                        <circle cx="185" cy="55" r="5" fill="red"/>
+                        <circle cx="205" cy="55" r="5" fill="red"/>
+                        <circle cx="225" cy="55" r="5" fill="red"/>
+                        
+                        <circle cx="145" cy="75" r="5" fill="red"/>
+                        <circle cx="165" cy="75" r="5" fill="red"/>
+                        <circle cx="185" cy="75" r="5" fill="red"/>
+                        <circle cx="205" cy="75" r="5" fill="red"/>
+                        <circle cx="225" cy="75" r="5" fill="red"/>
+                        
+                        <circle cx="145" cy="95" r="5" fill="red"/>
+                        <circle cx="165" cy="95" r="5" fill="red"/>
+                        <circle cx="185" cy="95" r="5" fill="red"/>
+                        <circle cx="205" cy="95" r="5" fill="red"/>
+                        <circle cx="225" cy="95" r="5" fill="red"/>
+                        
+                        <!-- Buttons -->
+                        <circle cx="140" cy="145" r="15" fill="#555" stroke="#222" stroke-width="2"/>
+                        <text x="140" y="150" text-anchor="middle" fill="white" font-size="14">A</text>
+                        
+                        <circle cx="260" cy="145" r="15" fill="#555" stroke="#222" stroke-width="2"/>
+                        <text x="260" y="150" text-anchor="middle" fill="white" font-size="14">B</text>
+                        
+                        <!-- Light sensor (conceptual, not physically visible on real Micro:bit) -->
+                        <circle cx="200" cy="30" r="8" fill="yellow" stroke="#333" stroke-width="1"/>
+                        <text x="200" y="15" text-anchor="middle" fill="#333" font-size="10">Light Sensor</text>
+                        
+                        <!-- Light rays -->
+                        <line x1="185" y1="15" x2="195" y2="25" stroke="orange" stroke-width="1.5"/>
+                        <line x1="200" y1="10" x2="200" y2="22" stroke="orange" stroke-width="1.5"/>
+                        <line x1="215" y1="15" x2="205" y2="25" stroke="orange" stroke-width="1.5"/>
+                    </svg>
+                </div>
+                
+                <h3>What You'll Learn</h3>
+                <ul>
+                    <li>How to read and interpret data from the Micro:bit's light sensor</li>
+                    <li>Working with conditional statements to make decisions based on sensor input</li>
+                    <li>Setting up and controlling continuous monitoring loops</li>
+                    <li>Displaying information and alerts on the LED display</li>
+                    <li>Using the music module to create audible alerts</li>
+                    <li>Working with timing functions for controlled responses</li>
+                    <li>Handling button events for user interaction</li>
+                    <li>Proper Python indentation and code structure</li>
+                </ul>
+                
+                <h3>Navigation</h3>
+                <p>Use the tabs above to navigate through different sections of this reference guide. Each section contains explanations, code examples, and checklists to help you complete the challenge.</p>
+                
+                <div class="note">
+                    <strong>Note:</strong> Make sure to test each component individually before combining them into your final project. This approach makes debugging easier and helps ensure each part works correctly.
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sensor Reading Tab -->
+        <div id="sensor" class="tab-content">
+            <div class="card">
+                <h2>1. Sensor Reading</h2>
+                
+                <div class="row">
+                    <div class="col">
+                        <h3>Reading the Light Sensor</h3>
+                        <p>The Micro:bit can detect ambient light levels using its LED matrix as a light sensor. Understanding how to read these values is the first step in building your light-activated alarm.</p>
+                        
+                        <p>To read the current light level, use the <code>display.read_light_level()</code> function. This returns a value between 0 (darkest) and 255 (brightest).</p>
+                        
+                        <pre><code>light_value = display.read_light_level()
+print("Light Level:", light_value)</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                        
+                        <p>Running this code will output the current light level to the Micro:bit's serial monitor, which you can view when connected to your computer.</p>
+                    </div>
+                    
+                    <div class="col">
+                        <div class="svg-container">
+                            <svg viewBox="0 0 300 200" width="300" height="200">
+                                <!-- Light sensor diagram -->
+                                <rect x="50" y="50" width="200" height="100" rx="10" fill="#f0f0f0" stroke="#333" stroke-width="2"/>
+                                
+                                <!-- LEDs acting as sensors -->
+                                <circle cx="100" cy="80" r="10" fill="#ffcc00" stroke="#333" stroke-width="1"/>
+                                <circle cx="140" cy="80" r="10" fill="#ffcc00" stroke="#333" stroke-width="1"/>
+                                <circle cx="180" cy="80" r="10" fill="#ffcc00" stroke="#333" stroke-width="1"/>
+                                <circle cx="220" cy="80" r="10" fill="#ffcc00" stroke="#333" stroke-width="1"/>
+                                
+                                <!-- Light rays -->
+                                <line x1="80" y1="30" x2="100" y2="70" stroke="#ff9900" stroke-width="2"/>
+                                <line x1="120" y1="30" x2="140" y2="70" stroke="#ff9900" stroke-width="2"/>
+                                <line x1="160" y1="30" x2="180" y2="70" stroke="#ff9900" stroke-width="2"/>
+                                <line x1="200" y1="30" x2="220" y2="70" stroke="#ff9900" stroke-width="2"/>
+                                
+                                <!-- Sun icon -->
+                                <circle cx="150" cy="20" r="15" fill="#ff9900" stroke="#ff6600" stroke-width="2"/>
+                                
+                                <!-- Text label -->
+                                <text x="150" y="120" text-anchor="middle" fill="#333">LED Matrix as Light Sensor</text>
+                                <text x="150" y="140" text-anchor="middle" fill="#333" font-size="10">Range: 0 (dark) to 255 (bright)</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>Calibration</h3>
+                <p>For your light alarm to work effectively, you'll need to calibrate it by capturing a baseline light level when your program starts. This will be your reference point for detecting changes.</p>
+                
+                <pre><code># Calibration: Store the baseline light level when program starts
+baseline_light = display.read_light_level()
+print("Baseline Light Level:", baseline_light)
+
+# Set a threshold for detection (e.g., 20 units above baseline)
+threshold = baseline_light + 20</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                
+                <div class="note">
+                    <strong>Tip:</strong> Calibrate your sensor in a controlled environment where the light level is stable. For best results, calibrate in a dimly lit or dark room.
+                </div>
+                
+                <h3>Checkpoint Checklist</h3>
+                <ul class="checklist">
+                    <li>I can read values from the light sensor using <code>display.read_light_level()</code></li>
+                    <li>I've verified that the sensor values change as I cover or expose the Micro:bit</li>
+                    <li>I'm storing a baseline light level at program start</li>
+                    <li>I've set a reasonable threshold for detecting significant light changes</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Conditional Statements Tab -->
+        <div id="conditional" class="tab-content">
+            <div class="card">
+                <h2>2. Conditional Statements</h2>
+                
+                <h3>Understanding If Statements</h3>
+                <p>Conditional statements allow your program to make decisions based on input data, such as the light sensor readings. In Python, we use <code>if</code>, <code>elif</code> (else if), and <code>else</code> statements for this purpose.</p>
+                
+                <div class="row">
+                    <div class="col">
+                        <pre><code># Basic if statement structure
+if current_light > threshold:
+    display.show("!")  # Show exclamation if light level above threshold
+else:
+    display.clear()    # Clear display if light level normal</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                        
+                        <p>You can also create more complex conditions with multiple thresholds:</p>
+                        
+                        <pre><code># Multiple thresholds using if-elif-else
+if current_light > high_threshold:
+    display.show("!")      # Bright light detected
+elif current_light > medium_threshold:
+    display.show("?")      # Moderate light change
+else:
+    display.clear()        # Normal light conditions</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                    </div>
+                    
+                    <div class="col">
+                        <div class="svg-container">
+                            <svg viewBox="0 0 300 250" width="300" height="250">
+                                <!-- Decision tree diagram -->
+                                <!-- Start node -->
+                                <circle cx="150" cy="30" r="20" fill="#4a6da7" stroke="#333" stroke-width="2"/>
+                                <text x="150" y="35" text-anchor="middle" fill="white" font-size="12">Start</text>
+                                
+                                <!-- Decision diamond -->
+                                <polygon points="150,60 190,100 150,140 110,100" fill="#ffd700" stroke="#333" stroke-width="2"/>
+                                <text x="150" y="100" text-anchor="middle" fill="#333" font-size="10">Light > Threshold?</text>
+                                
+                                <!-- Yes path -->
+                                <line x1="190" y1="100" x2="240" y2="100" stroke="#333" stroke-width="2"/>
+                                <text x="215" y="90" text-anchor="middle" fill="#333" font-size="12">Yes</text>
+                                
+                                <!-- No path -->
+                                <line x1="110" y1="100" x2="60" y2="100" stroke="#333" stroke-width="2"/>
+                                <text x="85" y="90" text-anchor="middle" fill="#333" font-size="12">No</text>
+                                
+                                <!-- Yes action -->
+                                <rect x="240" y="80" width="40" height="40" rx="5" fill="#ff8a65" stroke="#333" stroke-width="2"/>
+                                <text x="260" y="105" text-anchor="middle" fill="white" font-size="12">Alert!</text>
+                                
+                                <!-- No action -->
+                                <rect x="20" y="80" width="40" height="40" rx="5" fill="#8c9eff" stroke="#333" stroke-width="2"/>
+                                <text x="40" y="105" text-anchor="middle" fill="white" font-size="12">Clear</text>
+                                
+                                <!-- Connect back to start -->
+                                <path d="M 260,120 Q 260,180 150,180 Q 40,180 40,120" fill="none" stroke="#333" stroke-width="2" stroke-dasharray="5,5"/>
+                                
+                                <!-- Loop text -->
+                                <text x="150" y="200" text-anchor="middle" fill="#333" font-size="14">Continuous Monitoring Loop</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>Comparison Operators</h3>
+                <p>Python provides several comparison operators for making decisions:</p>
+                <ul>
+                    <li><code>==</code> Equal to</li>
+                    <li><code>!=</code> Not equal to</li>
+                    <li><code>&gt;</code> Greater than</li>
+                    <li><code>&lt;</code> Less than</li>
+                    <li><code>&gt;=</code> Greater than or equal to</li>
+                    <li><code>&lt;=</code> Less than or equal to</li>
+                </ul>
+                
+                <h3>Logical Operators</h3>
+                <p>For more complex conditions, you can use logical operators:</p>
+                <ul>
+                    <li><code>and</code> - Both conditions must be true</li>
+                    <li><code>or</code> - At least one condition must be true</li>
+                    <li><code>not</code> - Inverts a condition</li>
+                </ul>
+                
+                <pre><code># Using logical operators
+if current_light > threshold and not button_a.is_pressed():
+    display.show("!")  # Alert only if over threshold and button A not pressed
+else:
+    display.clear()</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                
+                <h3>Checkpoint Checklist</h3>
+                <ul class="checklist">
+                    <li>I understand how to use <code>if</code>, <code>elif</code>, and <code>else</code> statements</li>
+                    <li>I can compare the current light level to a threshold</li>
+                    <li>I know how to use comparison operators (<code>&gt;</code>, <code>&lt;</code>, <code>==</code>, etc.)</li>
+                    <li>I can create complex conditions using logical operators (<code>and</code>, <code>or</code>, <code>not</code>)</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Loops Tab -->
+        <div id="loops" class="tab-content">
+            <div class="card">
+                <h2>3. Loops</h2>
+                
+                <div class="row">
+                    <div class="col">
+                        <h3>Continuous Monitoring</h3>
+                        <p>To create an effective light monitor, your program needs to continuously check the sensor. In MicroPython, the <code>while True:</code> loop is commonly used for this purpose.</p>
+                        
+                        <pre><code># Basic continuous monitoring loop
+while True:
+    current_light = display.read_light_level()
+    
+    if current_light > threshold:
+        display.show("!")
+    else:
+        display.clear()
+        
+    sleep(100)  # Pause for 100 milliseconds</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                        
+                        <p>The <code>sleep()</code> function is crucial as it:</p>
+                        <ul>
+                            <li>Prevents the loop from running too quickly and consuming resources</li>
+                            <li>Reduces power consumption</li>
+                            <li>Allows the Micro:bit time to process other tasks</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col">
+                        <div class="svg-container">
+                            <svg viewBox="0 0 300 300" width="300" height="300">
+                                <!-- Loop diagram -->
+                                <!-- Start node -->
+                                <circle cx="150" cy="30" r="20" fill="#4a6da7" stroke="#333" stroke-width="2"/>
+                                <text x="150" y="35" text-anchor="middle" fill="white" font-size="12">Start</text>
+                                
+                                <!-- Loop flow -->
+                                <path d="M 150,50 L 150,80 L 40,80 L 40,240 L 150,240 L 150,270" 
+                                      fill="none" stroke="#333" stroke-width="2"/>
+                                <path d="M 150,270 L 260,270 L 260,80 L 150,80" 
+                                      fill="none" stroke="#333" stroke-width="2"/>
+                                      
+                                <!-- Loop label -->
+                                <text x="40" y="60" text-anchor="start" fill="#333" font-size="14">while True:</text>
+                                
+                                <!-- Steps inside loop -->
+                                <rect x="80" y="100" width="140" height="30" rx="5" fill="#e0e0e0" stroke="#333" stroke-width="1"/>
+                                <text x="150" y="120" text-anchor="middle" fill="#333" font-size="12">Read Light Level</text>
+                                
+                                <rect x="80" y="150" width="140" height="30" rx="5" fill="#e0e0e0" stroke="#333" stroke-width="1"/>
+                                <text x="150" y="170" text-anchor="middle" fill="#333" font-size="12">Check Conditions</text>
+                                
+                                <rect x="80" y="200" width="140" height="30" rx="5" fill="#e0e0e0" stroke="#333" stroke-width="1"/>
+                                <text x="150" y="220" text-anchor="middle" fill="#333" font-size="12">Sleep(100)</text>
+                                
+                                <!-- Arrows between steps -->
+                                <line x1="150" y1="130" x2="150" y2="150" stroke="#333" stroke-width="1" marker-end="url(#arrowhead)"/>
+                                <line x1="150" y1="180" x2="150" y2="200" stroke="#333" stroke-width="1" marker-end="url(#arrowhead)"/>
+                                
+                                <!-- Loop back arrow -->
+                                <defs>
+                                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#333"/>
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>Adjusting Loop Speed</h3>
+                <p>The value you use with <code>sleep()</code> controls how frequently your program checks the light sensor:</p>
+                <ul>
+                    <li><strong>Lower values</strong> (e.g., 50ms): More responsive but uses more power</li>
+                    <li><strong>Higher values</strong> (e.g., 500ms): Less responsive but saves power</li>
+                </ul>
+                
+                <p>For a light alarm, a value between 100-200ms provides a good balance between responsiveness and power efficiency.</p>
+                
+                <div class="note">
+                    <strong>Note:</strong> The <code>sleep()</code> function takes its argument in milliseconds. 1 second = 1000 milliseconds.
+                </div>
+                
+                <h3>Checkpoint Checklist</h3>
+                <ul class="checklist">
+                    <li>I have implemented a <code>while True:</code> loop to continuously monitor the light sensor</li>
+                    <li>I've added appropriate <code>sleep()</code> time to control loop speed</li>
+                    <li>I understand how to balance responsiveness and power efficiency with the sleep time</li>
+                    <li>My loop consistently reads the light sensor and responds to changes</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- LED Display Tab -->
+        <div id="led" class="tab-content">
+            <div class="card">
+                <h2>4. LED Display Control</h2>
+                
+                <div class="row">
+                    <div class="col">
+                        <h3>Displaying Alerts</h3>
+                        <p>The Micro:bit's 5x5 LED display is perfect for showing simple alerts and status information. Here are several ways to use it:</p>
+                        
+                        <h4>Displaying Single Characters</h4>
+                        <pre><code># Show a single character
+display.show("!")</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                        
+                        <h4>Scrolling Text</h4>
+                        <pre><code># Scroll longer messages
+display.scroll("ALERT!")</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                        
+                        <h4>Using Built-in Images</h4>
+                        <pre><code># Show a built-in image
+display.show(Image.SURPRISED)</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                    </div>
+                    
+                    <div class="col">
+                        <h4>Creating Custom Images</h4>
+                        <pre><code># Create a custom image (brightness values 0-9)
+alert_image = Image(
+    "90909:"
+    "00000:"
+    "90909:"
+    "00000:"
+    "90909"
+)
+display.show(alert_image)</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                        
+                        <h4>Clearing the Display</h4>
+                        <pre><code># Clear the LED display
+display.clear()</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                    </div>
+                </div>
+                
+                <div class="svg-container">
+                    <svg viewBox="0 0 500 180" width="500" height="180">
+                        <!-- LED Matrix Images -->
+                        <!-- Single character -->
+                        <rect x="20" y="30" width="100" height="100" rx="5" fill="#333"/>
+                        <text x="70" y="85" text-anchor="middle" fill="red" font-size="60" font-weight="bold">!</text>
+                        <text x="70" y="150" text-anchor="middle" fill="#333" font-size="12">Single Character</text>
+                        
+                        <!-- Scrolling text -->
+                        <rect x="140" y="30" width="100" height="100" rx="5" fill="#333"/>
+                        <text x="190" y="85" text-anchor="middle" fill="red" font-size="20" font-weight="bold">ALERT!</text>
+                        <path d="M 150,60 L 130,60" stroke="white" stroke-width="1" marker-end="url(#arrowhead)"/>
+                        <text x="190" y="150" text-anchor="middle" fill="#333" font-size="12">Scrolling Text</text>
+                        
+                        <!-- Built-in image -->
+                        <rect x="260" y="30" width="100" height="100" rx="5" fill="#333"/>
+                        <!-- Surprised face -->
+                        <circle cx="280" cy="50" r="10" fill="red"/>
+                        <circle cx="340" cy="50" r="10" fill="red"/>
+                        <path d="M 290,80 Q 310,100 330,80" stroke="red" stroke-width="4" fill="none"/>
+                        <text x="310" y="150" text-anchor="middle" fill="#333" font-size="12">Built-in Image</text>
+                        
+                        <!-- Custom image -->
+                        <rect x="380" y="30" width="100" height="100" rx="5" fill="#333"/>
+                        <!-- X pattern -->
+                        <circle cx="390" cy="40" r="8" fill="red"/>
+                        <circle cx="430" cy="40" r="8" fill="red"/>
+                        <circle cx="470" cy="40" r="8" fill="red"/>
+                        <circle cx="410" cy="80" r="8" fill="red"/>
+                        <circle cx="450" cy="80" r="8" fill="red"/>
+                        <circle cx="390" cy="120" r="8" fill="red"/>
+                        <circle cx="430" cy="120" r="8" fill="red"/>
+                        <circle cx="470" cy="120" r="8" fill="red"/>
+                        <text x="430" y="150" text-anchor="middle" fill="#333" font-size="12">Custom Pattern</text>
+                    </svg>
+                </div>
+                
+                <h3>Built-in Images</h3>
+                <p>The Micro:bit includes several built-in images you can use:</p>
+                <ul>
+                    <li><code>Image.HEART</code> - A heart symbol</li>
+                    <li><code>Image.HAPPY</code> - A smiling face</li>
+                    <li><code>Image.SAD</code> - A sad face</li>
+                    <li><code>Image.CONFUSED</code> - A confused face</li>
+                    <li><code>Image.ANGRY</code> - An angry face</li>
+                    <li><code>Image.SURPRISED</code> - A surprised face</li>
+                    <li><code>Image.YES</code> - A checkmark</li>
+                    <li><code>Image.NO</code> - An X mark</li>
+                </ul>
+                
+                <div class="note">
+                    <strong>Tip:</strong> For your light alarm, consider using <code>Image.SURPRISED</code> or <code>Image.ANGRY</code> to indicate when a light level change is detected, or create your own custom pattern.
+                </div>
+                
+                <h3>Checkpoint Checklist</h3>
+                <ul class="checklist">
+                    <li>I can display single characters using <code>display.show()</code></li>
+                    <li>I know how to scroll text using <code>display.scroll()</code></li>
+                    <li>I can use built-in images like <code>Image.SURPRISED</code></li>
+                    <li>I've tried creating a custom image for my alert</li>
+                    <li>I can clear the display using <code>display.clear()</code></li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Music Module Tab -->
+        <div id="music" class="tab-content">
+            <div class="card">
+                <h2>5. Music Module for Alarm Sounds</h2>
+                
+                <div class="row">
+                    <div class="col">
+                        <h3>Playing Sounds</h3>
+                        <p>To create a more effective alarm, you can add sound using the Micro:bit's music module. First, import the module at the top of your program:</p>
+                        
+                        <pre><code>import music</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                        
+                        <p>You can play built-in tunes using the <code>music.play()</code> function:</p>
+                        
+                        <pre><code># Play the ENTERTAINER tune
+music.play(music.ENTERTAINER)</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                        
+                        <p>By default, <code>music.play()</code> is blocking, meaning your program waits until the tune finishes before continuing. For an alarm system, you'll want to use non-blocking mode:</p>
+                        
+                        <pre><code># Non-blocking mode
+music.play(music.ENTERTAINER, wait=False)</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                    </div>
+                    
+                    <div class="col">
+                        <div class="svg-container">
+                            <svg viewBox="0 0 300 200" width="300" height="200">
+                                <!-- Speaker icon -->
+                                <rect x="100" y="50" width="100" height="100" rx="10" fill="#e0e0e0" stroke="#333" stroke-width="2"/>
+                                
+                                <!-- Speaker cone -->
+                                <circle cx="150" cy="100" r="30" fill="#666" stroke="#333" stroke-width="2"/>
+                                <circle cx="150" cy="100" r="15" fill="#444" stroke="#333" stroke-width="1"/>
+                                
+                                <!-- Sound waves -->
+                                <path d="M 190,70 Q 210,50 220,70" stroke="#4a6da7" stroke-width="2" fill="none"/>
+                                <path d="M 190,100 Q 220,70 230,100" stroke="#4a6da7" stroke-width="3" fill="none"/>
+                                <path d="M 190,130 Q 210,150 220,130" stroke="#4a6da7" stroke-width="2" fill="none"/>
+                                
+                                <!-- Music note -->
+                                <path d="M 70,80 L 70,120 Q 50,130 50,110 Q 50,90 70,100" fill="#4a6da7" stroke="#333" stroke-width="1"/>
+                                <line x1="70" y1="80" x2="80" y2="70" stroke="#333" stroke-width="2"/>
+                                <circle cx="80" cy="70" r="6" fill="#333"/>
+                                
+                                <!-- Label -->
+                                <text x="150" y="170" text-anchor="middle" fill="#333" font-size="14">Built-in Speaker</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>Built-in Tunes</h3>
+                <p>The Micro:bit has several built-in tunes you can use:</p>
+                <ul>
+                    <li><code>music.DADADADUM</code> - The opening to Beethoven's 5th Symphony</li>
+                    <li><code>music.ENTERTAINER</code> - Scott Joplin's classic ragtime piece</li>
+                    <li><code>music.PRELUDE</code> - The opening of Bach's Prelude in C</li>
+                    <li><code>music.ODE</code> - The beginning of Beethoven's Ode to Joy</li>
+                    <li><code>music.NYAN</code> - The Nyan Cat theme</li>
+                    <li><code>music.RINGTONE</code> - A familiar ringtone sound</li>
+                    <li><code>music.FUNK</code> - A funky bass line</li>
+                    <li><code>music.BLUES</code> - A blues walking bass</li>
+                    <li><code>music.BIRTHDAY</code> - Happy Birthday melody</li>
+                    <li><code>music.WEDDING</code> - Wedding March melody</li>
+                    <li><code>music.FUNERAL</code> - Funeral march</li>
+                    <li><code>music.CHASE</code> - Chase sequence</li>
+                    <li><code>music.WAWAWAWAA</code> - Descending tones ("wah wah" sound)</li>
+                    <li><code>music.JUMP_UP</code> - Ascending tones</li>
+                    <li><code>music.JUMP_DOWN</code> - Descending tones</li>
+                </ul>
+                
+                <h3>Stopping Sounds</h3>
+                <p>To stop playing music (for example, after the user presses a button), use:</p>
+                
+                <pre><code># Stop playing any music
+music.stop()</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                
+                <h3>Creating Custom Tunes</h3>
+                <p>You can also create custom tunes using notation:</p>
+                
+                <pre><code># Define a custom alarm tune
+alarm_tune = ["C4:4", "E4:4", "G4:4", "C5:4", "G4:4", "E4:4", "C4:4", "R:2"]
+music.play(alarm_tune, wait=False)</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                
+                <div class="note">
+                    <strong>Note:</strong> The notation format is "note:duration" where duration is in beats. "R" represents a rest (silence).
+                </div>
+                
+                <h3>Checkpoint Checklist</h3>
+                <ul class="checklist">
+                    <li>I have imported the music module using <code>import music</code></li>
+                    <li>I can play a built-in tune using <code>music.play(tune)</code></li>
+                    <li>I've set my alarm to use non-blocking mode with <code>wait=False</code></li>
+                    <li>I know how to stop sounds using <code>music.stop()</code></li>
+                    <li>I've tried creating a custom tune (optional)</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Timing Functions Tab -->
+        <div id="timing" class="tab-content">
+            <div class="card">
+                <h2>6. Timing Functions</h2>
+                
+                <div class="row">
+                    <div class="col">
+                        <h3>Using running_time()</h3>
+                        <p>The <code>running_time()</code> function returns the number of milliseconds since the Micro:bit was powered on or reset. You can use this to create timing-based logic for your alarm.</p>
+                        
+                        <p>A common use is to automatically stop an alarm after a certain duration:</p>
+                        
+                        <pre><code># Record the start time when alarm begins
+alarm_start_time = running_time()
+
+# Check if 5 seconds have passed
+if running_time() - alarm_start_time > 5000:
+    music.stop()
+    display.clear()</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                    </div>
+                    
+                    <div class="col">
+                        <div class="svg-container">
+                            <svg viewBox="0 0 300 200" width="300" height="200">
+                                <!-- Timer illustration -->
+                                <circle cx="150" cy="100" r="80" fill="white" stroke="#4a6da7" stroke-width="5"/>
+                                
+                                <!-- Clock hands -->
+                                <line x1="150" y1="100" x2="150" y2="40" stroke="#333" stroke-width="3"/>
+                                <line x1="150" y1="100" x2="200" y2="130" stroke="#333" stroke-width="4"/>
+                                
+                                <!-- Clock center -->
+                                <circle cx="150" cy="100" r="8" fill="#4a6da7" stroke="#333" stroke-width="1"/>
+                                
+                                <!-- Arrows indicating direction -->
+                                <path d="M 220,70 Q 230,60 240,70" stroke="#ff8a65" stroke-width="2" fill="none"/>
+                                <path d="M 240,70 L 235,65" stroke="#ff8a65" stroke-width="2"/>
+                                <path d="M 240,70 L 235,75" stroke="#ff8a65" stroke-width="2"/>
+                                
+                                <!-- Milliseconds text -->
+                                <text x="150" y="190" text-anchor="middle" fill="#333" font-size="14">Time in Milliseconds</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>Implementing a Complete Timing Solution</h3>
+                <p>Here's how to implement a timed alarm in your light sensor project:</p>
+                
+                <pre><code>import music
+from microbit import display, Image, sleep, running_time, button_a
+
+# Baseline and threshold
+baseline_light = display.read_light_level()
+threshold = baseline_light + 20
+
+# Variables to track alarm state
+alarm_active = False
+alarm_start_time = 0
+alarm_duration = 5000  # 5 seconds in milliseconds
+
+while True:
+    current_light = display.read_light_level()
+    
+    # Check if light increase detected and alarm not already active
+    if current_light > threshold and not alarm_active:
+        # Activate alarm
+        alarm_active = True
+        alarm_start_time = running_time()
+        display.show("!")
+        music.play(music.RINGTONE, wait=False)
+    
+    # Check if alarm is active and needs to be turned off automatically
+    if alarm_active and running_time() - alarm_start_time > alarm_duration:
+        # Deactivate alarm
+        alarm_active = False
+        music.stop()
+        display.clear()
+    
+    # Check for button press to manually deactivate alarm
+    if alarm_active and button_a.was_pressed():
+        # Deactivate alarm
+        alarm_active = False
+        music.stop()
+        display.clear()
+    
+    sleep(100)</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                
+                <div class="note">
+                    <strong>Note:</strong> The <code>running_time()</code> function returns time in milliseconds, so 5 seconds = 5000 milliseconds.
+                </div>
+                
+                <h3>Checkpoint Checklist</h3>
+                <ul class="checklist">
+                    <li>I understand how to use <code>running_time()</code> to track elapsed time</li>
+                    <li>I can calculate time differences by comparing current time with a stored start time</li>
+                    <li>I've implemented a timed alarm that deactivates automatically after a set duration</li>
+                    <li>I've tested that my timing logic works correctly</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Button Events Tab -->
+        <div id="buttons" class="tab-content">
+            <div class="card">
+                <h2>7. Handling Button Events</h2>
+                
+                <div class="row">
+                    <div class="col">
+                        <h3>Detecting Button Presses</h3>
+                        <p>The Micro:bit has two buttons, A and B, which can be used to control your program. There are several ways to check button states:</p>
+                        
+                        <h4>Check if button is currently pressed</h4>
+                        <pre><code># Returns True if button is currently being pressed
+if button_a.is_pressed():
+    display.clear()</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                        
+                        <h4>Check if button was pressed since last check</h4>
+                        <pre><code># Returns True if button was pressed since last check
+if button_a.was_pressed():
+    display.clear()</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                    </div>
+                    
+                    <div class="col">
+                        <div class="svg-container">
+                            <svg viewBox="0 0 300 220" width="300" height="220">
+                                <!-- Micro:bit buttons illustration -->
+                                <rect x="50" y="20" width="200" height="160" rx="10" fill="#FFD700" stroke="#333" stroke-width="2"/>
+                                
+                                <!-- Button A -->
+                                <circle cx="90" cy="140" r="20" fill="#555" stroke="#333" stroke-width="2"/>
+                                <text x="90" y="145" text-anchor="middle" fill="white" font-size="18">A</text>
+                                
+                                <!-- Button B -->
+                                <circle cx="210" cy="140" r="20" fill="#555" stroke="#333" stroke-width="2"/>
+                                <text x="210" y="145" text-anchor="middle" fill="white" font-size="18">B</text>
+                                
+                                <!-- Finger pressing button -->
+                                <path d="M 90,180 Q 90,210 70,210" fill="#f5cba7" stroke="#333" stroke-width="1"/>
+                                <circle cx="90" cy="170" r="10" fill="#f5cba7" stroke="#333" stroke-width="1"/>
+                                
+                                <!-- Labels -->
+                                <text x="90" y="100" text-anchor="middle" fill="#333" font-size="12">Reset/Calibrate</text>
+                                <text x="210" y="100" text-anchor="middle" fill="#333" font-size="12">Change Mode</text>
+                                
+                                <text x="150" y="200" text-anchor="middle" fill="#333" font-size="14">Button Interaction</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>Common Button Functions</h3>
+                <p>In your light sensor project, you might use buttons for:</p>
+                <ul>
+                    <li>Button A: Reset or recalibrate the light sensor baseline</li>
+                    <li>Button B: Change between different sensitivity modes</li>
+                    <li>Both buttons pressed simultaneously: Turn the alarm on/off</li>
+                </ul>
+                
+                <h3>Button Combinations</h3>
+                <p>You can also detect when both buttons are pressed:</p>
+                
+                <pre><code># Check if both buttons are pressed
+if button_a.is_pressed() and button_b.is_pressed():
+    # Reset everything
+    display.scroll("RESET")
+    baseline_light = display.read_light_level()
+    threshold = baseline_light + 20</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                
+                <h3>Example: Recalibration Button</h3>
+                
+                <pre><code># Recalibrate the light sensor when button A is pressed
+if button_a.was_pressed():
+    display.show(Image.DIAMOND)  # Show calibration symbol
+    sleep(1000)                  # Give time to adjust environment
+    baseline_light = display.read_light_level()
+    threshold = baseline_light + 20
+    display.show(Image.YES)      # Confirm calibration
+    sleep(500)
+    display.clear()</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                
+                <div class="note">
+                    <strong>Tip:</strong> Use <code>display.show()</code> or <code>display.scroll()</code> to provide feedback when a button is pressed, so the user knows their action was registered.
+                </div>
+                
+                <h3>Checkpoint Checklist</h3>
+                <ul class="checklist">
+                    <li>I can detect button presses using <code>button_a.is_pressed()</code> or <code>button_a.was_pressed()</code></li>
+                    <li>I've implemented a button press to deactivate the alarm</li>
+                    <li>I've added a recalibration feature using button presses</li>
+                    <li>My program provides feedback when buttons are pressed</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Indentation Tab -->
+        <div id="indentation" class="tab-content">
+            <div class="card">
+                <h2>8. Indentation in Python</h2>
+                
+                <div class="row">
+                    <div class="col">
+                        <h3>Understanding Indentation</h3>
+                        <p>Python uses indentation (whitespace at the beginning of a line) to define code blocks, unlike many other languages that use brackets or keywords. Proper indentation is not just a style choice but a syntactical requirement in Python.</p>
+                        
+                        <p>Standard practice is to use 4 spaces for each level of indentation, although a single tab character can also be used. The important thing is to be consistent.</p>
+                        
+                        <h4>Example of Correct Indentation</h4>
+                        <pre><code># First level (no indentation)
+if current_light > threshold:
+    # Second level (4 spaces or 1 tab)
+    display.show("!")
+    if button_a.is_pressed():
+        # Third level (8 spaces or 2 tabs)
+        music.stop()
+else:
+    # Second level again
+    display.clear()</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                    </div>
+                    
+                    <div class="col">
+                        <div class="svg-container">
+                            <svg viewBox="0 0 300 250" width="300" height="250">
+                                <!-- Indentation visualization -->
+                                <rect x="20" y="20" width="260" height="30" rx="5" fill="#f0f0f0" stroke="#ddd" stroke-width="1"/>
+                                <text x="30" y="40" font-family="Courier New" fill="#333" font-size="14">if current_light > threshold:</text>
+                                
+                                <rect x="20" y="60" width="260" height="30" rx="5" fill="#f0f0f0" stroke="#ddd" stroke-width="1"/>
+                                <rect x="30" y="65" width="20" height="20" fill="#8c9eff" opacity="0.3"/>
+                                <text x="60" y="80" font-family="Courier New" fill="#333" font-size="14">display.show("!")</text>
+                                
+                                <rect x="20" y="100" width="260" height="30" rx="5" fill="#f0f0f0" stroke="#ddd" stroke-width="1"/>
+                                <rect x="30" y="105" width="20" height="20" fill="#8c9eff" opacity="0.3"/>
+                                <text x="60" y="120" font-family="Courier New" fill="#333" font-size="14">if button_a.is_pressed():</text>
+                                
+                                <rect x="20" y="140" width="260" height="30" rx="5" fill="#f0f0f0" stroke="#ddd" stroke-width="1"/>
+                                <rect x="30" y="145" width="20" height="20" fill="#8c9eff" opacity="0.3"/>
+                                <rect x="50" y="145" width="20" height="20" fill="#8c9eff" opacity="0.3"/>
+                                <text x="80" y="160" font-family="Courier New" fill="#333" font-size="14">music.stop()</text>
+                                
+                                <rect x="20" y="180" width="260" height="30" rx="5" fill="#f0f0f0" stroke="#ddd" stroke-width="1"/>
+                                <text x="30" y="200" font-family="Courier New" fill="#333" font-size="14">else:</text>
+                                
+                                <rect x="20" y="220" width="260" height="30" rx="5" fill="#f0f0f0" stroke="#ddd" stroke-width="1"/>
+                                <rect x="30" y="225" width="20" height="20" fill="#8c9eff" opacity="0.3"/>
+                                <text x="60" y="240" font-family="Courier New" fill="#333" font-size="14">display.clear()</text>
+                                
+                                <!-- Labels -->
+                                <text x="20" y="15" fill="#333" font-size="10">Level 1 (No indent)</text>
+                                <text x="50" y="55" fill="#333" font-size="10">Level 2 (4 spaces)</text>
+                                <text x="80" y="135" fill="#333" font-size="10">Level 3 (8 spaces)</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>Common Indentation Errors</h3>
+                <p>Here are some common indentation errors to avoid:</p>
+                
+                <h4>Inconsistent Indentation</h4>
+                <pre><code># INCORRECT (mixed spaces and tab)
+if current_light > threshold:
+    display.show("!")  # 4 spaces
+	music.play(music.RINGTONE)  # 1 tab</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                
+                <h4>Missing Indentation</h4>
+                <pre><code># INCORRECT (missing indentation)
+if current_light > threshold:
+display.show("!")  # Should be indented</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                
+                <h4>Extra Indentation</h4>
+                <pre><code># INCORRECT (extra indentation)
+if current_light > threshold:
+    display.show("!")
+    music.play(music.RINGTONE)
+    display.clear()  # This will always run, not part of the if block</code>
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                
+                <h3>Indentation Best Practices</h3>
+                <ul>
+                    <li>Use 4 spaces for each level of indentation (Python standard)</li>
+                    <li>Be consistent throughout your code</li>
+                    <li>Avoid mixing tabs and spaces</li>
+                    <li>Use a code editor that shows whitespace characters or automatically converts tabs to spaces</li>
+                    <li>Ensure all statements in the same block have the same indentation level</li>
+                </ul>
+                
+                <div class="note">
+                    <strong>Note:</strong> The Mu editor (commonly used with Micro:bit) helps highlight indentation errors and can be configured to insert spaces when you press Tab.
+                </div>
+                
+                <h3>Checkpoint Checklist</h3>
+                <ul class="checklist">
+                    <li>I understand that Python uses indentation to define code blocks</li>
+                    <li>I use consistent indentation throughout my code (4 spaces per level)</li>
+                    <li>I've checked my code for indentation errors</li>
+                    <li>I can recognize and fix common indentation problems</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Challenge & Testing Tab -->
+        <div id="challenge" class="tab-content">
+            <div class="card">
+                <h2>9-10. Combining Concepts & Final Testing</h2>
+                
+                <h3>Basic Challenge Integration</h3>
+                <p>Now it's time to combine all the elements you've learned into a complete light sensor alarm system. Here's a complete example that incorporates all the key components:</p>
+                
+                
+<button class="copy-button" onclick="copyCode(this)">Copy</button></pre>
+                
+                <h3>Final Testing</h3>
+                <p>Before considering your project complete, test it thoroughly to ensure all parts work together as expected:</p>
+                
+                <ol>
+                    <li><strong>Calibration Test</strong>
+                        <ul>
+                            <li>Start the program in a controlled environment</li>
+                            <li>Verify the calibration message appears</li>
+                            <li>Confirm the program indicates successful calibration</li>
+                        </ul>
+                    </li>
+                    <li><strong>Alarm Triggering Test</strong>
+                        <ul>
+                            <li>After calibration, increase the light level (e.g., shine a flashlight)</li>
+                            <li>Verify the alarm activates (display and sound)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Auto-Deactivation Test</strong>
+                        <ul>
+                            <li>When the alarm triggers, wait for the set duration</li>
+                            <li>Verify the alarm stops automatically after this time</li>
+                        </ul>
+                    </li>
+                    <li><strong>Manual Deactivation Test</strong>
+                        <ul>
+                            <li>Trigger the alarm again</li>
+                            <li>Press button A to manually deactivate it</li>
+                            <li>Verify the alarm stops immediately</li>
+                        </ul>
+                    </li>
+                    <li><strong>Sensitivity Adjustment Test</strong>
+                        <ul>
+                            <li>Press button B to cycle through sensitivity settings</li>
+                            <li>Test each setting to ensure they have different trigger thresholds</li>
+                        </ul>
+                    </li>
+                    <li><strong>Recalibration Test</strong>
+                        <ul>
+                            <li>Change the environment's light level</li>
+                            <li>Press both buttons to recalibrate</li>
+                            <li>Verify the system adapts to the new baseline</li>
+                        </ul>
+                    </li>
+                </ol>
+                
+                <div class="svg-container">
+                    <svg viewBox="0 0 400 150" width="400" height="150">
+                        <!-- Testing flow diagram -->
+                        <rect x="10" y="20" width="70" height="40" rx="5" fill="#e0e0e0" stroke="#333" stroke-width="1"/>
+                        <text x="45" y="45" text-anchor="middle" fill="#333" font-size="12">Calibrate</text>
+                        
+                        <rect x="110" y="20" width="70" height="40" rx="5" fill="#e0e0e0" stroke="#333" stroke-width="1"/>
+                        <text x="145" y="45" text-anchor="middle" fill="#333" font-size="12">Trigger</text>
+                        
+                        <rect x="210" y="20" width="70" height="40" rx="5" fill="#e0e0e0" stroke="#333" stroke-width="1"/>
+                        <text x="245" y="45" text-anchor="middle" fill="#333" font-size="12">Deactivate</text>
+                        
+                        <rect x="310" y="20" width="70" height="40" rx="5" fill="#e0e0e0" stroke="#333" stroke-width="1"/>
+                        <text x="345" y="45" text-anchor="middle" fill="#333" font-size="12">Adjust</text>
+                        
+                        <!-- Arrows -->
+                        <line x1="80" y1="40" x2="110" y2="40" stroke="#333" stroke-width="1" marker-end="url(#arrowhead)"/>
+                        <line x1="180" y1="40" x2="210" y2="40" stroke="#333" stroke-width="1" marker-end="url(#arrowhead)"/>
+                        <line x1="280" y1="40" x2="310" y2="40" stroke="#333" stroke-width="1" marker-end="url(#arrowhead)"/>
+                        
+                        <!-- Loop back -->
+                        <path d="M 345,60 Q 345,100 45,100 Q 45,60 45,60" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+                        
+                        <!-- Text labels -->
+                        <text x="200" y="120" text-anchor="middle" fill="#333" font-size="14">Testing Cycle</text>
+                    </svg>
+                </div>
+                
+                <h3>Troubleshooting Common Issues</h3>
+                <ul>
+                    <li><strong>False Alarms:</strong> If your alarm triggers too easily, increase the threshold value</li>
+                    <li><strong>No Response:</strong> If your alarm doesn't trigger, decrease the threshold value</li>
+                    <li><strong>Inconsistent Behavior:</strong> Check for indentation errors or logic issues in your code</li>
+                    <li><strong>Sound Issues:</strong> Ensure you've imported the music module and are using non-blocking mode</li>
+                    <li><strong>Timing Problems:</strong> Double-check your <code>running_time()</code> calculations</li>
+                </ul>
+                
+                <div class="note">
+                    <strong>Final Tip:</strong> Remember, electronics can be sensitive to environmental conditions. Your light sensor may behave differently in various lighting conditions, so be prepared to adjust your thresholds accordingly.
+                </div>
+                
+                <h3>Challenge Extensions</h3>
+                <p>Once you've completed the basic challenge, consider these extensions:</p>
+                <ul>
+                    <li>Add a log of recent detections that scrolls on button press</li>
+                    <li>Create different alarm sounds for different light levels</li>
+                    <li>Combine with a temperature sensor for environmental monitoring</li>
+                    <li>Implement radio communication to send alerts to another Micro:bit</li>
+                </ul>
+                
+                <h3>Checkpoint Checklist</h3>
+                <ul class="checklist">
+                    <li>I've combined all the components into a complete working system</li>
+                    <li>My light alarm system calibrates correctly on startup</li>
+                    <li>The alarm triggers when light levels change significantly</li>
+                    <li>The alarm deactivates automatically after a set time</li>
+                    <li>Button controls work for manual deactivation and recalibration</li>
+                    <li>I've thoroughly tested all aspects of the system</li>
+                    <li>My code has consistent, correct indentation throughout</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <p>Micro:bit Light Sensor Challenge – Check Points & Indentation Guide © 2025</p>
+    </footer>
+    
+    <script>
+        function openTab(evt, tabName) {
+            // Hide all tab content
+            const tabContents = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+            
+            // Remove active class from all tab links
+            const tabLinks = document.getElementsByClassName("tab-link");
+            for (let i = 0; i < tabLinks.length; i++) {
+                tabLinks[i].classList.remove("active");
+            }
+            
+            // Show the selected tab and add active class to the button
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+        
+        function copyCode(button) {
+            const pre = button.parentElement;
+            const code = pre.querySelector("code");
+            const text = code.innerText;
+            
+            // Create a temporary textarea element to copy the text
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+            
+            // Change button text temporarily
+            const originalText = button.innerText;
+            button.innerText = "Copied!";
+            setTimeout(() => {
+                button.innerText = originalText;
+            }, 2000);
+        }
+        
+        // Add click event to checkboxes
+        document.addEventListener("DOMContentLoaded", function() {
+            const checkItems = document.querySelectorAll(".checklist li");
+            checkItems.forEach(item => {
+                item.addEventListener("click", function() {
+                    this.classList.toggle("checked");
+                });
+            });
+        });
+    </script>
+</body>
+</html>

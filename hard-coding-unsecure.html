@@ -1,106 +1,474 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Health Site</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediSecure Diagnostics - Health Testing</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        nav { margin-bottom: 20px; }
-        nav a { margin-right: 10px; }
+        /* Basic Professional Styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+        }
+
+        header {
+            background: #0056b3; /* Professional Blue */
+            color: #fff;
+            padding-top: 30px;
+            min-height: 70px;
+            border-bottom: #003d80 3px solid;
+        }
+
+        header a {
+            color: #fff;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 16px;
+        }
+
+        header ul {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+            float: right;
+        }
+
+        header li {
+            display: inline;
+            padding: 0 20px 0 20px;
+        }
+
+        header #branding {
+            float: left;
+        }
+
+        header #branding h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        header nav {
+            margin-top: 10px;
+        }
+
+        header .highlight, header .current a {
+            color: #e8491d; /* Accent color */
+            font-weight: bold;
+        }
+
+        header a:hover {
+            color: #ccc;
+            font-weight: bold;
+        }
+
+        main {
+            padding: 20px 0;
+        }
+
+        section {
+            background: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        h1, h2 {
+            color: #0056b3;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box; /* Include padding in width */
+        }
+
+        input[type="submit"],
+        button {
+            display: inline-block;
+            background: #e8491d;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 3px;
+            margin-top: 10px;
+        }
+
+         input[type="submit"]:hover,
+         button:hover {
+            background: #333;
+         }
+
+        textarea {
+            height: 100px;
+        }
+
+        #message-output, #search-results, #record-details, #status-output {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #e9e9e9;
+            border: 1px dashed #ccc;
+            min-height: 30px;
+            word-wrap: break-word; /* Prevent long strings from breaking layout */
+        }
+
+        footer {
+            background: #333;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        /* Initially hide sections */
+        #about, #login, #admin_dashboard, #tools {
+            display: none;
+        }
+
+        /* Vulnerable Comment Example */
+        /* TODO: Remember to change the default admin password 'Qwertz432' before going live! */
+        /* Server Info: Apache/2.4.41 (Win64) running PHP/7.4.3 */
+
     </style>
 </head>
 <body>
-    <h1>Welcome to Health Site</h1>
-    <p>A drop of blood to do all the health testing.</p>
-    <nav>
-        <a href="#home">Home</a>
-        <a href="#about">About</a>
-        <a href="#login">Login</a>
-    </nav>
+    <header>
+        <div class="container">
+            <div id="branding">
+                <h1><span class="highlight">MediSecure</span> Diagnostics</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li class="current"><a href="#home" data-target="home">Home</a></li>
+                    <li><a href="#about" data-target="about">About</a></li>
+                    <li><a href="#tools" data-target="tools">Tools</a></li>
+                    <li><a href="#login" data-target="login">Login</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
 
-    <div id="home">
-        <h2>Send a Message</h2>
-        <form action="#" method="POST">
-            <label for="message">Message:</label><br>
-            <textarea id="message" name="message" rows="4" cols="50"></textarea><br>
-            <input type="submit" value="Send" onclick="sendMessage(); return false;">
-        </form>
-        <div id="message-output"></div>
-    </div>
+    <main class="container">
+        <section id="home">
+            <h1>Welcome to MediSecure Diagnostics</h1>
+            <p>Your health, our priority. Advanced diagnostics from just a single drop of blood. Fast, accurate, and secure.</p>
+            <h2>Leave a Public Comment</h2>
+            <form action="#" method="POST" onsubmit="postComment(); return false;">
+                <label for="comment">Comment:</label>
+                <textarea id="comment" name="comment" placeholder="Enter your public comment here..."></textarea>
+                <input type="submit" value="Post Comment">
+            </form>
+            <div id="message-output">
+                <!-- Comments will appear here -->
+                <p>User1: Great service!</p>
+            </div>
+        </section>
 
-    <div id="about" style="display: none;">
-        <h1>About Health Site</h1>
-        <p>We are a health testing company that provides comprehensive health analysis with just a drop of blood.</p>
-    </div>
+        <section id="about">
+            <h1>About MediSecure Diagnostics</h1>
+            <p>Founded in 2023, MediSecure Diagnostics leverages cutting-edge biotechnology to provide comprehensive health insights from minimal samples. Our patented analysis process ensures quick turnaround times without compromising accuracy.</p>
+            <p>We are committed to data privacy and employ state-of-the-art security measures (or so we claim).</p>
+        </section>
 
-    <div id="login" style="display: none;">
-        <h1>Login</h1>
-        <form action="#" method="POST" onsubmit="return checkPassword();">
-            <label for="username">Username:</label><br>
-            <input type="text" id="username" name="username"><br>
-            <label for="password">Password:</label><br>
-            <input type="password" id="password" name="password"><br><br>
-            <input type="submit" value="Login">
-        </form>
-    </div>
+        <section id="tools">
+            <h1>Diagnostic Tools (Simulated)</h1>
 
-    <div id="admin_dashboard" style="display: none;">
-        <h1>Admin Dashboard</h1>
-        <p>Welcome, Admin!</p>
-        <p>This is the admin dashboard.</p>
-        <button onclick="deleteAllRecords();">Delete All Database Records</button>
-    </div>
+            <!-- Simulated SQL Injection -->
+            <h2>Search Patient Records</h2>
+            <form onsubmit="searchPatients(); return false;">
+                <label for="patientId">Patient ID:</label>
+                <input type="text" id="patientId" name="patientId" placeholder="e.g., 101 or 101' OR '1'='1">
+                <input type="submit" value="Search">
+            </form>
+            <div id="search-results">Search results will appear here.</div>
+
+            <!-- Simulated Directory Traversal -->
+            <h2>Load Patient Record File</h2>
+            <form onsubmit="loadRecord(); return false;">
+                <label for="recordFile">Record Filename:</label>
+                <input type="text" id="recordFile" name="recordFile" placeholder="e.g., record_101.pdf or ../../../config/settings.ini">
+                <input type="submit" value="Load File">
+            </form>
+            <div id="record-details">File content simulation appears here.</div>
+
+             <!-- Simulated Command Injection -->
+            <h2>Check Server Status</h2>
+             <form onsubmit="checkServerStatus(); return false;">
+                <label for="serverIp">Server IP:</label>
+                <input type="text" id="serverIp" name="serverIp" placeholder="e.g., 192.168.1.1 or 127.0.0.1; ls -la /">
+                <input type="submit" value="Check Status">
+            </form>
+            <div id="status-output">Server status simulation appears here.</div>
+
+            <!-- Simulated Insecure File Upload -->
+            <h2>Upload Test Results (PDF Only)</h2>
+            <form onsubmit="handleFileUpload(); return false;">
+                 <label for="fileUpload">Select File:</label>
+                 <input type="file" id="fileUpload" name="fileUpload" accept=".pdf">
+                 <!-- Note: 'accept' is only a client-side hint, easily bypassed! -->
+                 <input type="submit" value="Upload">
+            </form>
+            <div id="upload-status">Upload status...</div>
+
+        </section>
+
+        <section id="login">
+            <h1>Admin Login</h1>
+            <form action="#" method="POST" onsubmit="return checkPassword();">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+                <input type="submit" value="Login">
+            </form>
+            <div id="login-error" style="color: red; margin-top: 10px;"></div>
+        </section>
+
+        <section id="admin_dashboard" style="display: none;">
+            <h1>Admin Dashboard</h1>
+            <p>Welcome, <span id="admin-username">Admin</span>!</p>
+            <p>This area contains sensitive administrative functions.</p>
+            <!-- This button simulates a dangerous action -->
+            <button onclick="deleteAllRecords();">Delete All Patient Records (Simulated)</button>
+            <p style="margin-top: 20px;"><button onclick="logout()">Logout</button></p>
+        </section>
+    </main>
+
+    <footer>
+        <p>MediSecure Diagnostics © 2024 | <a href="#" style="color:#fff;">Privacy Policy</a> | All Rights Reserved (For educational purposes only)</p>
+        <!-- Important Note for Students: This website is intentionally vulnerable. Do NOT deploy similar code in production. -->
+    </footer>
 
     <script>
-        // Initialize local storage with important data
+        // --- Initialization ---
+
+        // Vulnerability: Sensitive Data Exposure in Local Storage
+        // Simulating storing potentially sensitive IDs client-side.
+        localStorage.setItem("sessionToken", "sess_abc123xyz789");
+        localStorage.setItem("userRole", "guest"); // Initial role
+        localStorage.setItem("trackingId", "trk_987654321");
+        localStorage.setItem("lastLoginTimestamp", Date.now());
+        // Old data from previous example, kept for consistency if needed
         localStorage.setItem("name", "John Doe");
         localStorage.setItem("institutionId", "ABC123");
         localStorage.setItem("customerId", "CUS456");
         localStorage.setItem("paymentId", "PAY789");
         localStorage.setItem("analyticsId", "ANA012");
 
-        function sendMessage() {
-            var message = document.getElementById("message").value;
-            document.getElementById("message-output").innerHTML = message;
+        // --- Navigation ---
+        const sections = document.querySelectorAll('main > section');
+        const navLinks = document.querySelectorAll('header nav a');
+
+        function displaySection(targetId) {
+            sections.forEach(section => {
+                section.style.display = (section.id === targetId) ? 'block' : 'none';
+            });
+            // Update nav highlight
+            navLinks.forEach(link => {
+                if (link.getAttribute('data-target') === targetId) {
+                    link.parentElement.classList.add('current');
+                } else {
+                    link.parentElement.classList.remove('current');
+                }
+            });
         }
 
-        function checkPassword() {
-            var username = document.getElementById("username").value;
-            var password = document.getElementById("password").value;
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(event) {
+                event.preventDefault();
+                const targetId = this.getAttribute('data-target');
+                if (targetId === 'login' && localStorage.getItem('userRole') === 'admin') {
+                     // If admin is logged in, show dashboard instead of login page
+                     displaySection('admin_dashboard');
+                } else if (targetId) {
+                     displaySection(targetId);
+                }
+            });
+        });
 
-            if ((username === "admin" && password === "Qwertz432") || (username === "super-admin" && password === "superlols123")) {
-                // Simulate an unencrypted API endpoint
-                var apiEndpoint = "http://example.com/api/login?username=" + username + "&password=" + password;
-                console.log("Sending request to: " + apiEndpoint);
+        // Show home section by default
+        document.addEventListener('DOMContentLoaded', () => displaySection('home'));
 
-                // Show the admin dashboard
-                document.getElementById("login").style.display = "none";
-                document.getElementById("admin_dashboard").style.display = "block";
+        // --- Functionality & Vulnerabilities ---
+
+        // Vulnerability: Reflected Cross-Site Scripting (XSS)
+        function postComment() {
+            var commentInput = document.getElementById("comment");
+            var comment = commentInput.value;
+            var outputDiv = document.getElementById("message-output");
+            // Directly inserting user input into innerHTML is unsafe
+            outputDiv.innerHTML += `<p>You: ${comment}</p>`;
+            commentInput.value = ''; // Clear the input field
+            // Note: Real applications need server-side storage and sanitization!
+        }
+
+        // Vulnerability: Simulated SQL Injection
+        function searchPatients() {
+            const patientId = document.getElementById('patientId').value;
+            const resultsDiv = document.getElementById('search-results');
+            // Simulating building a query string unsafely
+            const query = `SELECT * FROM patients WHERE id = '${patientId}';`;
+            console.log("Simulated SQL Query:", query); // Log the vulnerable query
+            // Displaying output (could potentially reveal data if injection works)
+            resultsDiv.innerHTML = `Searching for patient ID matching: ${escapeHtml(patientId)}... (Check console for simulated query)`;
+            // In a real scenario, results based on the (potentially manipulated) query would be shown.
+        }
+
+         // Vulnerability: Simulated Directory Traversal / Path Traversal
+        function loadRecord() {
+            const recordFile = document.getElementById('recordFile').value;
+            const detailsDiv = document.getElementById('record-details');
+            // Simulating accessing a file based on user input without sanitization
+            const filePath = `/var/www/html/records/${recordFile}`; // Base path
+            console.log("Simulated File Path Access:", filePath);
+            detailsDiv.innerHTML = `Attempting to load file: ${escapeHtml(recordFile)}... (Check console for simulated path)`;
+            // Real app would try to read the file at 'filePath', potentially accessing unintended files.
+        }
+
+         // Vulnerability: Simulated Command Injection
+        function checkServerStatus() {
+             const serverIp = document.getElementById('serverIp').value;
+             const statusDiv = document.getElementById('status-output');
+             // Simulating building a shell command unsafely
+             const command = `ping -c 4 ${serverIp}`;
+             console.log("Simulated Command Execution:", command);
+             statusDiv.innerHTML = `Pinging server: ${escapeHtml(serverIp)}... (Check console for simulated command)`;
+             // Real app might execute this command, allowing arbitrary command execution via input like '127.0.0.1; rm -rf /'
+        }
+
+        // Vulnerability: Insecure File Upload (Client-Side Validation Only)
+        function handleFileUpload() {
+            const fileInput = document.getElementById('fileUpload');
+            const statusDiv = document.getElementById('upload-status');
+            const allowedType = 'application/pdf';
+
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                // Client-side check (easily bypassed)
+                if (file.type === allowedType) {
+                     statusDiv.innerHTML = `Simulating upload of ${escapeHtml(file.name)} (${file.type})... OK.`;
+                     console.log(`Simulated successful upload of ${file.name}. Server-side validation is CRUCIAL!`);
+                     // In a real app, the file would be sent to the server here.
+                     // The vulnerability lies in the *lack* of proper server-side validation
+                     // (checking file type by content, size limits, renaming, scanning for malware, storing outside web root).
+                } else {
+                     statusDiv.innerHTML = `Error: Invalid file type. Only PDF is allowed (Client-side check). You selected: ${escapeHtml(file.type)}`;
+                     console.warn(`Client-side block: Invalid file type (${file.type}). This check can be bypassed.`);
+                }
             } else {
-                alert("Invalid username or password.");
+                statusDiv.innerHTML = 'Please select a file to upload.';
+            }
+        }
+
+
+        // Vulnerability: Hardcoded Credentials & Insecure Authentication Logic
+        // Vulnerability: Sensitive Data Transmission (Simulated in console log)
+        // Vulnerability: Verbose Error Potential
+        function checkPassword() {
+            var usernameInput = document.getElementById("username");
+            var passwordInput = document.getElementById("password");
+            var username = usernameInput.value;
+            var password = passwordInput.value; // In real apps, NEVER handle passwords client-side like this.
+            var errorDiv = document.getElementById("login-error");
+            errorDiv.textContent = ''; // Clear previous errors
+
+            // Hardcoded credentials - Major vulnerability
+            const validUsers = {
+                "admin": "Qwertz432", // Weak password, hardcoded
+                "super-admin": "superlols123" // Also weak, hardcoded
+                // Real systems use hashed passwords stored server-side.
+            };
+
+            if (validUsers[username] && validUsers[username] === password) {
+                // Simulate sending credentials insecurely (e.g., over HTTP or in URL parameters)
+                var apiEndpoint = "http://medisecure.example.com/api/login?username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password); // Still bad practice even encoded
+                console.warn("VULNERABILITY: Sending login request with credentials (simulated): " + apiEndpoint);
+
+                // Vulnerability: Broken Access Control (Client-Side Role Update)
+                // The client is deciding it's now an admin based on client-side check.
+                localStorage.setItem("userRole", "admin"); // Updating role client-side!
+
+                document.getElementById("admin-username").textContent = username;
+                displaySection('admin_dashboard');
+
+            } else {
+                // Vulnerability: Potentially Verbose Error Message
+                // While this example is simple, real apps might leak info here.
+                errorDiv.textContent = "Invalid username or password."; // Could be more specific/verbose in a real scenario
+                console.log(`Login failed for username: ${username}`);
+                // Clear password field on failure
+                passwordInput.value = "";
             }
 
+            // Prevent form submission from reloading the page
             return false;
         }
 
+        // Vulnerability: Broken Access Control (Admin Action without Re-auth/Token)
+        // Vulnerability: Insecure Direct Object Reference (IDOR) / Excessive Permissions (Simulated)
         function deleteAllRecords() {
-            // Simulate deleting all database records
-            console.log("Deleting all database records...");
-            alert("All database records have been deleted!");
+            // This simulates a highly destructive action.
+            // In a real app, this endpoint MUST be protected robustly (POST, CSRF token, re-authentication, proper server-side authorization).
+            // A user could potentially trigger this if they gain access or via CSRF if not protected.
+            if (localStorage.getItem("userRole") !== 'admin') {
+                alert("Access Denied. Admins only."); // Basic client-side check, easily bypassed.
+                return;
+            }
+            if (confirm("DANGER: Are you absolutely sure you want to delete all patient records? This action is irreversible!")) {
+                console.error("SIMULATION: Deleting all database records initiated by admin:", document.getElementById('admin-username').textContent);
+                alert("All patient records have been deleted (Simulated).");
+                 // In a real scenario, this would trigger a backend API call.
+            }
         }
 
-        // Navigation handling
-        var links = document.querySelectorAll("nav a");
-        for (var i = 0; i < links.length; i++) {
-            links[i].addEventListener("click", function(event) {
-                event.preventDefault();
-                var target = this.getAttribute("href").substring(1);
-                var pages = document.querySelectorAll("div[id]");
-                for (var j = 0; j < pages.length; j++) {
-                    pages[j].style.display = "none";
-                }
-                document.getElementById(target).style.display = "block";
-            });
+        function logout() {
+             localStorage.setItem("userRole", "guest"); // Revert role
+             // Clear sensitive items if desired
+             localStorage.removeItem("sessionToken");
+             // Redirect to home/login
+             displaySection('home');
+             // Clear login form fields if necessary
+             document.getElementById("username").value = "";
+             document.getElementById("password").value = "";
+             document.getElementById("login-error").textContent = "";
         }
+
+        // Utility function to escape HTML for display purposes (prevents self-XSS in output areas)
+        function escapeHtml(unsafe) {
+            if (unsafe === null || unsafe === undefined) return '';
+            return unsafe
+                 .toString()
+                 .replace(/&/g, "&")
+                 .replace(/</g, "<")
+                 .replace(/>/g, ">")
+                 .replace(/"/g, """)
+                 .replace(/'/g, "'");
+         }
+
     </script>
+
 </body>
 </html>

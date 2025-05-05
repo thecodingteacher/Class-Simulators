@@ -3,155 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediSecure Diagnostics - Health Testing (Vulnerable - Fixed)</title>
+    <title>MediSecure Diagnostics - Health Testing (Vulnerable - Reworked)</title>
     <style>
-        /* Basic Professional Styling */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-            color: #333;
-            line-height: 1.6;
-        }
-
-        .container {
-            width: 80%;
-            margin: auto;
-            overflow: hidden;
-        }
-
-        header {
-            background: #0056b3; /* Professional Blue */
-            color: #fff;
-            padding-top: 30px;
-            min-height: 70px;
-            border-bottom: #003d80 3px solid;
-        }
-
-        header a {
-            color: #fff;
-            text-decoration: none;
-            text-transform: uppercase;
-            font-size: 16px;
-        }
-
-        header ul {
-            padding: 0;
-            margin: 0;
-            list-style: none;
-            float: right;
-        }
-
-        header li {
-            display: inline;
-            padding: 0 20px 0 20px;
-        }
-
-        header #branding {
-            float: left;
-        }
-
-        header #branding h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-
-        header nav {
-            margin-top: 10px;
-        }
-
-        header .highlight { color: #e8491d; } /* Accent color */
+        /* Basic Professional Styling (Same as before) */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; line-height: 1.6; }
+        .container { width: 80%; margin: auto; overflow: hidden; }
+        header { background: #0056b3; color: #fff; padding-top: 30px; min-height: 70px; border-bottom: #003d80 3px solid; }
+        header a { color: #fff; text-decoration: none; text-transform: uppercase; font-size: 16px; }
+        header ul { padding: 0; margin: 0; list-style: none; float: right; }
+        header li { display: inline; padding: 0 20px 0 20px; }
+        header #branding { float: left; }
+        header #branding h1 { margin: 0; font-size: 24px; }
+        header nav { margin-top: 10px; }
+        header .highlight { color: #e8491d; }
         header .current a { color: #e8491d; font-weight: bold; }
-
-
-        header a:hover {
-            color: #ccc;
-            font-weight: bold;
-        }
-
-        main {
-            padding: 20px 0;
-        }
-
-        section {
-            background: #fff;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-
-        h1, h2 {
-            color: #0056b3;
-        }
-
-        label {
-            display: block;
-            margin: 10px 0 5px;
-        }
-
-        input[type="text"],
-        input[type="password"],
-        textarea,
-        select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            box-sizing: border-box; /* Include padding in width */
-        }
-
-        input[type="submit"],
-        button {
-            display: inline-block;
-            background: #e8491d;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 3px;
-            margin-top: 10px;
-            margin-right: 10px; /* Add some spacing between buttons */
-        }
-
-         input[type="submit"]:hover,
-         button:hover {
-            background: #333;
-         }
-
-        textarea {
-            height: 100px;
-        }
-
-        #message-output, #search-results, #record-details, #status-output, #upload-status, #fake-accounts-status {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #e9e9e9;
-            border: 1px dashed #ccc;
-            min-height: 30px;
-            word-wrap: break-word; /* Prevent long strings from breaking layout */
-        }
-
-        footer {
-            background: #333;
-            color: #fff;
-            text-align: center;
-            padding: 20px;
-            margin-top: 30px;
-        }
-
-        /* Initially hide sections */
-        #home, #about, #login, #admin_dashboard, #tools {
-            display: none; /* Start all hidden, JS will show 'home' */
-        }
-
+        header a:hover { color: #ccc; font-weight: bold; }
+        main { padding: 20px 0; }
+        section { background: #fff; padding: 20px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        h1, h2 { color: #0056b3; }
+        label { display: block; margin: 10px 0 5px; }
+        input[type="text"], input[type="password"], textarea, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 3px; box-sizing: border-box; }
+        input[type="submit"], button { display: inline-block; background: #e8491d; color: #fff; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 3px; margin-top: 10px; margin-right: 10px; }
+        input[type="submit"]:hover, button:hover { background: #333; }
+        textarea { height: 100px; }
+        #message-output, #search-results, #record-details, #status-output, #upload-status, #fake-accounts-status { margin-top: 15px; padding: 10px; background-color: #e9e9e9; border: 1px dashed #ccc; min-height: 30px; word-wrap: break-word; }
+        footer { background: #333; color: #fff; text-align: center; padding: 20px; margin-top: 30px; }
+        /* Hide sections initially, JS will show 'home' */
+        #home, #about, #login, #admin_dashboard, #tools { display: none; }
         /* Vulnerable Comment Example */
         /* TODO: Remember to change the default admin password 'Qwertz432' before going live! */
         /* Server Info: Apache/2.4.41 (Win64) running PHP/7.4.3 (Simulated) */
-
     </style>
 </head>
 <body>
@@ -177,8 +58,8 @@
             <h1>Welcome to MediSecure Diagnostics</h1>
             <p>Your health, our priority. Advanced diagnostics from just a single drop of blood. Fast, accurate, and secure.</p>
             <h2>Leave a Public Comment</h2>
-            <!-- Ensures function runs and default submit is prevented -->
-            <form action="#" method="POST" onsubmit="postComment(); return false;">
+            <!-- Add ID for JS targeting -->
+            <form id="comment-form" action="#" method="POST">
                 <label for="comment">Comment:</label>
                 <textarea id="comment" name="comment" placeholder="Enter your public comment here... e.g., <script>alert('XSS')</script>"></textarea>
                 <input type="submit" value="Post Comment">
@@ -200,7 +81,8 @@
 
             <!-- Simulated SQL Injection -->
             <h2>Search Patient Records (SQLi)</h2>
-            <form onsubmit="searchPatients(); return false;">
+            <!-- Add ID for JS targeting -->
+            <form id="search-form">
                 <label for="patientId">Patient ID:</label>
                 <input type="text" id="patientId" name="patientId" placeholder="e.g., 101 or 101' OR '1'='1">
                 <input type="submit" value="Search">
@@ -209,7 +91,8 @@
 
             <!-- Simulated Directory Traversal -->
             <h2>Load Patient Record File (Path Traversal)</h2>
-            <form onsubmit="loadRecord(); return false;">
+             <!-- Add ID for JS targeting -->
+            <form id="load-record-form">
                 <label for="recordFile">Record Filename:</label>
                 <input type="text" id="recordFile" name="recordFile" placeholder="e.g., record_101.pdf or ../../../etc/passwd">
                 <input type="submit" value="Load File">
@@ -218,7 +101,8 @@
 
              <!-- Simulated Command Injection -->
             <h2>Check Server Status (Command Injection)</h2>
-             <form onsubmit="checkServerStatus(); return false;">
+            <!-- Add ID for JS targeting -->
+             <form id="status-form">
                 <label for="serverIp">Server IP:</label>
                 <input type="text" id="serverIp" name="serverIp" placeholder="e.g., 192.168.1.1 or 127.0.0.1; whoami">
                 <input type="submit" value="Check Status">
@@ -227,20 +111,20 @@
 
             <!-- Simulated Insecure File Upload -->
             <h2>Upload Test Results (Insecure Upload)</h2>
-            <form onsubmit="handleFileUpload(); return false;">
+             <!-- Add ID for JS targeting -->
+            <form id="upload-form">
                  <label for="fileUpload">Select File (Client-side PDF check only):</label>
                  <input type="file" id="fileUpload" name="fileUpload" accept=".pdf">
-                 <!-- Note: 'accept' is only a client-side hint, easily bypassed! -->
                  <input type="submit" value="Upload">
             </form>
             <div id="upload-status">Upload status...</div>
-
         </section>
 
         <section id="login">
             <h1>Admin Login</h1>
             <!-- Vulnerability: Lack of CSRF token -->
-            <form action="#" method="POST" onsubmit="return checkPassword();">
+             <!-- Add ID for JS targeting -->
+            <form id="login-form" action="#" method="POST">
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>
                 <label for="password">Password:</label>
@@ -256,72 +140,56 @@
             <p>Current Access Level (from localStorage): <span id="admin-level-display">Normal</span></p>
             <p>This area contains sensitive administrative functions.</p>
 
-            <!-- Vulnerability: Broken Access Control (Client-side check below) -->
-            <button onclick="deleteAllRecords();">Delete All Patient Records (Simulated - Requires 'admin' role)</button>
-
-            <!-- Vulnerability: Privilege Escalation via LocalStorage -->
-            <!-- This button's action relies *only* on adminLevel in localStorage -->
-            <button onclick="deleteFakeAccounts();">Delete Fake User Accounts (Simulated - Requires adminLevel '2' in localStorage)</button>
+            <!-- Add IDs for JS targeting -->
+            <button id="delete-records-btn">Delete All Patient Records (Simulated - Requires 'admin' role)</button>
+            <button id="delete-fake-btn">Delete Fake User Accounts (Simulated - Requires adminLevel '2' in localStorage)</button>
             <div id="fake-accounts-status"></div>
 
-
-            <p style="margin-top: 20px;"><button onclick="logout()">Logout</button></p>
+            <p style="margin-top: 20px;"><button id="logout-btn">Logout</button></p>
         </section>
     </main>
 
     <footer>
         <p>MediSecure Diagnostics © 2024 | <a href="#" style="color:#fff;">Privacy Policy</a> | All Rights Reserved (For educational purposes only)</p>
-        <!-- Important Note for Students: This website is intentionally vulnerable. Do NOT deploy similar code in production. -->
         <!-- Vulnerability Hint: Check Local Storage in Developer Tools (F12 -> Application) -->
     </footer>
 
     <script>
-        // --- Initialization ---
+        // --- Global Variables & Initial Data ---
 
         // Vulnerability: Sensitive Data Exposure in Local Storage
-        localStorage.setItem("sessionToken", "sess_abc123xyz789_demo_v2");
+        localStorage.setItem("sessionToken", "sess_abc123xyz789_demo_v3");
         localStorage.setItem("userRole", "guest"); // Initial role ('guest', 'admin')
-        localStorage.setItem("trackingId", "trk_987654321_demo_v2");
+        localStorage.setItem("trackingId", "trk_987654321_demo_v3");
         localStorage.setItem("lastLoginTimestamp", Date.now());
         // Vulnerability: Control flag for privilege escalation in localStorage
-        if (localStorage.getItem("adminLevel") === null || !['0','1','2'].includes(localStorage.getItem("adminLevel"))) { // Initialize only if not set or invalid
-             localStorage.setItem("adminLevel", "0"); // 0=Normal, 1=Admin (via login), 2=SuperSuperAdmin (manual change)
+        if (localStorage.getItem("adminLevel") === null || !['0','1','2'].includes(localStorage.getItem("adminLevel"))) {
+             localStorage.setItem("adminLevel", "0"); // 0=Normal, 1=Admin, 2=SuperSuperAdmin
         }
 
-        // Simulated Fake User Accounts Data (Client-Side - Global within script)
+        // Simulated Fake User Accounts Data (Client-Side)
         let fakeUserAccounts = [
-            { id: 1, username: "testuser1", email: "test1@example.com" },
-            { id: 2, username: "demo_user", email: "demo@example.com" },
-            { id: 3, username: "jsmith", email: "jsmith@sample.org" },
-            { id: 4, username: "another_user", email: "another@example.com" },
-            { id: 5, username: "pentest_dummy", email: "dummy@test.local" },
-            { id: 6, username: "user_six", email: "six@example.net" },
-            { id: 7, username: "tester_beta", email: "beta@sample.org" },
-            { id: 8, username: "final_test", email: "final@test.local" },
-            { id: 9, username: "some_guy", email: "guy@example.com" },
-            { id: 10, username: "last_one", email: "last@example.net" },
+            { id: 1, username: "testuser1", email: "test1@example.com" }, { id: 2, username: "demo_user", email: "demo@example.com" },
+            { id: 3, username: "jsmith", email: "jsmith@sample.org" }, { id: 4, username: "another_user", email: "another@example.com" },
+            { id: 5, username: "pentest_dummy", email: "dummy@test.local" }, { id: 6, username: "user_six", email: "six@example.net" },
+            { id: 7, username: "tester_beta", email: "beta@sample.org" }, { id: 8, username: "final_test", email: "final@test.local" },
+            { id: 9, username: "some_guy", email: "guy@example.com" }, { id: 10, username: "last_one", email: "last@example.net" },
         ];
 
-        // --- Helper Function ---
+        // --- Helper Functions ---
 
-        // Utility function to escape HTML for display purposes (prevents self-XSS in output areas)
         function escapeHtml(unsafe) {
             if (unsafe === null || unsafe === undefined) return '';
-            return String(unsafe) // Ensure input is string
-                 .replace(/&/g, "&")
-                 .replace(/</g, "<")
-                 .replace(/>/g, ">")
-                 .replace(/"/g, """)
-                 .replace(/'/g, "'");
+            return String(unsafe)
+                 .replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">")
+                 .replace(/"/g, """).replace(/'/g, "'");
          }
 
-        // --- Navigation ---
-        const sections = document.querySelectorAll('main > section');
-        const navLinks = document.querySelectorAll('header nav a');
-        const navListItems = document.querySelectorAll('header nav li'); // To manage current class
-
         function displaySection(targetId) {
+            const sections = document.querySelectorAll('main > section');
+            const navListItems = document.querySelectorAll('header nav li');
             let foundTarget = false;
+
             sections.forEach(section => {
                 if (section.id === targetId) {
                     section.style.display = 'block';
@@ -333,11 +201,12 @@
 
             if (!foundTarget) {
                 console.error("Target section not found:", targetId);
-                document.getElementById('home').style.display = 'block'; // Fallback to home
-                targetId = 'home'; // Adjust targetId for highlighting
+                const homeSection = document.getElementById('home');
+                if (homeSection) homeSection.style.display = 'block'; // Fallback
+                targetId = 'home'; // Adjust for highlighting
             }
 
-             // Update Admin dashboard display elements if showing it
+             // Update Admin dashboard display elements whenever it's shown
              if(targetId === 'admin_dashboard') {
                 updateAdminDashboardDisplay();
              }
@@ -352,178 +221,9 @@
                     li.classList.remove('current');
                 }
             });
+            // console.log("Displayed section:", targetId); // Debug log
         }
 
-        // Attach navigation event listeners
-        navLinks.forEach(link => {
-            link.addEventListener('click', function(event) {
-                event.preventDefault(); // Prevent default anchor link behavior
-                const targetId = this.getAttribute('data-target');
-
-                // If user clicks Login link BUT is already admin, show dashboard
-                if (targetId === 'login' && localStorage.getItem('userRole') === 'admin') {
-                     displaySection('admin_dashboard');
-                } else if (targetId) {
-                     displaySection(targetId);
-                } else {
-                    console.error("Link missing data-target:", this);
-                    displaySection('home'); // Fallback
-                }
-            });
-        });
-
-        // Show home section by default on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            // Check if user is admin and should maybe see dashboard instead?
-            // For simplicity, always start at home unless a hash directs otherwise (not implemented here)
-            displaySection('home');
-        });
-
-
-        // --- Core Functionality & Vulnerabilities ---
-
-        // Vulnerability: Reflected Cross-Site Scripting (XSS)
-        function postComment() {
-            try {
-                var commentInput = document.getElementById("comment");
-                var comment = commentInput.value;
-                var outputDiv = document.getElementById("message-output");
-                // VULNERABILITY: Directly inserting user input into innerHTML allows script execution
-                // Using escapeHtml on role prevents XSS *from the role*, but not the comment itself.
-                outputDiv.innerHTML += `<p><span style="color: blue;">You (${escapeHtml(localStorage.getItem('userRole')) || 'guest'}):</span> ${comment}</p>`;
-                commentInput.value = ''; // Clear the input field
-                console.log("Posted comment (check for XSS in output div):", comment);
-            } catch (error) {
-                console.error("Error in postComment:", error);
-            }
-        }
-
-        // Vulnerability: Simulated SQL Injection
-        function searchPatients() {
-            try {
-                const patientId = document.getElementById('patientId').value; // User input
-                const resultsDiv = document.getElementById('search-results');
-                // VULNERABILITY: Simulating building a query string unsafely by concatenating input
-                const query = `SELECT * FROM patients WHERE id = '${patientId}';`; // SQL injection possible here
-                console.warn("Simulated SQL Query (VULNERABLE):", query);
-                // Displaying output - Escaping here prevents XSS in the *output div* but doesn't fix the SQLi
-                resultsDiv.innerHTML = `Simulating search based on ID: ${escapeHtml(patientId)}... <br>(Check console for the vulnerable query generated)`;
-            } catch (error) {
-                console.error("Error in searchPatients:", error);
-            }
-        }
-
-         // Vulnerability: Simulated Directory Traversal / Path Traversal
-        function loadRecord() {
-             try {
-                const recordFile = document.getElementById('recordFile').value; // User input
-                const detailsDiv = document.getElementById('record-details');
-                // VULNERABILITY: Simulating accessing a file path constructed directly from user input
-                const basePath = "/var/www/html/records/"; // Example base path
-                const filePath = basePath + recordFile; // Path traversal possible here
-                console.warn("Simulated File Path Access (VULNERABLE):", filePath);
-                detailsDiv.innerHTML = `Simulating loading file: ${escapeHtml(recordFile)}... <br>(Check console for the vulnerable path generated)`;
-            } catch (error) {
-                console.error("Error in loadRecord:", error);
-            }
-        }
-
-         // Vulnerability: Simulated Command Injection
-        function checkServerStatus() {
-             try {
-                 const serverIp = document.getElementById('serverIp').value; // User input
-                 const statusDiv = document.getElementById('status-output');
-                 // VULNERABILITY: Simulating building a shell command unsafely by concatenating input
-                 const command = `ping -c 4 ${serverIp}`; // Command injection possible here
-                 console.warn("Simulated Command Execution (VULNERABLE):", command);
-                 statusDiv.innerHTML = `Simulating ping to: ${escapeHtml(serverIp)}... <br>(Check console for the vulnerable command generated)`;
-            } catch (error) {
-                console.error("Error in checkServerStatus:", error);
-            }
-        }
-
-        // Vulnerability: Insecure File Upload (Client-Side Validation Only)
-        function handleFileUpload() {
-            try {
-                const fileInput = document.getElementById('fileUpload');
-                const statusDiv = document.getElementById('upload-status');
-                const allowedClientType = 'application/pdf'; // Check based on browser-reported type
-
-                if (fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    console.log(`File selected: Name='${file.name}', Client-Reported Type='${file.type}', Size=${file.size}`);
-
-                    // VULNERABILITY: Client-side check is insufficient and easily bypassed.
-                    if (file.type === allowedClientType) {
-                         statusDiv.innerHTML = `Simulating upload of ${escapeHtml(file.name)} (${escapeHtml(file.type)})... OK (Client Check Passed).`;
-                         console.log(`Simulated successful upload of ${file.name}. VULNERABILITY: Server-side validation is MISSING!`);
-                    } else {
-                         statusDiv.innerHTML = `Error: Invalid file type (checked client-side). Only PDF allowed. You selected: ${escapeHtml(file.type)}`;
-                         console.warn(`Client-side block: Invalid file type (${file.type}). This check can be bypassed.`);
-                    }
-                } else {
-                    statusDiv.innerHTML = 'Please select a file to upload.';
-                }
-            } catch (error) {
-                console.error("Error in handleFileUpload:", error);
-            }
-        }
-
-
-        // Vulnerability: Hardcoded Credentials & Insecure Authentication Logic
-        // Vulnerability: Sensitive Data Transmission (Simulated in console log)
-        // Vulnerability: Broken Access Control (Client-Side Role/Level Update)
-        function checkPassword() {
-            try {
-                var usernameInput = document.getElementById("username");
-                var passwordInput = document.getElementById("password");
-                var username = usernameInput.value;
-                var password = passwordInput.value;
-                var errorDiv = document.getElementById("login-error");
-                errorDiv.textContent = ''; // Clear previous errors
-
-                // VULNERABILITY: Hardcoded credentials directly in client-side code.
-                const validUsers = {
-                    "admin": "Qwertz432",
-                    "super-admin": "superlols123"
-                };
-
-                if (validUsers[username] && validUsers[username] === password) {
-                    // VULNERABILITY: Sending credentials insecurely (simulated)
-                    var apiEndpoint = "http://medisecure.example.com/api/login?username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password);
-                    console.warn("VULNERABILITY: Sending login request with credentials (simulated, insecure): " + apiEndpoint);
-
-                    // VULNERABILITY: Broken Access Control - Client decides its own role/level.
-                    localStorage.setItem("userRole", "admin");
-                    // If they somehow already had level 2, keep it, otherwise set to 1 for admin.
-                    if (localStorage.getItem("adminLevel") !== '2') {
-                        localStorage.setItem("adminLevel", "1"); // Set level 1 for standard admin login
-                    }
-                    localStorage.setItem("lastAdminUser", username); // Store username for display
-                    console.log(`Login successful for ${username}. Role set to 'admin', Level set to '${localStorage.getItem("adminLevel")}'.`);
-
-                    displaySection('admin_dashboard'); // Show admin section
-
-                } else {
-                    errorDiv.textContent = "Invalid username or password.";
-                    console.log(`Login failed for username: ${username}`);
-                    // Don't necessarily reset role/level on failed login attempt
-                    // localStorage.setItem("userRole", "guest");
-                    // localStorage.setItem("adminLevel", "0");
-                    passwordInput.value = ""; // Clear password field only
-                }
-            } catch (error) {
-                console.error("Error in checkPassword:", error);
-                // Display a generic error to the user in case of unexpected script errors
-                 if(document.getElementById("login-error")) {
-                    document.getElementById("login-error").textContent = "An unexpected error occurred during login.";
-                 }
-            }
-            // Crucial: Prevent default form submission which causes page reload/405 error
-            return false;
-        }
-
-        // Function to update the admin dashboard display elements
         function updateAdminDashboardDisplay() {
             try {
                 const currentLevel = localStorage.getItem('adminLevel') || '0';
@@ -531,73 +231,27 @@
                 if (currentLevel === '1') levelText = 'Admin (1)';
                 if (currentLevel === '2') levelText = 'Super Super Admin (2)';
 
-                const username = localStorage.getItem('lastAdminUser') || 'Admin'; // Get stored username
+                const username = localStorage.getItem('lastAdminUser') || 'Admin';
+                const levelDisplay = document.getElementById('admin-level-display');
+                const usernameDisplay = document.getElementById('admin-username');
 
-                document.getElementById('admin-level-display').textContent = levelText;
-                document.getElementById('admin-username').textContent = escapeHtml(username);
-                updateFakeAccountsDisplay(); // Update the list of fake accounts
+                if(levelDisplay) levelDisplay.textContent = levelText;
+                if(usernameDisplay) usernameDisplay.textContent = escapeHtml(username);
+
+                updateFakeAccountsDisplay(); // Refresh account list too
             } catch (error) {
                 console.error("Error updating admin dashboard display:", error);
             }
         }
 
-
-        // Vulnerability: Broken Access Control (Admin Action Check Is Client-Side)
-        function deleteAllRecords() {
-            try {
-                // VULNERABILITY: Authorization check relies on client-side localStorage 'userRole'
-                if (localStorage.getItem("userRole") !== 'admin') {
-                    alert("Access Denied. Requires 'admin' role (checked client-side).");
-                    console.warn("deleteAllRecords blocked by client-side role check.");
-                    return;
-                }
-
-                if (confirm("DANGER: Are you absolutely sure you want to delete all PATIENT records? This action is irreversible! (Simulated)")) {
-                    console.error("SIMULATION: Deleting all patient records initiated by user with 'admin' role:", escapeHtml(localStorage.getItem('lastAdminUser')));
-                    alert("All patient records have been deleted (Simulated).");
-                }
-            } catch (error) {
-                console.error("Error in deleteAllRecords:", error);
-            }
-        }
-
-        // Vulnerability: Privilege Escalation via LocalStorage + Broken Access Control
-        function deleteFakeAccounts() {
-            try {
-                const fakeAccountsDiv = document.getElementById('fake-accounts-status');
-                // VULNERABILITY: Authorization check relies *only* on client-side localStorage 'adminLevel'.
-                const currentLevel = localStorage.getItem('adminLevel');
-                if (currentLevel !== '2') {
-                    alert("Access Denied. Requires 'Super Super Admin' privileges (adminLevel '2' in localStorage - checked client-side).");
-                    console.warn(`deleteFakeAccounts blocked. Required Level: 2, Current Level (localStorage): ${currentLevel}`);
-                    if(fakeAccountsDiv) fakeAccountsDiv.innerHTML = `<p style="color: red;">Access Denied. Requires Level 2.</p>`;
-                    return;
-                }
-
-                // If check passes (Level is 2):
-                 if (confirm("Privilege Escalation Success! You have Level 2 access.\nAre you sure you want to delete all FAKE user accounts? (Simulated)")) {
-                    const initialCount = fakeUserAccounts.length;
-                    // Simulate deletion by clearing the *global* array
-                    fakeUserAccounts = [];
-                    console.log(`SUPER-SUPER-ADMIN ACTION (${escapeHtml(localStorage.getItem('lastAdminUser'))}) : Deleted ${initialCount} fake user accounts.`);
-                    alert(`Success: ${initialCount} fake user accounts deleted (Simulated).`);
-                    updateFakeAccountsDisplay(); // Update the display
-                }
-            } catch (error) {
-                console.error("Error in deleteFakeAccounts:", error);
-            }
-        }
-
-        // Function to display the list of fake accounts in the admin dashboard
         function updateFakeAccountsDisplay() {
             try {
                 const fakeAccountsDiv = document.getElementById('fake-accounts-status');
-                if (!fakeAccountsDiv) return; // Safety check
+                if (!fakeAccountsDiv) return;
 
                 if (fakeUserAccounts.length > 0) {
                     let listHtml = '<h3>Current Fake User Accounts:</h3><ul>';
                     fakeUserAccounts.forEach(acc => {
-                        // Escape user-controlled data before displaying
                         listHtml += `<li>ID: ${acc.id}, Username: ${escapeHtml(acc.username)}, Email: ${escapeHtml(acc.email)}</li>`;
                     });
                     listHtml += '</ul>';
@@ -612,17 +266,164 @@
              }
         }
 
+        // --- Core Logic Functions (Vulnerabilities Here) ---
+
+        function postComment() {
+            try {
+                const commentInput = document.getElementById("comment");
+                const outputDiv = document.getElementById("message-output");
+                if(!commentInput || !outputDiv) {
+                    console.error("Comment elements not found"); return;
+                }
+                const comment = commentInput.value;
+                // VULNERABILITY: XSS - Direct insertion of 'comment' into innerHTML
+                outputDiv.innerHTML += `<p><span style="color: blue;">You (${escapeHtml(localStorage.getItem('userRole')) || 'guest'}):</span> ${comment}</p>`;
+                commentInput.value = ''; // Clear input
+                console.log("Posted comment (check output div):", comment);
+            } catch (error) { console.error("Error in postComment:", error); }
+        }
+
+        function searchPatients() {
+            try {
+                const patientIdInput = document.getElementById('patientId');
+                const resultsDiv = document.getElementById('search-results');
+                 if(!patientIdInput || !resultsDiv) { console.error("Search elements not found"); return; }
+                const patientId = patientIdInput.value;
+                // VULNERABILITY: Simulated SQL Injection
+                const query = `SELECT * FROM patients WHERE id = '${patientId}';`;
+                console.warn("Simulated SQL Query (VULNERABLE):", query);
+                resultsDiv.innerHTML = `Simulating search based on ID: ${escapeHtml(patientId)}... <br>(Check console for vulnerable query)`;
+            } catch (error) { console.error("Error in searchPatients:", error); }
+        }
+
+        function loadRecord() {
+             try {
+                const recordFileInput = document.getElementById('recordFile');
+                const detailsDiv = document.getElementById('record-details');
+                if(!recordFileInput || !detailsDiv) { console.error("Load record elements not found"); return; }
+                const recordFile = recordFileInput.value;
+                // VULNERABILITY: Simulated Path Traversal
+                const basePath = "/var/www/html/records/";
+                const filePath = basePath + recordFile;
+                console.warn("Simulated File Path Access (VULNERABLE):", filePath);
+                detailsDiv.innerHTML = `Simulating loading file: ${escapeHtml(recordFile)}... <br>(Check console for vulnerable path)`;
+            } catch (error) { console.error("Error in loadRecord:", error); }
+        }
+
+        function checkServerStatus() {
+             try {
+                 const serverIpInput = document.getElementById('serverIp');
+                 const statusDiv = document.getElementById('status-output');
+                  if(!serverIpInput || !statusDiv) { console.error("Status elements not found"); return; }
+                 const serverIp = serverIpInput.value;
+                 // VULNERABILITY: Simulated Command Injection
+                 const command = `ping -c 4 ${serverIp}`;
+                 console.warn("Simulated Command Execution (VULNERABLE):", command);
+                 statusDiv.innerHTML = `Simulating ping to: ${escapeHtml(serverIp)}... <br>(Check console for vulnerable command)`;
+            } catch (error) { console.error("Error in checkServerStatus:", error); }
+        }
+
+        function handleFileUpload() {
+            try {
+                const fileInput = document.getElementById('fileUpload');
+                const statusDiv = document.getElementById('upload-status');
+                 if(!fileInput || !statusDiv) { console.error("Upload elements not found"); return; }
+                const allowedClientType = 'application/pdf';
+
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    // VULNERABILITY: Client-side check only
+                    if (file.type === allowedClientType) {
+                         statusDiv.innerHTML = `Simulating upload of ${escapeHtml(file.name)} (${escapeHtml(file.type)})... OK (Client Check Passed).`;
+                         console.log(`Simulated upload of ${file.name}. VULNERABILITY: Server-side validation MISSING!`);
+                    } else {
+                         statusDiv.innerHTML = `Error: Invalid file type (client check). Only PDF allowed. You selected: ${escapeHtml(file.type)}`;
+                         console.warn(`Client block: Invalid file type (${file.type}). Bypassable.`);
+                    }
+                } else {
+                    statusDiv.innerHTML = 'Please select a file to upload.';
+                }
+            } catch (error) { console.error("Error in handleFileUpload:", error); }
+        }
+
+        function checkPassword() {
+            try {
+                const usernameInput = document.getElementById("username");
+                const passwordInput = document.getElementById("password");
+                const errorDiv = document.getElementById("login-error");
+                 if(!usernameInput || !passwordInput || !errorDiv) { console.error("Login elements not found"); return false; }
+
+                const username = usernameInput.value;
+                const password = passwordInput.value;
+                errorDiv.textContent = ''; // Clear errors
+
+                // VULNERABILITY: Hardcoded Credentials
+                const validUsers = { "admin": "Qwertz432", "super-admin": "superlols123" };
+
+                if (validUsers[username] && validUsers[username] === password) {
+                    // VULNERABILITY: Broken Access Control (client sets own role/level)
+                    localStorage.setItem("userRole", "admin");
+                    if (localStorage.getItem("adminLevel") !== '2') { // Don't downgrade if already escalated
+                        localStorage.setItem("adminLevel", "1");
+                    }
+                    localStorage.setItem("lastAdminUser", username); // Store for display
+                    console.log(`Login OK for ${username}. Role='admin', Level='${localStorage.getItem("adminLevel")}'.`);
+                    displaySection('admin_dashboard'); // Show admin section
+                } else {
+                    errorDiv.textContent = "Invalid username or password.";
+                    console.log(`Login failed for username: ${username}`);
+                    passwordInput.value = ""; // Clear password only
+                }
+            } catch (error) {
+                console.error("Error in checkPassword:", error);
+                 const errorDiv = document.getElementById("login-error");
+                 if(errorDiv) errorDiv.textContent = "Login error occurred.";
+            }
+             // Prevent form submission regardless of outcome
+             return false;
+        }
+
+        function deleteAllRecords() {
+            try {
+                // VULNERABILITY: Broken Access Control (client-side role check)
+                if (localStorage.getItem("userRole") !== 'admin') {
+                    alert("Access Denied. Requires 'admin' role (checked client-side)."); return;
+                }
+                if (confirm("DANGER: Delete all PATIENT records? (Simulated)")) {
+                    console.error(`SIMULATION: Deleting patient records by ${escapeHtml(localStorage.getItem('lastAdminUser'))}`);
+                    alert("All patient records deleted (Simulated).");
+                }
+            } catch (error) { console.error("Error in deleteAllRecords:", error); }
+        }
+
+        function deleteFakeAccounts() {
+            try {
+                // VULNERABILITY: Privilege Escalation via LocalStorage level check
+                const currentLevel = localStorage.getItem('adminLevel');
+                if (currentLevel !== '2') {
+                    alert("Access Denied. Requires adminLevel '2' in localStorage (checked client-side).");
+                    console.warn(`deleteFakeAccounts blocked. Required Level: 2, Current: ${currentLevel}`);
+                    return;
+                }
+                 if (confirm("Level 2 Access OK! Delete all FAKE user accounts? (Simulated)")) {
+                    const initialCount = fakeUserAccounts.length;
+                    fakeUserAccounts = []; // Clear the global array
+                    console.log(`SUPER-ADMIN ACTION (${escapeHtml(localStorage.getItem('lastAdminUser'))}): Deleted ${initialCount} fake accounts.`);
+                    alert(`Success: ${initialCount} fake accounts deleted (Simulated).`);
+                    updateFakeAccountsDisplay(); // Update list on dashboard
+                }
+            } catch (error) { console.error("Error in deleteFakeAccounts:", error); }
+        }
 
         function logout() {
              try {
-                 localStorage.setItem("userRole", "guest"); // Revert role
-                 localStorage.setItem("adminLevel", "0"); // Revert level
-                 // Clear sensitive items if desired (good practice)
-                 localStorage.removeItem("sessionToken");
-                 localStorage.removeItem("lastLoginTimestamp");
-                 // Keep 'lastAdminUser' if you want to show who logged out, or remove it too.
+                 localStorage.setItem("userRole", "guest");
+                 localStorage.setItem("adminLevel", "0");
+                 // localStorage.removeItem("sessionToken"); // Optional cleanup
+                 // localStorage.removeItem("lastLoginTimestamp"); // Optional cleanup
+                 // Keep lastAdminUser? Optional.
 
-                 // Clear login form fields for better UX upon logging out
+                 // Clear login form for better UX
                  const usernameInput = document.getElementById("username");
                  const passwordInput = document.getElementById("password");
                  const errorDiv = document.getElementById("login-error");
@@ -630,13 +431,65 @@
                  if(passwordInput) passwordInput.value = "";
                  if(errorDiv) errorDiv.textContent = "";
 
-                 // Redirect to home section
-                 displaySection('home');
-                 console.log("User logged out. Role set to 'guest', Level set to '0'.");
-            } catch (error) {
-                 console.error("Error during logout:", error);
-            }
+                 displaySection('home'); // Go back home
+                 console.log("User logged out. Role='guest', Level='0'.");
+            } catch (error) { console.error("Error during logout:", error); }
         }
+
+        // --- Event Listener Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOM Loaded. Attaching listeners.");
+
+            // Initial state: Show home section
+            displaySection('home');
+
+            // Navigation Links
+            document.querySelectorAll('header nav a').forEach(link => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault(); // Stop anchor jump/reload
+                    const targetId = link.getAttribute('data-target');
+                    if (targetId === 'login' && localStorage.getItem('userRole') === 'admin') {
+                        displaySection('admin_dashboard'); // Show dashboard if admin clicks "Login"
+                    } else if (targetId) {
+                        displaySection(targetId);
+                    } else {
+                         console.error("Link missing data-target:", link);
+                         displaySection('home'); // Fallback
+                    }
+                });
+            });
+
+            // Form Submissions (using IDs added to forms)
+            document.getElementById('comment-form')?.addEventListener('submit', (event) => {
+                event.preventDefault(); postComment();
+            });
+            document.getElementById('search-form')?.addEventListener('submit', (event) => {
+                event.preventDefault(); searchPatients();
+            });
+            document.getElementById('load-record-form')?.addEventListener('submit', (event) => {
+                event.preventDefault(); loadRecord();
+            });
+            document.getElementById('status-form')?.addEventListener('submit', (event) => {
+                event.preventDefault(); checkServerStatus();
+            });
+             document.getElementById('upload-form')?.addEventListener('submit', (event) => {
+                event.preventDefault(); handleFileUpload();
+            });
+            document.getElementById('login-form')?.addEventListener('submit', (event) => {
+                event.preventDefault(); checkPassword(); // Login function handles display change
+            });
+
+            // Admin Buttons (using IDs added to buttons)
+            document.getElementById('delete-records-btn')?.addEventListener('click', deleteAllRecords);
+            document.getElementById('delete-fake-btn')?.addEventListener('click', deleteFakeAccounts);
+            document.getElementById('logout-btn')?.addEventListener('click', logout);
+
+             // Ensure fake accounts list is ready for admin dash (even if hidden)
+             updateFakeAccountsDisplay();
+
+            console.log("Listeners attached.");
+
+        }); // End DOMContentLoaded
 
     </script>
 

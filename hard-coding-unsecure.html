@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediSecure Diagnostics - Health Testing (Vulnerable)</title>
+    <title>MediSecure Diagnostics - Health Testing (Vulnerable - Fixed)</title>
     <style>
         /* Basic Professional Styling */
         body {
@@ -144,8 +144,8 @@
         }
 
         /* Initially hide sections */
-        #about, #login, #admin_dashboard, #tools {
-            display: none;
+        #home, #about, #login, #admin_dashboard, #tools {
+            display: none; /* Start all hidden, JS will show 'home' */
         }
 
         /* Vulnerable Comment Example */
@@ -162,7 +162,8 @@
             </div>
             <nav>
                 <ul>
-                    <li class="current"><a href="#home" data-target="home">Home</a></li>
+                    <!-- data-target attribute used by JS for navigation -->
+                    <li><a href="#home" data-target="home">Home</a></li>
                     <li><a href="#about" data-target="about">About</a></li>
                     <li><a href="#tools" data-target="tools">Tools</a></li>
                     <li><a href="#login" data-target="login">Login</a></li>
@@ -176,6 +177,7 @@
             <h1>Welcome to MediSecure Diagnostics</h1>
             <p>Your health, our priority. Advanced diagnostics from just a single drop of blood. Fast, accurate, and secure.</p>
             <h2>Leave a Public Comment</h2>
+            <!-- Ensures function runs and default submit is prevented -->
             <form action="#" method="POST" onsubmit="postComment(); return false;">
                 <label for="comment">Comment:</label>
                 <textarea id="comment" name="comment" placeholder="Enter your public comment here... e.g., <script>alert('XSS')</script>"></textarea>
@@ -248,7 +250,7 @@
             <div id="login-error" style="color: red; margin-top: 10px;"></div>
         </section>
 
-        <section id="admin_dashboard" style="display: none;">
+        <section id="admin_dashboard">
             <h1>Admin Dashboard</h1>
             <p>Welcome, <span id="admin-username">Admin</span>!</p>
             <p>Current Access Level (from localStorage): <span id="admin-level-display">Normal</span></p>
@@ -277,17 +279,16 @@
         // --- Initialization ---
 
         // Vulnerability: Sensitive Data Exposure in Local Storage
-        localStorage.setItem("sessionToken", "sess_abc123xyz789_demo");
+        localStorage.setItem("sessionToken", "sess_abc123xyz789_demo_v2");
         localStorage.setItem("userRole", "guest"); // Initial role ('guest', 'admin')
-        localStorage.setItem("trackingId", "trk_987654321_demo");
+        localStorage.setItem("trackingId", "trk_987654321_demo_v2");
         localStorage.setItem("lastLoginTimestamp", Date.now());
         // Vulnerability: Control flag for privilege escalation in localStorage
-        if (localStorage.getItem("adminLevel") === null) { // Initialize only if not set
+        if (localStorage.getItem("adminLevel") === null || !['0','1','2'].includes(localStorage.getItem("adminLevel"))) { // Initialize only if not set or invalid
              localStorage.setItem("adminLevel", "0"); // 0=Normal, 1=Admin (via login), 2=SuperSuperAdmin (manual change)
         }
 
-
-        // Simulated Fake User Accounts Data (Client-Side)
+        // Simulated Fake User Accounts Data (Client-Side - Global within script)
         let fakeUserAccounts = [
             { id: 1, username: "testuser1", email: "test1@example.com" },
             { id: 2, username: "demo_user", email: "demo@example.com" },
@@ -304,11 +305,9 @@
         // --- Helper Function ---
 
         // Utility function to escape HTML for display purposes (prevents self-XSS in output areas)
-        // Ensures basic HTML characters are encoded to prevent script injection in display divs
         function escapeHtml(unsafe) {
             if (unsafe === null || unsafe === undefined) return '';
-            // Ensure input is a string before calling replace
-            return String(unsafe)
+            return String(unsafe) // Ensure input is string
                  .replace(/&/g, "&")
                  .replace(/</g, "<")
                  .replace(/>/g, ">")
@@ -319,259 +318,324 @@
         // --- Navigation ---
         const sections = document.querySelectorAll('main > section');
         const navLinks = document.querySelectorAll('header nav a');
+        const navListItems = document.querySelectorAll('header nav li'); // To manage current class
 
         function displaySection(targetId) {
-             // Update Admin dashboard display based on role/level when showing it
+            let foundTarget = false;
+            sections.forEach(section => {
+                if (section.id === targetId) {
+                    section.style.display = 'block';
+                    foundTarget = true;
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+
+            if (!foundTarget) {
+                console.error("Target section not found:", targetId);
+                document.getElementById('home').style.display = 'block'; // Fallback to home
+                targetId = 'home'; // Adjust targetId for highlighting
+            }
+
+             // Update Admin dashboard display elements if showing it
              if(targetId === 'admin_dashboard') {
                 updateAdminDashboardDisplay();
              }
 
-            sections.forEach(section => {
-                section.style.display = (section.id === targetId) ? 'block' : 'none';
-            });
             // Update nav highlight
-            navLinks.forEach(link => {
-                const linkTarget = link.getAttribute('data-target');
+            navListItems.forEach(li => {
+                const link = li.querySelector('a');
+                const linkTarget = link ? link.getAttribute('data-target') : null;
                 if (linkTarget === targetId || (targetId === 'admin_dashboard' && linkTarget === 'login' && localStorage.getItem('userRole') === 'admin')) {
-                     // Highlight Login nav item even when showing dashboard if logged in
-                    link.parentElement.classList.add('current');
+                    li.classList.add('current');
                 } else {
-                    link.parentElement.classList.remove('current');
+                    li.classList.remove('current');
                 }
             });
         }
 
+        // Attach navigation event listeners
         navLinks.forEach(link => {
             link.addEventListener('click', function(event) {
-                event.preventDefault();
+                event.preventDefault(); // Prevent default anchor link behavior
                 const targetId = this.getAttribute('data-target');
+
                 // If user clicks Login link BUT is already admin, show dashboard
                 if (targetId === 'login' && localStorage.getItem('userRole') === 'admin') {
                      displaySection('admin_dashboard');
                 } else if (targetId) {
                      displaySection(targetId);
+                } else {
+                    console.error("Link missing data-target:", this);
+                    displaySection('home'); // Fallback
                 }
             });
         });
 
         // Show home section by default on page load
-        document.addEventListener('DOMContentLoaded', () => displaySection('home'));
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if user is admin and should maybe see dashboard instead?
+            // For simplicity, always start at home unless a hash directs otherwise (not implemented here)
+            displaySection('home');
+        });
 
 
         // --- Core Functionality & Vulnerabilities ---
 
         // Vulnerability: Reflected Cross-Site Scripting (XSS)
         function postComment() {
-            var commentInput = document.getElementById("comment");
-            var comment = commentInput.value;
-            var outputDiv = document.getElementById("message-output");
-            // VULNERABILITY: Directly inserting user input into innerHTML allows script execution
-            outputDiv.innerHTML += `<p><span style="color: blue;">You (${escapeHtml(localStorage.getItem('userRole')) || 'guest'}):</span> ${comment}</p>`; // Display role too
-            commentInput.value = ''; // Clear the input field
-            console.log("Posted comment (check for XSS in output div):", comment);
-            // Note: Real applications need server-side storage and robust sanitization!
+            try {
+                var commentInput = document.getElementById("comment");
+                var comment = commentInput.value;
+                var outputDiv = document.getElementById("message-output");
+                // VULNERABILITY: Directly inserting user input into innerHTML allows script execution
+                // Using escapeHtml on role prevents XSS *from the role*, but not the comment itself.
+                outputDiv.innerHTML += `<p><span style="color: blue;">You (${escapeHtml(localStorage.getItem('userRole')) || 'guest'}):</span> ${comment}</p>`;
+                commentInput.value = ''; // Clear the input field
+                console.log("Posted comment (check for XSS in output div):", comment);
+            } catch (error) {
+                console.error("Error in postComment:", error);
+            }
         }
 
         // Vulnerability: Simulated SQL Injection
         function searchPatients() {
-            const patientId = document.getElementById('patientId').value; // User input
-            const resultsDiv = document.getElementById('search-results');
-            // VULNERABILITY: Simulating building a query string unsafely by concatenating input
-            const query = `SELECT * FROM patients WHERE id = '${patientId}';`; // SQL injection possible here
-            console.warn("Simulated SQL Query (VULNERABLE):", query);
-            // Displaying output - Escaping here prevents XSS in the *output div* but doesn't fix the SQLi
-            resultsDiv.innerHTML = `Simulating search based on ID: ${escapeHtml(patientId)}... <br>(Check console for the vulnerable query generated)`;
-            // In a real scenario, results based on the (potentially manipulated) query would be shown.
+            try {
+                const patientId = document.getElementById('patientId').value; // User input
+                const resultsDiv = document.getElementById('search-results');
+                // VULNERABILITY: Simulating building a query string unsafely by concatenating input
+                const query = `SELECT * FROM patients WHERE id = '${patientId}';`; // SQL injection possible here
+                console.warn("Simulated SQL Query (VULNERABLE):", query);
+                // Displaying output - Escaping here prevents XSS in the *output div* but doesn't fix the SQLi
+                resultsDiv.innerHTML = `Simulating search based on ID: ${escapeHtml(patientId)}... <br>(Check console for the vulnerable query generated)`;
+            } catch (error) {
+                console.error("Error in searchPatients:", error);
+            }
         }
 
          // Vulnerability: Simulated Directory Traversal / Path Traversal
         function loadRecord() {
-            const recordFile = document.getElementById('recordFile').value; // User input
-            const detailsDiv = document.getElementById('record-details');
-            // VULNERABILITY: Simulating accessing a file path constructed directly from user input
-            const basePath = "/var/www/html/records/"; // Example base path
-            const filePath = basePath + recordFile; // Path traversal possible here
-            console.warn("Simulated File Path Access (VULNERABLE):", filePath);
-            detailsDiv.innerHTML = `Simulating loading file: ${escapeHtml(recordFile)}... <br>(Check console for the vulnerable path generated)`;
-            // Real app would try to read the file at 'filePath', potentially accessing unintended files like ../../etc/passwd.
+             try {
+                const recordFile = document.getElementById('recordFile').value; // User input
+                const detailsDiv = document.getElementById('record-details');
+                // VULNERABILITY: Simulating accessing a file path constructed directly from user input
+                const basePath = "/var/www/html/records/"; // Example base path
+                const filePath = basePath + recordFile; // Path traversal possible here
+                console.warn("Simulated File Path Access (VULNERABLE):", filePath);
+                detailsDiv.innerHTML = `Simulating loading file: ${escapeHtml(recordFile)}... <br>(Check console for the vulnerable path generated)`;
+            } catch (error) {
+                console.error("Error in loadRecord:", error);
+            }
         }
 
          // Vulnerability: Simulated Command Injection
         function checkServerStatus() {
-             const serverIp = document.getElementById('serverIp').value; // User input
-             const statusDiv = document.getElementById('status-output');
-             // VULNERABILITY: Simulating building a shell command unsafely by concatenating input
-             const command = `ping -c 4 ${serverIp}`; // Command injection possible here
-             console.warn("Simulated Command Execution (VULNERABLE):", command);
-             statusDiv.innerHTML = `Simulating ping to: ${escapeHtml(serverIp)}... <br>(Check console for the vulnerable command generated)`;
-             // Real app might execute this, allowing input like '127.0.0.1; rm -rf /' (DANGEROUS!)
+             try {
+                 const serverIp = document.getElementById('serverIp').value; // User input
+                 const statusDiv = document.getElementById('status-output');
+                 // VULNERABILITY: Simulating building a shell command unsafely by concatenating input
+                 const command = `ping -c 4 ${serverIp}`; // Command injection possible here
+                 console.warn("Simulated Command Execution (VULNERABLE):", command);
+                 statusDiv.innerHTML = `Simulating ping to: ${escapeHtml(serverIp)}... <br>(Check console for the vulnerable command generated)`;
+            } catch (error) {
+                console.error("Error in checkServerStatus:", error);
+            }
         }
 
         // Vulnerability: Insecure File Upload (Client-Side Validation Only)
         function handleFileUpload() {
-            const fileInput = document.getElementById('fileUpload');
-            const statusDiv = document.getElementById('upload-status');
-            const allowedClientType = 'application/pdf'; // Check based on browser-reported type
+            try {
+                const fileInput = document.getElementById('fileUpload');
+                const statusDiv = document.getElementById('upload-status');
+                const allowedClientType = 'application/pdf'; // Check based on browser-reported type
 
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                console.log(`File selected: Name='${file.name}', Client-Reported Type='${file.type}', Size=${file.size}`);
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    console.log(`File selected: Name='${file.name}', Client-Reported Type='${file.type}', Size=${file.size}`);
 
-                // VULNERABILITY: Client-side check is insufficient and easily bypassed.
-                // Attacker can rename malicious file (e.g., shell.php -> shell.pdf) or intercept request.
-                if (file.type === allowedClientType) {
-                     statusDiv.innerHTML = `Simulating upload of ${escapeHtml(file.name)} (${escapeHtml(file.type)})... OK (Client Check Passed).`;
-                     console.log(`Simulated successful upload of ${file.name}. VULNERABILITY: Server-side validation is MISSING!`);
-                     // In a real app, the file would be sent to the server here.
-                     // The vulnerability lies in the *lack* of proper server-side validation.
+                    // VULNERABILITY: Client-side check is insufficient and easily bypassed.
+                    if (file.type === allowedClientType) {
+                         statusDiv.innerHTML = `Simulating upload of ${escapeHtml(file.name)} (${escapeHtml(file.type)})... OK (Client Check Passed).`;
+                         console.log(`Simulated successful upload of ${file.name}. VULNERABILITY: Server-side validation is MISSING!`);
+                    } else {
+                         statusDiv.innerHTML = `Error: Invalid file type (checked client-side). Only PDF allowed. You selected: ${escapeHtml(file.type)}`;
+                         console.warn(`Client-side block: Invalid file type (${file.type}). This check can be bypassed.`);
+                    }
                 } else {
-                     statusDiv.innerHTML = `Error: Invalid file type (checked client-side). Only PDF allowed. You selected: ${escapeHtml(file.type)}`;
-                     console.warn(`Client-side block: Invalid file type (${file.type}). This check can be bypassed.`);
+                    statusDiv.innerHTML = 'Please select a file to upload.';
                 }
-            } else {
-                statusDiv.innerHTML = 'Please select a file to upload.';
+            } catch (error) {
+                console.error("Error in handleFileUpload:", error);
             }
         }
 
 
         // Vulnerability: Hardcoded Credentials & Insecure Authentication Logic
         // Vulnerability: Sensitive Data Transmission (Simulated in console log)
-        // Vulnerability: Broken Access Control (Client-Side Role Update)
+        // Vulnerability: Broken Access Control (Client-Side Role/Level Update)
         function checkPassword() {
-            var usernameInput = document.getElementById("username");
-            var passwordInput = document.getElementById("password");
-            var username = usernameInput.value;
-            var password = passwordInput.value; // Plain text password handling client-side is bad practice.
-            var errorDiv = document.getElementById("login-error");
-            errorDiv.textContent = ''; // Clear previous errors
+            try {
+                var usernameInput = document.getElementById("username");
+                var passwordInput = document.getElementById("password");
+                var username = usernameInput.value;
+                var password = passwordInput.value;
+                var errorDiv = document.getElementById("login-error");
+                errorDiv.textContent = ''; // Clear previous errors
 
-            // VULNERABILITY: Hardcoded credentials directly in client-side code.
-            const validUsers = {
-                "admin": "Qwertz432", // Weak password, easily found in source.
-                "super-admin": "superlols123" // Also weak, hardcoded.
-            };
+                // VULNERABILITY: Hardcoded credentials directly in client-side code.
+                const validUsers = {
+                    "admin": "Qwertz432",
+                    "super-admin": "superlols123"
+                };
 
-            if (validUsers[username] && validUsers[username] === password) {
-                // VULNERABILITY: Sending credentials insecurely (simulated)
-                var apiEndpoint = "http://medisecure.example.com/api/login?username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password); // Bad practice: GET + creds in URL
-                console.warn("VULNERABILITY: Sending login request with credentials (simulated, insecure): " + apiEndpoint);
+                if (validUsers[username] && validUsers[username] === password) {
+                    // VULNERABILITY: Sending credentials insecurely (simulated)
+                    var apiEndpoint = "http://medisecure.example.com/api/login?username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password);
+                    console.warn("VULNERABILITY: Sending login request with credentials (simulated, insecure): " + apiEndpoint);
 
-                // VULNERABILITY: Broken Access Control - Client decides its own role based on client-side check.
-                localStorage.setItem("userRole", "admin");
-                // Login doesn't grant level 2 automatically, that's the escalation vuln.
-                // If they somehow already had level 2, keep it, otherwise set to 1 for admin.
-                if (localStorage.getItem("adminLevel") !== '2') {
-                    localStorage.setItem("adminLevel", "1"); // Set level 1 for standard admin login
+                    // VULNERABILITY: Broken Access Control - Client decides its own role/level.
+                    localStorage.setItem("userRole", "admin");
+                    // If they somehow already had level 2, keep it, otherwise set to 1 for admin.
+                    if (localStorage.getItem("adminLevel") !== '2') {
+                        localStorage.setItem("adminLevel", "1"); // Set level 1 for standard admin login
+                    }
+                    localStorage.setItem("lastAdminUser", username); // Store username for display
+                    console.log(`Login successful for ${username}. Role set to 'admin', Level set to '${localStorage.getItem("adminLevel")}'.`);
+
+                    displaySection('admin_dashboard'); // Show admin section
+
+                } else {
+                    errorDiv.textContent = "Invalid username or password.";
+                    console.log(`Login failed for username: ${username}`);
+                    // Don't necessarily reset role/level on failed login attempt
+                    // localStorage.setItem("userRole", "guest");
+                    // localStorage.setItem("adminLevel", "0");
+                    passwordInput.value = ""; // Clear password field only
                 }
-                console.log(`Login successful for ${username}. Role set to 'admin', Level set to '${localStorage.getItem("adminLevel")}'.`);
-
-
-                document.getElementById("admin-username").textContent = username; // Display username
-                displaySection('admin_dashboard'); // Show admin section
-
-            } else {
-                errorDiv.textContent = "Invalid username or password."; // Generic error is good, but verbose logs might exist elsewhere.
-                console.log(`Login failed for username: ${username}`);
-                localStorage.setItem("userRole", "guest"); // Ensure role is guest on failure
-                localStorage.setItem("adminLevel", "0"); // Reset level on failure
-                passwordInput.value = ""; // Clear password field
+            } catch (error) {
+                console.error("Error in checkPassword:", error);
+                // Display a generic error to the user in case of unexpected script errors
+                 if(document.getElementById("login-error")) {
+                    document.getElementById("login-error").textContent = "An unexpected error occurred during login.";
+                 }
             }
-
-            // Prevent form submission from reloading the page
+            // Crucial: Prevent default form submission which causes page reload/405 error
             return false;
         }
 
         // Function to update the admin dashboard display elements
         function updateAdminDashboardDisplay() {
-            const currentLevel = localStorage.getItem('adminLevel') || '0';
-            let levelText = 'Normal (0)';
-            if (currentLevel === '1') levelText = 'Admin (1)';
-            if (currentLevel === '2') levelText = 'Super Super Admin (2)';
-            document.getElementById('admin-level-display').textContent = levelText;
-            document.getElementById('admin-username').textContent = document.getElementById('username').value || localStorage.getItem('lastAdminUser') || 'Admin'; // Try to show user
-             // Update fake accounts list display
-            updateFakeAccountsDisplay();
+            try {
+                const currentLevel = localStorage.getItem('adminLevel') || '0';
+                let levelText = 'Normal (0)';
+                if (currentLevel === '1') levelText = 'Admin (1)';
+                if (currentLevel === '2') levelText = 'Super Super Admin (2)';
+
+                const username = localStorage.getItem('lastAdminUser') || 'Admin'; // Get stored username
+
+                document.getElementById('admin-level-display').textContent = levelText;
+                document.getElementById('admin-username').textContent = escapeHtml(username);
+                updateFakeAccountsDisplay(); // Update the list of fake accounts
+            } catch (error) {
+                console.error("Error updating admin dashboard display:", error);
+            }
         }
 
 
         // Vulnerability: Broken Access Control (Admin Action Check Is Client-Side)
-        // Vulnerability: Insecure Direct Object Reference (IDOR) / Excessive Permissions (Simulated Destructive Action)
         function deleteAllRecords() {
-            // VULNERABILITY: Authorization check relies on client-side localStorage 'userRole'
-            if (localStorage.getItem("userRole") !== 'admin') {
-                alert("Access Denied. Requires 'admin' role (checked client-side).");
-                console.warn("deleteAllRecords blocked by client-side role check.");
-                return;
-            }
+            try {
+                // VULNERABILITY: Authorization check relies on client-side localStorage 'userRole'
+                if (localStorage.getItem("userRole") !== 'admin') {
+                    alert("Access Denied. Requires 'admin' role (checked client-side).");
+                    console.warn("deleteAllRecords blocked by client-side role check.");
+                    return;
+                }
 
-            // Action simulation lacks CSRF protection if this were a real request
-            if (confirm("DANGER: Are you absolutely sure you want to delete all PATIENT records? This action is irreversible! (Simulated)")) {
-                console.error("SIMULATION: Deleting all patient records initiated by user with 'admin' role:", document.getElementById('admin-username').textContent);
-                alert("All patient records have been deleted (Simulated).");
-                 // In a real scenario, this would trigger a backend API call, needing server-side auth + CSRF protection.
+                if (confirm("DANGER: Are you absolutely sure you want to delete all PATIENT records? This action is irreversible! (Simulated)")) {
+                    console.error("SIMULATION: Deleting all patient records initiated by user with 'admin' role:", escapeHtml(localStorage.getItem('lastAdminUser')));
+                    alert("All patient records have been deleted (Simulated).");
+                }
+            } catch (error) {
+                console.error("Error in deleteAllRecords:", error);
             }
         }
 
         // Vulnerability: Privilege Escalation via LocalStorage + Broken Access Control
         function deleteFakeAccounts() {
-            const fakeAccountsDiv = document.getElementById('fake-accounts-status');
+            try {
+                const fakeAccountsDiv = document.getElementById('fake-accounts-status');
+                // VULNERABILITY: Authorization check relies *only* on client-side localStorage 'adminLevel'.
+                const currentLevel = localStorage.getItem('adminLevel');
+                if (currentLevel !== '2') {
+                    alert("Access Denied. Requires 'Super Super Admin' privileges (adminLevel '2' in localStorage - checked client-side).");
+                    console.warn(`deleteFakeAccounts blocked. Required Level: 2, Current Level (localStorage): ${currentLevel}`);
+                    if(fakeAccountsDiv) fakeAccountsDiv.innerHTML = `<p style="color: red;">Access Denied. Requires Level 2.</p>`;
+                    return;
+                }
 
-            // VULNERABILITY: Authorization check relies *only* on client-side localStorage 'adminLevel'.
-            // User can manually set localStorage.setItem('adminLevel', '2') in dev tools to bypass.
-            const currentLevel = localStorage.getItem('adminLevel');
-            if (currentLevel !== '2') {
-                alert("Access Denied. Requires 'Super Super Admin' privileges (adminLevel '2' in localStorage - checked client-side).");
-                console.warn(`deleteFakeAccounts blocked. Required Level: 2, Current Level (localStorage): ${currentLevel}`);
-                fakeAccountsDiv.innerHTML = `<p style="color: red;">Access Denied. Requires Level 2.</p>`;
-                return;
-            }
-
-            // If check passes (Level is 2):
-             if (confirm("Privilege Escalation Success! You have Level 2 access.\nAre you sure you want to delete all FAKE user accounts? (Simulated)")) {
-                const initialCount = fakeUserAccounts.length;
-                // Simulate deletion by clearing the array
-                fakeUserAccounts = [];
-                console.log(`SUPER-SUPER-ADMIN ACTION: Deleted ${initialCount} fake user accounts.`);
-                alert(`Success: ${initialCount} fake user accounts deleted (Simulated).`);
-                updateFakeAccountsDisplay(); // Update the display
+                // If check passes (Level is 2):
+                 if (confirm("Privilege Escalation Success! You have Level 2 access.\nAre you sure you want to delete all FAKE user accounts? (Simulated)")) {
+                    const initialCount = fakeUserAccounts.length;
+                    // Simulate deletion by clearing the *global* array
+                    fakeUserAccounts = [];
+                    console.log(`SUPER-SUPER-ADMIN ACTION (${escapeHtml(localStorage.getItem('lastAdminUser'))}) : Deleted ${initialCount} fake user accounts.`);
+                    alert(`Success: ${initialCount} fake user accounts deleted (Simulated).`);
+                    updateFakeAccountsDisplay(); // Update the display
+                }
+            } catch (error) {
+                console.error("Error in deleteFakeAccounts:", error);
             }
         }
 
-        // Function to display the list of fake accounts
+        // Function to display the list of fake accounts in the admin dashboard
         function updateFakeAccountsDisplay() {
-            const fakeAccountsDiv = document.getElementById('fake-accounts-status');
-            if (!fakeAccountsDiv) return; // Safety check
+            try {
+                const fakeAccountsDiv = document.getElementById('fake-accounts-status');
+                if (!fakeAccountsDiv) return; // Safety check
 
-            if (fakeUserAccounts.length > 0) {
-                let listHtml = '<h3>Current Fake User Accounts:</h3><ul>';
-                fakeUserAccounts.forEach(acc => {
-                    listHtml += `<li>ID: ${acc.id}, Username: ${escapeHtml(acc.username)}, Email: ${escapeHtml(acc.email)}</li>`;
-                });
-                listHtml += '</ul>';
-                fakeAccountsDiv.innerHTML = listHtml;
-            } else {
-                fakeAccountsDiv.innerHTML = '<p style="color: green;">All fake user accounts have been deleted.</p>';
-            }
-             fakeAccountsDiv.innerHTML += `<p>Total fake accounts: ${fakeUserAccounts.length}</p>`;
+                if (fakeUserAccounts.length > 0) {
+                    let listHtml = '<h3>Current Fake User Accounts:</h3><ul>';
+                    fakeUserAccounts.forEach(acc => {
+                        // Escape user-controlled data before displaying
+                        listHtml += `<li>ID: ${acc.id}, Username: ${escapeHtml(acc.username)}, Email: ${escapeHtml(acc.email)}</li>`;
+                    });
+                    listHtml += '</ul>';
+                    fakeAccountsDiv.innerHTML = listHtml;
+                } else {
+                    fakeAccountsDiv.innerHTML = '<p style="color: green;">All fake user accounts have been deleted.</p>';
+                }
+                fakeAccountsDiv.innerHTML += `<p>Total fake accounts: ${fakeUserAccounts.length}</p>`;
+             } catch (error) {
+                 console.error("Error updating fake accounts display:", error);
+                 if(fakeAccountsDiv) fakeAccountsDiv.innerHTML = "<p style='color:red;'>Error displaying fake accounts.</p>";
+             }
         }
 
 
         function logout() {
-             localStorage.setItem("userRole", "guest"); // Revert role
-             localStorage.setItem("adminLevel", "0"); // Revert level
-             // Clear sensitive items if desired (good practice)
-             localStorage.removeItem("sessionToken");
-             localStorage.removeItem("lastLoginTimestamp");
-             localStorage.setItem("lastAdminUser", document.getElementById('admin-username').textContent); // Remember who logged out maybe
+             try {
+                 localStorage.setItem("userRole", "guest"); // Revert role
+                 localStorage.setItem("adminLevel", "0"); // Revert level
+                 // Clear sensitive items if desired (good practice)
+                 localStorage.removeItem("sessionToken");
+                 localStorage.removeItem("lastLoginTimestamp");
+                 // Keep 'lastAdminUser' if you want to show who logged out, or remove it too.
 
-             // Clear login form fields if necessary for UX
-             if(document.getElementById("username")) document.getElementById("username").value = "";
-             if(document.getElementById("password")) document.getElementById("password").value = "";
-             if(document.getElementById("login-error")) document.getElementById("login-error").textContent = "";
+                 // Clear login form fields for better UX upon logging out
+                 const usernameInput = document.getElementById("username");
+                 const passwordInput = document.getElementById("password");
+                 const errorDiv = document.getElementById("login-error");
+                 if(usernameInput) usernameInput.value = "";
+                 if(passwordInput) passwordInput.value = "";
+                 if(errorDiv) errorDiv.textContent = "";
 
-             // Redirect to home section
-             displaySection('home');
-             console.log("User logged out. Role set to 'guest', Level set to '0'.");
+                 // Redirect to home section
+                 displaySection('home');
+                 console.log("User logged out. Role set to 'guest', Level set to '0'.");
+            } catch (error) {
+                 console.error("Error during logout:", error);
+            }
         }
 
     </script>

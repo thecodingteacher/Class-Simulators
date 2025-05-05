@@ -124,6 +124,7 @@
          /* Hidden About Section */
          #about {
              display: none; /* VULNERABILITY: Hidden via CSS */
+                 display: none;
          }
 
         /* Forms */
@@ -326,7 +327,7 @@
         <nav>
             <ul>
                 <li><a href="#home" class="nav-link active">Home</a></li>
-                <li><a href="#about" class="nav-link">About (Hidden)</a></li> <!-- Link still exists -->
+                <li><a href="#about" class="nav-link" style ="display: none;">About (Hidden)</a></li> <!-- Link still exists -->
                 <li><a href="#patient-query" class="nav-link">Patient Query</a></li>
                 <li><a href="#login" class="nav-link" id="nav-login">Login</a></li>
                 <!-- Links shown when logged in -->

@@ -3,493 +3,794 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediSecure Diagnostics - Health Testing (Vulnerable - Reworked)</title>
+    <title>Cyber Security Education Hub</title>
     <style>
-        /* Basic Professional Styling (Same as before) */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; line-height: 1.6; }
-        .container { width: 80%; margin: auto; overflow: hidden; }
-        header { background: #0056b3; color: #fff; padding-top: 30px; min-height: 70px; border-bottom: #003d80 3px solid; }
-        header a { color: #fff; text-decoration: none; text-transform: uppercase; font-size: 16px; }
-        header ul { padding: 0; margin: 0; list-style: none; float: right; }
-        header li { display: inline; padding: 0 20px 0 20px; }
-        header #branding { float: left; }
-        header #branding h1 { margin: 0; font-size: 24px; }
-        header nav { margin-top: 10px; }
-        header .highlight { color: #e8491d; }
-        header .current a { color: #e8491d; font-weight: bold; }
-        header a:hover { color: #ccc; font-weight: bold; }
-        main { padding: 20px 0; }
-        section { background: #fff; padding: 20px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px; }
-        h1, h2 { color: #0056b3; }
-        label { display: block; margin: 10px 0 5px; }
-        input[type="text"], input[type="password"], textarea, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 3px; box-sizing: border-box; }
-        input[type="submit"], button { display: inline-block; background: #e8491d; color: #fff; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 3px; margin-top: 10px; margin-right: 10px; }
-        input[type="submit"]:hover, button:hover { background: #333; }
-        textarea { height: 100px; }
-        #message-output, #search-results, #record-details, #status-output, #upload-status, #fake-accounts-status { margin-top: 15px; padding: 10px; background-color: #e9e9e9; border: 1px dashed #ccc; min-height: 30px; word-wrap: break-word; }
-        footer { background: #333; color: #fff; text-align: center; padding: 20px; margin-top: 30px; }
-        /* Hide sections initially, JS will show 'home' */
-        #home, #about, #login, #admin_dashboard, #tools { display: none; }
-        /* Vulnerable Comment Example */
-        /* TODO: Remember to change the default admin password 'Qwertz432' before going live! */
-        /* Server Info: Apache/2.4.41 (Win64) running PHP/7.4.3 (Simulated) */
+        /* Basic Reset & Font */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Container */
+        .container {
+            max-width: 960px;
+            margin: 20px auto;
+            padding: 0 20px;
+            flex-grow: 1;
+        }
+
+        /* Header */
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 1rem 0;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        header h1 {
+            margin-bottom: 5px;
+        }
+        header p {
+            font-style: italic;
+            font-size: 0.9em;
+            color: #ccc;
+        }
+
+        /* Navigation */
+        nav {
+            background: #444;
+            padding: 0.7rem 0;
+            margin-bottom: 25px;
+            border-radius: 5px;
+        }
+        nav ul {
+            list-style: none;
+            text-align: center;
+        }
+        nav ul li {
+            display: inline;
+            margin: 0 15px;
+        }
+        nav ul li a {
+            color: #fff;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        nav ul li a:hover,
+        nav ul li a.active {
+            background-color: #555;
+        }
+        nav ul li a#nav-logout,
+        nav ul li a#nav-admin {
+             display: none; /* Initially hidden */
+        }
+
+        /* Content Sections */
+        .content-section {
+            background: #fff;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .content-section h2, .content-section h1 {
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Forms */
+        form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        form input[type="text"],
+        form input[type="password"],
+        form textarea,
+        form select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        form textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        form input[type="submit"],
+        button {
+            display: inline-block;
+            background: #5cb85c;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+        form input[type="submit"]:hover,
+        button:hover {
+            background: #4cae4c;
+        }
+        button.danger {
+            background: #d9534f;
+        }
+        button.danger:hover {
+            background: #c9302c;
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.secondary:hover {
+            background: #5a6268;
+        }
+
+        /* Message Output / Status */
+        #message-output, #status-message, #sql-output {
+            margin-top: 15px;
+            padding: 10px;
+            border-left: 4px solid #5bc0de;
+            background-color: #eef9fd;
+            border-radius: 4px;
+            word-wrap: break-word; /* Prevent long messages breaking layout */
+        }
+        #status-message.error {
+            border-left-color: #d9534f;
+            background-color: #fdf7f7;
+            color: #a94442;
+        }
+        #status-message.success {
+            border-left-color: #5cb85c;
+            background-color: #f7fcf7;
+            color: #3c763d;
+        }
+
+        /* Admin Specific */
+        #admin-dashboard .user-list {
+            list-style: none;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+        }
+        #admin-dashboard .user-list li {
+            padding: 8px;
+            border-bottom: 1px dotted #ccc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #admin-dashboard .user-list li:last-child {
+            border-bottom: none;
+        }
+         #admin-dashboard .user-list button {
+            padding: 3px 8px;
+            font-size: 0.8em;
+            margin-left: 10px;
+         }
+        .admin-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .sql-interface input[type="text"] {
+            margin-bottom: 5px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 15px;
+            background: #333;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+        footer p {
+            margin: 0;
+        }
     </style>
 </head>
 <body>
+
     <header>
-        <div class="container">
-            <div id="branding">
-                <h1><span class="highlight">MediSecure</span> Diagnostics</h1>
-            </div>
-            <nav>
-                <ul>
-                    <!-- data-target attribute used by JS for navigation -->
-                    <li><a href="#home" data-target="home">Home</a></li>
-                    <li><a href="#about" data-target="about">About</a></li>
-                    <li><a href="#tools" data-target="tools">Tools</a></li>
-                    <li><a href="#login" data-target="login">Login</a></li>
-                </ul>
-            </nav>
-        </div>
+        <h1>Cyber Security Education Hub</h1>
+        <p>Learning about web vulnerabilities through examples</p>
     </header>
 
-    <main class="container">
-        <section id="home">
-            <h1>Welcome to MediSecure Diagnostics</h1>
-            <p>Your health, our priority. Advanced diagnostics from just a single drop of blood. Fast, accurate, and secure.</p>
-            <h2>Leave a Public Comment</h2>
-            <!-- Add ID for JS targeting -->
-            <form id="comment-form" action="#" method="POST">
-                <label for="comment">Comment:</label>
-                <textarea id="comment" name="comment" placeholder="Enter your public comment here... e.g., <script>alert('XSS')</script>"></textarea>
-                <input type="submit" value="Post Comment">
+    <div class="container">
+        <nav>
+            <ul>
+                <li><a href="#home" class="nav-link active">Home</a></li>
+                <li><a href="#about" class="nav-link">About</a></li>
+                <li><a href="#login" class="nav-link" id="nav-login">Login</a></li>
+                <li><a href="#admin-dashboard" class="nav-link" id="nav-admin">Admin Dashboard</a></li>
+                <li><a href="#" class="nav-link" id="nav-logout">Logout</a></li>
+            </ul>
+        </nav>
+
+        <!-- Status Message Area -->
+        <div id="status-message"></div>
+
+        <!-- Home Section -->
+        <div id="home" class="content-section">
+            <h2>Welcome!</h2>
+            <p>This site demonstrates common web security vulnerabilities. Explore the different sections to learn more. Start by trying the login or sending a message below.</p>
+            <p><strong>Security Note:</strong> Check your browser's developer tools (F12) -> Application -> Local Storage. See that potentially sensitive data is stored insecurely?</p>
+
+            <h2>Send a "Secure" Message</h2>
+             <p><em>(Demonstrates potential for Cross-Site Scripting (XSS) if not handled correctly)</em></p>
+            <form id="message-form">
+                <label for="message">Your Message:</label>
+                <textarea id="message" name="message" rows="4"></textarea>
+                <input type="submit" value="Display Message Locally">
             </form>
-            <div id="message-output">
-                <!-- Vulnerability: XSS - Comments will appear here unescaped -->
-                <p>User1: Great service!</p>
-            </div>
-        </section>
+            <div id="message-output" style="display: none;"></div>
+        </div>
 
-        <section id="about">
-            <h1>About MediSecure Diagnostics</h1>
-            <p>Founded in 2023, MediSecure Diagnostics leverages cutting-edge biotechnology to provide comprehensive health insights from minimal samples. Our patented analysis process ensures quick turnaround times without compromising accuracy.</p>
-            <p>We are committed to data privacy and employ state-of-the-art security measures (or so we claim).</p>
-        </section>
+        <!-- About Section -->
+        <div id="about" class="content-section" style="display: none;">
+            <h1>About This Site</h1>
+            <p>This mini-site is designed as an educational tool to illustrate fundamental cyber security concepts and vulnerabilities in a hands-on way.</p>
+            <h3>Demonstrated Concepts:</h3>
+            <ul>
+                <li><strong>Insecure Client-Side Storage:</strong> Storing sensitive data (like user credentials, IDs) directly in `localStorage` without encryption.</li>
+                <li><strong>Insecure Authentication:</strong> Using hardcoded or easily guessable passwords, checking credentials only on the client-side.</li>
+                <li><strong>Lack of Password Hashing:</strong> Storing and comparing passwords in plain text.</li>
+                <li><strong>Potential for Input Injection:</strong> The "SQL-like" interface simulates how unvalidated user input could be executed.</li>
+                <li><strong>Cross-Site Scripting (XSS) Risk:</strong> Injecting user-provided content directly into the page (mitigated here using `textContent`).</li>
+                <li><strong>Broken Access Control:</strong> Relying on client-side flags (`adminLevel` in `localStorage`) for authorization, which can be easily manipulated.</li>
+            </ul>
+            <p><strong>Disclaimer:</strong> The security practices implemented here (like storing plain text passwords) are **intentionally insecure** for demonstration purposes. **Never** use these practices in real-world applications.</p>
+        </div>
 
-        <section id="tools">
-            <h1>Diagnostic Tools (Simulated Vulnerabilities)</h1>
-
-            <!-- Simulated SQL Injection -->
-            <h2>Search Patient Records (SQLi)</h2>
-            <!-- Add ID for JS targeting -->
-            <form id="search-form">
-                <label for="patientId">Patient ID:</label>
-                <input type="text" id="patientId" name="patientId" placeholder="e.g., 101 or 101' OR '1'='1">
-                <input type="submit" value="Search">
-            </form>
-            <div id="search-results">Search results will appear here.</div>
-
-            <!-- Simulated Directory Traversal -->
-            <h2>Load Patient Record File (Path Traversal)</h2>
-             <!-- Add ID for JS targeting -->
-            <form id="load-record-form">
-                <label for="recordFile">Record Filename:</label>
-                <input type="text" id="recordFile" name="recordFile" placeholder="e.g., record_101.pdf or ../../../etc/passwd">
-                <input type="submit" value="Load File">
-            </form>
-            <div id="record-details">File content simulation appears here.</div>
-
-             <!-- Simulated Command Injection -->
-            <h2>Check Server Status (Command Injection)</h2>
-            <!-- Add ID for JS targeting -->
-             <form id="status-form">
-                <label for="serverIp">Server IP:</label>
-                <input type="text" id="serverIp" name="serverIp" placeholder="e.g., 192.168.1.1 or 127.0.0.1; whoami">
-                <input type="submit" value="Check Status">
-            </form>
-            <div id="status-output">Server status simulation appears here.</div>
-
-            <!-- Simulated Insecure File Upload -->
-            <h2>Upload Test Results (Insecure Upload)</h2>
-             <!-- Add ID for JS targeting -->
-            <form id="upload-form">
-                 <label for="fileUpload">Select File (Client-side PDF check only):</label>
-                 <input type="file" id="fileUpload" name="fileUpload" accept=".pdf">
-                 <input type="submit" value="Upload">
-            </form>
-            <div id="upload-status">Upload status...</div>
-        </section>
-
-        <section id="login">
-            <h1>Admin Login</h1>
-            <!-- Vulnerability: Lack of CSRF token -->
-             <!-- Add ID for JS targeting -->
-            <form id="login-form" action="#" method="POST">
+        <!-- Login Section -->
+        <div id="login" class="content-section" style="display: none;">
+            <h1>Login</h1>
+             <p><em>(Demonstrates insecure client-side authentication)</em></p>
+            <form id="login-form">
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required>
                 <input type="submit" value="Login">
             </form>
-            <div id="login-error" style="color: red; margin-top: 10px;"></div>
-        </section>
+            <p><small>Hint: Try default user 'admin' with password 'password123'.</small></p>
+             <p><small>For Super Admin access, log in as admin, then manually edit `localStorage` ('cyberSecSiteUsers' entry) to set `adminLevel` to `2`, then refresh.</small></p>
+        </div>
 
-        <section id="admin_dashboard">
-            <h1>Admin Dashboard</h1>
-            <p>Welcome, <span id="admin-username">Admin</span>!</p>
-            <p>Current Access Level (from localStorage): <span id="admin-level-display">Normal</span></p>
-            <p>This area contains sensitive administrative functions.</p>
+        <!-- Admin Dashboard Section -->
+        <div id="admin-dashboard" class="content-section" style="display: none;">
+            <!-- Content generated by JavaScript -->
+        </div>
 
-            <!-- Add IDs for JS targeting -->
-            <button id="delete-records-btn">Delete All Patient Records (Simulated - Requires 'admin' role)</button>
-            <button id="delete-fake-btn">Delete Fake User Accounts (Simulated - Requires adminLevel '2' in localStorage)</button>
-            <div id="fake-accounts-status"></div>
-
-            <p style="margin-top: 20px;"><button id="logout-btn">Logout</button></p>
-        </section>
-    </main>
+    </div>
 
     <footer>
-        <p>MediSecure Diagnostics © 2024 | <a href="#" style="color:#fff;">Privacy Policy</a> | All Rights Reserved (For educational purposes only)</p>
-        <!-- Vulnerability Hint: Check Local Storage in Developer Tools (F12 -> Application) -->
+        <p>© 2023 Cyber Security Education Hub - For Educational Purposes Only</p>
     </footer>
 
     <script>
-        // --- Global Variables & Initial Data ---
+        // --- Constants and State ---
+        const USERS_STORAGE_KEY = 'cyberSecSiteUsers';
+        let currentUser = null; // Store logged-in user info { username, adminLevel }
 
-        // Vulnerability: Sensitive Data Exposure in Local Storage
-        localStorage.setItem("sessionToken", "sess_abc123xyz789_demo_v3");
-        localStorage.setItem("userRole", "guest"); // Initial role ('guest', 'admin')
-        localStorage.setItem("trackingId", "trk_987654321_demo_v3");
-        localStorage.setItem("lastLoginTimestamp", Date.now());
-        // Vulnerability: Control flag for privilege escalation in localStorage
-        if (localStorage.getItem("adminLevel") === null || !['0','1','2'].includes(localStorage.getItem("adminLevel"))) {
-             localStorage.setItem("adminLevel", "0"); // 0=Normal, 1=Admin, 2=SuperSuperAdmin
-        }
-
-        // Simulated Fake User Accounts Data (Client-Side)
-        let fakeUserAccounts = [
-            { id: 1, username: "testuser1", email: "test1@example.com" }, { id: 2, username: "demo_user", email: "demo@example.com" },
-            { id: 3, username: "jsmith", email: "jsmith@sample.org" }, { id: 4, username: "another_user", email: "another@example.com" },
-            { id: 5, username: "pentest_dummy", email: "dummy@test.local" }, { id: 6, username: "user_six", email: "six@example.net" },
-            { id: 7, username: "tester_beta", email: "beta@sample.org" }, { id: 8, username: "final_test", email: "final@test.local" },
-            { id: 9, username: "some_guy", email: "guy@example.com" }, { id: 10, username: "last_one", email: "last@example.net" },
-        ];
-
-        // --- Helper Functions ---
-
-        function escapeHtml(unsafe) {
-            if (unsafe === null || unsafe === undefined) return '';
-            return String(unsafe)
-                 .replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">")
-                 .replace(/"/g, """).replace(/'/g, "'");
-         }
-
-        function displaySection(targetId) {
-            const sections = document.querySelectorAll('main > section');
-            const navListItems = document.querySelectorAll('header nav li');
-            let foundTarget = false;
-
-            sections.forEach(section => {
-                if (section.id === targetId) {
-                    section.style.display = 'block';
-                    foundTarget = true;
-                } else {
-                    section.style.display = 'none';
-                }
-            });
-
-            if (!foundTarget) {
-                console.error("Target section not found:", targetId);
-                const homeSection = document.getElementById('home');
-                if (homeSection) homeSection.style.display = 'block'; // Fallback
-                targetId = 'home'; // Adjust for highlighting
-            }
-
-             // Update Admin dashboard display elements whenever it's shown
-             if(targetId === 'admin_dashboard') {
-                updateAdminDashboardDisplay();
-             }
-
-            // Update nav highlight
-            navListItems.forEach(li => {
-                const link = li.querySelector('a');
-                const linkTarget = link ? link.getAttribute('data-target') : null;
-                if (linkTarget === targetId || (targetId === 'admin_dashboard' && linkTarget === 'login' && localStorage.getItem('userRole') === 'admin')) {
-                    li.classList.add('current');
-                } else {
-                    li.classList.remove('current');
-                }
-            });
-            // console.log("Displayed section:", targetId); // Debug log
-        }
-
-        function updateAdminDashboardDisplay() {
-            try {
-                const currentLevel = localStorage.getItem('adminLevel') || '0';
-                let levelText = 'Normal (0)';
-                if (currentLevel === '1') levelText = 'Admin (1)';
-                if (currentLevel === '2') levelText = 'Super Super Admin (2)';
-
-                const username = localStorage.getItem('lastAdminUser') || 'Admin';
-                const levelDisplay = document.getElementById('admin-level-display');
-                const usernameDisplay = document.getElementById('admin-username');
-
-                if(levelDisplay) levelDisplay.textContent = levelText;
-                if(usernameDisplay) usernameDisplay.textContent = escapeHtml(username);
-
-                updateFakeAccountsDisplay(); // Refresh account list too
-            } catch (error) {
-                console.error("Error updating admin dashboard display:", error);
-            }
-        }
-
-        function updateFakeAccountsDisplay() {
-            try {
-                const fakeAccountsDiv = document.getElementById('fake-accounts-status');
-                if (!fakeAccountsDiv) return;
-
-                if (fakeUserAccounts.length > 0) {
-                    let listHtml = '<h3>Current Fake User Accounts:</h3><ul>';
-                    fakeUserAccounts.forEach(acc => {
-                        listHtml += `<li>ID: ${acc.id}, Username: ${escapeHtml(acc.username)}, Email: ${escapeHtml(acc.email)}</li>`;
-                    });
-                    listHtml += '</ul>';
-                    fakeAccountsDiv.innerHTML = listHtml;
-                } else {
-                    fakeAccountsDiv.innerHTML = '<p style="color: green;">All fake user accounts have been deleted.</p>';
-                }
-                fakeAccountsDiv.innerHTML += `<p>Total fake accounts: ${fakeUserAccounts.length}</p>`;
-             } catch (error) {
-                 console.error("Error updating fake accounts display:", error);
-                 if(fakeAccountsDiv) fakeAccountsDiv.innerHTML = "<p style='color:red;'>Error displaying fake accounts.</p>";
-             }
-        }
-
-        // --- Core Logic Functions (Vulnerabilities Here) ---
-
-        function postComment() {
-            try {
-                const commentInput = document.getElementById("comment");
-                const outputDiv = document.getElementById("message-output");
-                if(!commentInput || !outputDiv) {
-                    console.error("Comment elements not found"); return;
-                }
-                const comment = commentInput.value;
-                // VULNERABILITY: XSS - Direct insertion of 'comment' into innerHTML
-                outputDiv.innerHTML += `<p><span style="color: blue;">You (${escapeHtml(localStorage.getItem('userRole')) || 'guest'}):</span> ${comment}</p>`;
-                commentInput.value = ''; // Clear input
-                console.log("Posted comment (check output div):", comment);
-            } catch (error) { console.error("Error in postComment:", error); }
-        }
-
-        function searchPatients() {
-            try {
-                const patientIdInput = document.getElementById('patientId');
-                const resultsDiv = document.getElementById('search-results');
-                 if(!patientIdInput || !resultsDiv) { console.error("Search elements not found"); return; }
-                const patientId = patientIdInput.value;
-                // VULNERABILITY: Simulated SQL Injection
-                const query = `SELECT * FROM patients WHERE id = '${patientId}';`;
-                console.warn("Simulated SQL Query (VULNERABLE):", query);
-                resultsDiv.innerHTML = `Simulating search based on ID: ${escapeHtml(patientId)}... <br>(Check console for vulnerable query)`;
-            } catch (error) { console.error("Error in searchPatients:", error); }
-        }
-
-        function loadRecord() {
-             try {
-                const recordFileInput = document.getElementById('recordFile');
-                const detailsDiv = document.getElementById('record-details');
-                if(!recordFileInput || !detailsDiv) { console.error("Load record elements not found"); return; }
-                const recordFile = recordFileInput.value;
-                // VULNERABILITY: Simulated Path Traversal
-                const basePath = "/var/www/html/records/";
-                const filePath = basePath + recordFile;
-                console.warn("Simulated File Path Access (VULNERABLE):", filePath);
-                detailsDiv.innerHTML = `Simulating loading file: ${escapeHtml(recordFile)}... <br>(Check console for vulnerable path)`;
-            } catch (error) { console.error("Error in loadRecord:", error); }
-        }
-
-        function checkServerStatus() {
-             try {
-                 const serverIpInput = document.getElementById('serverIp');
-                 const statusDiv = document.getElementById('status-output');
-                  if(!serverIpInput || !statusDiv) { console.error("Status elements not found"); return; }
-                 const serverIp = serverIpInput.value;
-                 // VULNERABILITY: Simulated Command Injection
-                 const command = `ping -c 4 ${serverIp}`;
-                 console.warn("Simulated Command Execution (VULNERABLE):", command);
-                 statusDiv.innerHTML = `Simulating ping to: ${escapeHtml(serverIp)}... <br>(Check console for vulnerable command)`;
-            } catch (error) { console.error("Error in checkServerStatus:", error); }
-        }
-
-        function handleFileUpload() {
-            try {
-                const fileInput = document.getElementById('fileUpload');
-                const statusDiv = document.getElementById('upload-status');
-                 if(!fileInput || !statusDiv) { console.error("Upload elements not found"); return; }
-                const allowedClientType = 'application/pdf';
-
-                if (fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    // VULNERABILITY: Client-side check only
-                    if (file.type === allowedClientType) {
-                         statusDiv.innerHTML = `Simulating upload of ${escapeHtml(file.name)} (${escapeHtml(file.type)})... OK (Client Check Passed).`;
-                         console.log(`Simulated upload of ${file.name}. VULNERABILITY: Server-side validation MISSING!`);
-                    } else {
-                         statusDiv.innerHTML = `Error: Invalid file type (client check). Only PDF allowed. You selected: ${escapeHtml(file.type)}`;
-                         console.warn(`Client block: Invalid file type (${file.type}). Bypassable.`);
-                    }
-                } else {
-                    statusDiv.innerHTML = 'Please select a file to upload.';
-                }
-            } catch (error) { console.error("Error in handleFileUpload:", error); }
-        }
-
-        function checkPassword() {
-            try {
-                const usernameInput = document.getElementById("username");
-                const passwordInput = document.getElementById("password");
-                const errorDiv = document.getElementById("login-error");
-                 if(!usernameInput || !passwordInput || !errorDiv) { console.error("Login elements not found"); return false; }
-
-                const username = usernameInput.value;
-                const password = passwordInput.value;
-                errorDiv.textContent = ''; // Clear errors
-
-                // VULNERABILITY: Hardcoded Credentials
-                const validUsers = { "admin": "Qwertz432", "super-admin": "superlols123" };
-
-                if (validUsers[username] && validUsers[username] === password) {
-                    // VULNERABILITY: Broken Access Control (client sets own role/level)
-                    localStorage.setItem("userRole", "admin");
-                    if (localStorage.getItem("adminLevel") !== '2') { // Don't downgrade if already escalated
-                        localStorage.setItem("adminLevel", "1");
-                    }
-                    localStorage.setItem("lastAdminUser", username); // Store for display
-                    console.log(`Login OK for ${username}. Role='admin', Level='${localStorage.getItem("adminLevel")}'.`);
-                    displaySection('admin_dashboard'); // Show admin section
-                } else {
-                    errorDiv.textContent = "Invalid username or password.";
-                    console.log(`Login failed for username: ${username}`);
-                    passwordInput.value = ""; // Clear password only
-                }
-            } catch (error) {
-                console.error("Error in checkPassword:", error);
-                 const errorDiv = document.getElementById("login-error");
-                 if(errorDiv) errorDiv.textContent = "Login error occurred.";
-            }
-             // Prevent form submission regardless of outcome
-             return false;
-        }
-
-        function deleteAllRecords() {
-            try {
-                // VULNERABILITY: Broken Access Control (client-side role check)
-                if (localStorage.getItem("userRole") !== 'admin') {
-                    alert("Access Denied. Requires 'admin' role (checked client-side)."); return;
-                }
-                if (confirm("DANGER: Delete all PATIENT records? (Simulated)")) {
-                    console.error(`SIMULATION: Deleting patient records by ${escapeHtml(localStorage.getItem('lastAdminUser'))}`);
-                    alert("All patient records deleted (Simulated).");
-                }
-            } catch (error) { console.error("Error in deleteAllRecords:", error); }
-        }
-
-        function deleteFakeAccounts() {
-            try {
-                // VULNERABILITY: Privilege Escalation via LocalStorage level check
-                const currentLevel = localStorage.getItem('adminLevel');
-                if (currentLevel !== '2') {
-                    alert("Access Denied. Requires adminLevel '2' in localStorage (checked client-side).");
-                    console.warn(`deleteFakeAccounts blocked. Required Level: 2, Current: ${currentLevel}`);
-                    return;
-                }
-                 if (confirm("Level 2 Access OK! Delete all FAKE user accounts? (Simulated)")) {
-                    const initialCount = fakeUserAccounts.length;
-                    fakeUserAccounts = []; // Clear the global array
-                    console.log(`SUPER-ADMIN ACTION (${escapeHtml(localStorage.getItem('lastAdminUser'))}): Deleted ${initialCount} fake accounts.`);
-                    alert(`Success: ${initialCount} fake accounts deleted (Simulated).`);
-                    updateFakeAccountsDisplay(); // Update list on dashboard
-                }
-            } catch (error) { console.error("Error in deleteFakeAccounts:", error); }
-        }
-
-        function logout() {
-             try {
-                 localStorage.setItem("userRole", "guest");
-                 localStorage.setItem("adminLevel", "0");
-                 // localStorage.removeItem("sessionToken"); // Optional cleanup
-                 // localStorage.removeItem("lastLoginTimestamp"); // Optional cleanup
-                 // Keep lastAdminUser? Optional.
-
-                 // Clear login form for better UX
-                 const usernameInput = document.getElementById("username");
-                 const passwordInput = document.getElementById("password");
-                 const errorDiv = document.getElementById("login-error");
-                 if(usernameInput) usernameInput.value = "";
-                 if(passwordInput) passwordInput.value = "";
-                 if(errorDiv) errorDiv.textContent = "";
-
-                 displaySection('home'); // Go back home
-                 console.log("User logged out. Role='guest', Level='0'.");
-            } catch (error) { console.error("Error during logout:", error); }
-        }
-
-        // --- Event Listener Setup ---
+        // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("DOM Loaded. Attaching listeners.");
+            initializeApp();
+            setupNavigation();
+            setupEventListeners();
+            showSection('home'); // Start on the home page
+            updateUIBasedOnLogin();
 
-            // Initial state: Show home section
-            displaySection('home');
+            // SECURITY TEACHING POINT: Insecurely storing sensitive data in localStorage
+            // Real applications should NEVER store sensitive data like this client-side.
+            // This is easily accessible via browser developer tools.
+            if (!localStorage.getItem("institutionId")) {
+                localStorage.setItem("name", "Alice Wonderland");
+                localStorage.setItem("institutionId", "XYZ789");
+                localStorage.setItem("customerId", "CUST987");
+                localStorage.setItem("paymentId", "PAY654");
+                localStorage.setItem("analyticsId", "ANA321");
+                console.log("WARNING: Initialized insecure demo data in localStorage.");
+            }
+        });
 
-            // Navigation Links
-            document.querySelectorAll('header nav a').forEach(link => {
+        function initializeApp() {
+            // Initialize users in localStorage if not present
+            if (!localStorage.getItem(USERS_STORAGE_KEY)) {
+                const defaultUsers = [
+                    // SECURITY TEACHING POINT: Storing plain text passwords is very bad practice!
+                    // Real applications MUST hash passwords securely server-side.
+                    { username: 'admin', password: 'password123', adminLevel: 1 },
+                    { username: 'student', password: 'changeme', adminLevel: 0 }
+                ];
+                localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
+                console.log("Initialized default users in localStorage.");
+            }
+             // Clear any previous status messages
+            clearStatusMessage();
+        }
+
+        // --- User Management ---
+        function getUsers() {
+            try {
+                const users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+                return Array.isArray(users) ? users : []; // Ensure it's an array
+            } catch (e) {
+                console.error("Error parsing users from localStorage:", e);
+                setStatusMessage("Error reading user data.", "error");
+                return []; // Return empty array on error
+            }
+        }
+
+        function saveUsers(users) {
+            // Ensure adminLevel is a number
+             const sanitizedUsers = users.map(u => ({
+                ...u,
+                adminLevel: parseInt(u.adminLevel, 10) || 0 // Default to 0 if invalid
+            }));
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(sanitizedUsers));
+        }
+
+        function addUser(username, password, adminLevel = 0) {
+            if (!username || !password) {
+                setStatusMessage("Username and password cannot be empty.", "error");
+                return false;
+            }
+            const users = getUsers();
+            const userExists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
+            if (userExists) {
+                setStatusMessage(`User "${username}" already exists.`, "error");
+                return false;
+            }
+            // SECURITY TEACHING POINT: Storing plain text password!
+             const numericAdminLevel = parseInt(adminLevel, 10);
+             if (isNaN(numericAdminLevel) || numericAdminLevel < 0 || numericAdminLevel > 2) {
+                 setStatusMessage("Invalid Admin Level (must be 0, 1, or 2).", "error");
+                 return false;
+             }
+            users.push({ username, password, adminLevel: numericAdminLevel });
+            saveUsers(users);
+            setStatusMessage(`User "${username}" added successfully.`, "success");
+            return true;
+        }
+
+        function removeUser(usernameToRemove) {
+            let users = getUsers();
+            const initialLength = users.length;
+            // Prevent removing the currently logged-in user for simplicity
+            if (currentUser && usernameToRemove.toLowerCase() === currentUser.username.toLowerCase()) {
+                 setStatusMessage("Cannot remove the currently logged-in user.", "error");
+                 return false;
+            }
+            users = users.filter(u => u.username.toLowerCase() !== usernameToRemove.toLowerCase());
+            if (users.length < initialLength) {
+                saveUsers(users);
+                setStatusMessage(`User "${usernameToRemove}" removed successfully.`, "success");
+                return true;
+            } else {
+                setStatusMessage(`User "${usernameToRemove}" not found.`, "error");
+                return false;
+            }
+        }
+
+        // --- Authentication ---
+        function handleLogin(event) {
+            event.preventDefault();
+            clearStatusMessage();
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value; // Don't trim password
+
+            if (!username || !password) {
+                setStatusMessage("Please enter both username and password.", "error");
+                return;
+            }
+
+            // SECURITY TEACHING POINT: Client-side authentication is insecure.
+            // Credentials should be sent securely (HTTPS POST) to a server for verification.
+            // Comparing plain text passwords is also insecure.
+            const users = getUsers();
+            const foundUser = users.find(u => u.username === username && u.password === password);
+
+            if (foundUser) {
+                currentUser = { username: foundUser.username, adminLevel: parseInt(foundUser.adminLevel, 10) || 0 };
+                setStatusMessage(`Welcome, ${currentUser.username}!`, "success");
+                updateUIBasedOnLogin();
+                showSection(currentUser.adminLevel > 0 ? 'admin-dashboard' : 'home'); // Go to dashboard if admin, else home
+                renderAdminDashboard(); // Render dashboard content if applicable
+                usernameInput.value = ''; // Clear form
+                passwordInput.value = '';
+            } else {
+                setStatusMessage("Invalid username or password.", "error");
+                currentUser = null;
+                updateUIBasedOnLogin();
+                 passwordInput.value = ''; // Clear password field only
+            }
+        }
+
+        function handleLogout() {
+            setStatusMessage(`User ${currentUser.username} logged out.`, "success");
+            currentUser = null;
+            updateUIBasedOnLogin();
+            showSection('home'); // Go back to home page
+            // Optionally clear specific sensitive data from localStorage on logout
+            // localStorage.removeItem('someSensitiveKey');
+        }
+
+        // --- UI Updates ---
+        function updateUIBasedOnLogin() {
+            const navLogin = document.getElementById('nav-login');
+            const navAdmin = document.getElementById('nav-admin');
+            const navLogout = document.getElementById('nav-logout');
+
+            if (currentUser) {
+                navLogin.style.display = 'none';
+                navLogout.style.display = 'inline-block';
+                if (currentUser.adminLevel > 0) {
+                    navAdmin.style.display = 'inline-block';
+                } else {
+                    navAdmin.style.display = 'none';
+                }
+            } else {
+                navLogin.style.display = 'inline-block';
+                navLogout.style.display = 'none';
+                navAdmin.style.display = 'none';
+                // Hide admin dashboard if user logs out
+                const adminDash = document.getElementById('admin-dashboard');
+                if (adminDash) adminDash.style.display = 'none';
+                 clearStatusMessage(); // Clear messages on logout
+            }
+        }
+
+        function setStatusMessage(message, type = 'info') { // type can be 'info', 'success', 'error'
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.className = type; // Add class for styling
+             // Automatically clear the message after a delay
+             setTimeout(clearStatusMessage, 7000); // Clear after 7 seconds
+        }
+
+         function clearStatusMessage() {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = '';
+            statusDiv.className = ''; // Remove type classes
+        }
+
+
+        // --- Navigation ---
+        function setupNavigation() {
+            const navLinks = document.querySelectorAll('nav .nav-link');
+            navLinks.forEach(link => {
                 link.addEventListener('click', (event) => {
-                    event.preventDefault(); // Stop anchor jump/reload
-                    const targetId = link.getAttribute('data-target');
-                    if (targetId === 'login' && localStorage.getItem('userRole') === 'admin') {
-                        displaySection('admin_dashboard'); // Show dashboard if admin clicks "Login"
-                    } else if (targetId) {
-                        displaySection(targetId);
-                    } else {
-                         console.error("Link missing data-target:", link);
-                         displaySection('home'); // Fallback
+                    // Handle logout separately
+                    if (link.id === 'nav-logout') {
+                        event.preventDefault();
+                        handleLogout();
+                        return;
+                    }
+
+                    const targetId = link.getAttribute('href');
+                    // Only prevent default for internal links starting with #
+                    if (targetId && targetId.startsWith('#')) {
+                        event.preventDefault();
+                        // Ensure admin dashboard is only accessible when logged in as admin
+                        if (targetId === '#admin-dashboard' && (!currentUser || currentUser.adminLevel === 0)) {
+                            setStatusMessage("Access denied. Please log in as an admin.", "error");
+                            showSection('login');
+                        } else {
+                            showSection(targetId.substring(1));
+                        }
                     }
                 });
             });
+        }
 
-            // Form Submissions (using IDs added to forms)
-            document.getElementById('comment-form')?.addEventListener('submit', (event) => {
-                event.preventDefault(); postComment();
-            });
-            document.getElementById('search-form')?.addEventListener('submit', (event) => {
-                event.preventDefault(); searchPatients();
-            });
-            document.getElementById('load-record-form')?.addEventListener('submit', (event) => {
-                event.preventDefault(); loadRecord();
-            });
-            document.getElementById('status-form')?.addEventListener('submit', (event) => {
-                event.preventDefault(); checkServerStatus();
-            });
-             document.getElementById('upload-form')?.addEventListener('submit', (event) => {
-                event.preventDefault(); handleFileUpload();
-            });
-            document.getElementById('login-form')?.addEventListener('submit', (event) => {
-                event.preventDefault(); checkPassword(); // Login function handles display change
+        function showSection(sectionId) {
+            const contentSections = document.querySelectorAll('.content-section');
+            contentSections.forEach(section => {
+                section.style.display = section.id === sectionId ? 'block' : 'none';
             });
 
-            // Admin Buttons (using IDs added to buttons)
-            document.getElementById('delete-records-btn')?.addEventListener('click', deleteAllRecords);
-            document.getElementById('delete-fake-btn')?.addEventListener('click', deleteFakeAccounts);
-            document.getElementById('logout-btn')?.addEventListener('click', logout);
+            // Update active link style
+            const navLinks = document.querySelectorAll('nav .nav-link');
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${sectionId}`) {
+                    link.classList.add('active');
+                }
+            });
 
-             // Ensure fake accounts list is ready for admin dash (even if hidden)
-             updateFakeAccountsDisplay();
+             // Re-render admin dashboard if navigating to it
+             if (sectionId === 'admin-dashboard' && currentUser && currentUser.adminLevel > 0) {
+                 renderAdminDashboard();
+             }
+             clearStatusMessage(); // Clear messages when changing sections
+        }
 
-            console.log("Listeners attached.");
+        // --- Event Listeners Setup ---
+        function setupEventListeners() {
+            // Login form
+            const loginForm = document.getElementById('login-form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
 
-        }); // End DOMContentLoaded
+            // Message form
+             const messageForm = document.getElementById('message-form');
+             if(messageForm) {
+                 messageForm.addEventListener('submit', handleSendMessage);
+             }
+
+             // Note: Event listeners for admin actions (add/remove user, SQL, delete all)
+             // are added dynamically when the admin dashboard is rendered in renderAdminDashboard().
+        }
+
+        // --- Home Section Functionality ---
+        function handleSendMessage(event) {
+            event.preventDefault();
+            const messageInput = document.getElementById("message");
+            const messageOutput = document.getElementById("message-output");
+            const message = messageInput.value;
+
+            // SECURITY TEACHING POINT: Using textContent prevents HTML injection (XSS).
+            // If we used innerHTML here (messageOutput.innerHTML = message;),
+            // entering '<script>alert("XSS")</script>' would execute the script.
+            messageOutput.textContent = `Your message: "${message}" (Displayed safely using textContent)`;
+            messageOutput.style.display = 'block';
+            // messageInput.value = ''; // Optionally clear the input
+             clearStatusMessage();
+        }
+
+        // --- Admin Dashboard Rendering and Functionality ---
+        function renderAdminDashboard() {
+            const dashboardDiv = document.getElementById('admin-dashboard');
+            if (!currentUser || currentUser.adminLevel === 0) {
+                dashboardDiv.innerHTML = '<h1>Access Denied</h1><p>You do not have permission to view this page.</p>';
+                dashboardDiv.style.display = 'block'; // Ensure it's visible to show the error
+                return;
+            }
+
+            // Determine if Super Admin (Level 2)
+            // SECURITY TEACHING POINT: Relying on client-side adminLevel is insecure.
+            // This check should happen server-side based on a secure session.
+            // The user can manually change this in localStorage!
+            const isSuperAdmin = currentUser.adminLevel === 2;
+
+            let superAdminControls = '';
+            if (isSuperAdmin) {
+                superAdminControls = `
+                    <div class="admin-section">
+                        <h2>Super Admin Controls</h2>
+                        <p><strong>Warning:</strong> The following action is irreversible and demonstrates tampering with client-side data.</p>
+                        <button id="delete-all-data" class="danger">Delete All Site Data (localStorage)</button>
+                    </div>
+                `;
+            }
+
+            // Fetch users for the list
+            const users = getUsers();
+            let userListHtml = '<ul class="user-list">';
+            users.forEach(user => {
+                // Prevent deleting the currently logged-in user via the list button
+                 const disableDelete = (currentUser && user.username.toLowerCase() === currentUser.username.toLowerCase()) ? 'disabled title="Cannot remove self"' : '';
+                userListHtml += `
+                    <li>
+                        <span>${user.username} (Level: ${user.adminLevel})</span>
+                        <button class="danger remove-user-btn" data-username="${user.username}" ${disableDelete}>Remove</button>
+                    </li>
+                `;
+            });
+            userListHtml += '</ul>';
+
+
+            dashboardDiv.innerHTML = `
+                <h1>Admin Dashboard</h1>
+                <p>Welcome, <strong>${currentUser.username}</strong>!</p>
+                <p>Your Admin Level: <strong>${currentUser.adminLevel} ${isSuperAdmin ? '(Super Admin)' : ''}</strong></p>
+
+                <div class="admin-section">
+                    <h2>User Management</h2>
+                    ${userListHtml}
+                    <h3>Add New User</h3>
+                     <form id="add-user-form">
+                         <label for="new-username">Username:</label>
+                         <input type="text" id="new-username" required>
+                         <label for="new-password">Password:</label>
+                         <input type="password" id="new-password" required>
+                         <label for="new-adminlevel">Admin Level (0=User, 1=Admin, 2=SuperAdmin):</label>
+                         <select id="new-adminlevel">
+                            <option value="0" selected>0 - Standard User</option>
+                            <option value="1">1 - Administrator</option>
+                            ${isSuperAdmin ? '<option value="2">2 - Super Administrator</option>' : ''}
+                         </select>
+                         <button type="submit" class="secondary">Add User</button>
+                     </form>
+                </div>
+
+                <div class="admin-section sql-interface">
+                    <h2>Basic Command Interface</h2>
+                    <p><em>(Demonstrates potential for injection if backend processed raw commands)</em></p>
+                    <label for="sql-command">Enter Command:</label>
+                    <input type="text" id="sql-command" placeholder="e.g., ADD USER newuser pass123 0;">
+                    <button id="run-sql-command">Run Command</button>
+                    <div id="sql-output"></div>
+                     <small>Commands: ADD USER [user] [pass] [level]; REMOVE USER [user]; LIST USERS;</small>
+                </div>
+
+                ${superAdminControls}
+            `;
+
+            // --- Add Event Listeners for dynamically created elements ---
+
+            // Remove User buttons
+            dashboardDiv.querySelectorAll('.remove-user-btn').forEach(button => {
+                 if (!button.disabled) { // Only add listener if not disabled
+                    button.addEventListener('click', (e) => {
+                        const usernameToRemove = e.target.getAttribute('data-username');
+                        if (confirm(`Are you sure you want to remove user "${usernameToRemove}"?`)) {
+                           if (removeUser(usernameToRemove)) {
+                               renderAdminDashboard(); // Re-render to update list
+                           }
+                        }
+                    });
+                 }
+            });
+
+            // Add User form
+            const addUserForm = dashboardDiv.querySelector('#add-user-form');
+            if (addUserForm) {
+                addUserForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const newUsername = document.getElementById('new-username').value.trim();
+                    const newPassword = document.getElementById('new-password').value;
+                    const newAdminLevel = document.getElementById('new-adminlevel').value;
+                     if (addUser(newUsername, newPassword, newAdminLevel)) {
+                         renderAdminDashboard(); // Re-render to update list
+                         // Clear form fields after successful add
+                        document.getElementById('new-username').value = '';
+                        document.getElementById('new-password').value = '';
+                        document.getElementById('new-adminlevel').value = '0';
+                     }
+                });
+            }
+
+            // SQL Command button
+             const runSqlCommandBtn = dashboardDiv.querySelector('#run-sql-command');
+             if (runSqlCommandBtn) {
+                 runSqlCommandBtn.addEventListener('click', handleSqlCommand);
+             }
+
+            // Super Admin - Delete All Data button
+            const deleteAllDataBtn = dashboardDiv.querySelector('#delete-all-data');
+            if (deleteAllDataBtn) {
+                deleteAllDataBtn.addEventListener('click', () => {
+                    if (confirm('WARNING: This will delete all user data and other site data from localStorage. This action cannot be undone. Proceed?')) {
+                        deleteAllSiteData();
+                    }
+                });
+            }
+        }
+
+        // --- "SQL-like" Command Handling ---
+        function handleSqlCommand() {
+            const commandInput = document.getElementById('sql-command');
+            const outputDiv = document.getElementById('sql-output');
+            const command = commandInput.value.trim().toUpperCase();
+            outputDiv.textContent = ''; // Clear previous output
+            clearStatusMessage(); // Clear general status messages
+
+            // SECURITY TEACHING POINT: This is a highly simplified parser.
+            // Real SQL injection exploits complex syntax. This just demonstrates
+            // taking user input and acting upon it based on keywords.
+            // If a backend did this without validation/parameterization, it would be vulnerable.
+
+            try {
+                 if (command.startsWith('ADD USER ')) {
+                    // Expecting: ADD USER username password level;
+                    const parts = commandInput.value.trim().split(/\s+/); // Split by whitespace
+                    if (parts.length === 5 && parts[0].toUpperCase() === 'ADD' && parts[1].toUpperCase() === 'USER' && parts[4].endsWith(';')) {
+                        const username = parts[2];
+                        const password = parts[3];
+                        const level = parts[4].slice(0, -1); // Remove trailing semicolon
+                        if (addUser(username, password, level)) {
+                            outputDiv.textContent = `Command executed: Added user '${username}'.`;
+                            renderAdminDashboard(); // Update user list visually
+                        } else {
+                             // addUser function already sets a status message on failure
+                            outputDiv.textContent = `Command failed. See status message above.`;
+                        }
+                    } else {
+                         outputDiv.textContent = "Invalid ADD USER syntax. Use: ADD USER username password level;";
+                    }
+                } else if (command.startsWith('REMOVE USER ')) {
+                     // Expecting: REMOVE USER username;
+                     const parts = commandInput.value.trim().split(/\s+/);
+                     if (parts.length === 4 && parts[0].toUpperCase() === 'REMOVE' && parts[1].toUpperCase() === 'USER' && parts[3].endsWith(';')) {
+                         const username = parts[2];
+                          if (currentUser && username.toLowerCase() === currentUser.username.toLowerCase()) {
+                             outputDiv.textContent = "Command blocked: Cannot remove the currently logged-in user via command.";
+                         } else if (removeUser(username)) {
+                            outputDiv.textContent = `Command executed: Removed user '${username}'.`;
+                            renderAdminDashboard(); // Update user list visually
+                         } else {
+                            // removeUser function already sets a status message on failure
+                            outputDiv.textContent = `Command failed. User '${username}' not found or error occurred.`;
+                         }
+                     } else {
+                         outputDiv.textContent = "Invalid REMOVE USER syntax. Use: REMOVE USER username;";
+                     }
+                } else if (command === 'LIST USERS;') {
+                    const users = getUsers();
+                    outputDiv.innerHTML = '<strong>Current Users:</strong><br>' + users.map(u => `- ${u.username} (Level: ${u.adminLevel})`).join('<br>');
+                } else {
+                    outputDiv.textContent = "Unknown command or invalid syntax. Use ADD USER, REMOVE USER, or LIST USERS;";
+                }
+            } catch (e) {
+                 console.error("Error processing command:", e);
+                 outputDiv.textContent = "Error processing command. Check console for details.";
+            }
+
+            commandInput.value = ''; // Clear command input
+        }
+
+
+        // --- Super Admin Functionality ---
+        function deleteAllSiteData() {
+            if (!currentUser || currentUser.adminLevel !== 2) {
+                setStatusMessage("Unauthorized action.", "error");
+                return;
+            }
+
+            // SECURITY TEACHING POINT: Deleting client-side data.
+            // This shows how stored info can be wiped by a privileged (or malicious) user
+            // if controls are client-side.
+            console.warn("SUPER ADMIN ACTION: Deleting all site data from localStorage...");
+
+            // List of keys to remove (adjust as needed)
+            const keysToRemove = [
+                USERS_STORAGE_KEY,
+                "name",
+                "institutionId",
+                "customerId",
+                "paymentId",
+                "analyticsId"
+                // Add any other keys your site might use in localStorage
+            ];
+
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+                console.log(`Removed localStorage key: ${key}`);
+            });
+
+            // Force logout and refresh/redirect
+            currentUser = null;
+            alert("All site data in local storage has been deleted. You will be logged out.");
+            initializeApp(); // Re-initialize (will set default users if needed)
+            updateUIBasedOnLogin();
+            showSection('login'); // Redirect to login page
+        }
 
     </script>
 

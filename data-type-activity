@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arctic Data & Algorithms Adventure!</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@300;400;700&family=Roboto:wght@300;400;500&display=swap');
+
+        :root {
+            /* Theme variables from previous */
+            --bg-color: #01081a; --primary-color: #56ccf2; --secondary-color: #f75f8c; --accent-color: #f2c94c;
+            --danger-color: #eb5757; --text-color: #e6faff; --card-bg: rgba(8, 20, 45, 0.95);
+            --border-color: rgba(86, 204, 242, 0.5); --shadow-color: rgba(86, 204, 242, 0.6);
+            --glow-color-primary: rgba(86, 204, 242, 0.8); --glow-color-secondary: rgba(247, 95, 140, 0.7);
+            --glow-color-accent: rgba(242, 201, 76, 0.8); --glow-color-danger: rgba(235, 87, 87, 0.8);
+            --slider-track: rgba(255, 255, 255, 0.2); --slider-thumb-year: var(--primary-color);
+            --slider-thumb-co2: var(--accent-color); --scanline-opacity: 0.05; --border-animation-speed: 6s;
+            --water-color: #1f82a1; --ice-color: #ffffff; --ice-edge-color: #cbf3f0; --bear-color: #fffefa;
+            --seal-color: #a9afb7; --sun-color: #ffeb80; --status-best: #27ae60; --status-ok: var(--accent-color);
+            --status-bad: var(--danger-color); --status-critical: #e74c3c;
+            --activity-bg: rgba(20, 40, 70, 0.7); --button-bg: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            --button-text-color: #01081a; --feedback-correct-bg: rgba(39, 174, 96, 0.2);
+            --feedback-incorrect-bg: rgba(235, 87, 87, 0.2);
+            --flowchart-symbol-bg: rgba(255,255,255,0.1); --flowchart-symbol-border: var(--primary-color);
+        }
+
+        /* --- Base Theme & Page Structure --- */
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Roboto', sans-serif; line-height: 1.6; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; overflow: hidden; /* No scroll on body */ }
+        body::before, body::after { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; } /* Grid/Scanlines behind everything */
+        body::before { background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), repeating-linear-gradient( 0deg, transparent, transparent 3px, rgba(86, 204, 242, var(--scanline-opacity)) 4px, rgba(86, 204, 242, var(--scanline-opacity)) 5px ); background-size: 100% 9px; animation: scanlines 0.3s linear infinite; }
+        body::after { background-image: linear-gradient(rgba(86, 204, 242, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(86, 204, 242, 0.04) 1px, transparent 1px); background-size: 55px 55px; animation: backgroundGrid 25s linear infinite; }
+        @keyframes scanlines { 0% { background-position: 0 0; } 100% { background-position: 0 9px; } }
+        @keyframes backgroundGrid { 0% { background-position: 0 0; } 100% { background-position: 55px 55px; } }
+        
+        .adventure-container { /* This is the main visible area, might scroll if content exceeds viewport height */
+            width: 100%; max-width: 1150px; height: 95vh; max-height: 800px; /* Fixed height, adjust as needed */
+            background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px;
+            box-shadow: 0 0 40px var(--shadow-color), 0 0 15px rgba(0,0,0,0.5) inset;
+            display: flex; flex-direction: column; position: relative;
+            backdrop-filter: blur(12px); overflow: hidden; /* Important for fixed height */
+        }
+        .adventure-container::before, .adventure-container::after { /* Animated border, relative to this container */
+            content: ''; position: absolute; z-index: -1; border-radius: इन्हेरिट;
+        }
+        .adventure-container::before {top: -50%; left: -50%; width: 200%; height: 200%; background: conic-gradient( transparent, rgba(86, 204, 242, 0.25), transparent 35% ); animation: rotateBorder var(--border-animation-speed) linear infinite; }
+        .adventure-container::after { inset: 1px; background: var(--card-bg); }
+        @keyframes rotateBorder { 100% { transform: rotate(360deg); } }
+
+        header { text-align: center; padding: 20px 30px 10px; border-bottom: 1px solid rgba(86, 204, 242, 0.3); flex-shrink: 0; }
+        header h1 { font-family: 'Orbitron', sans-serif; color: var(--primary-color); font-size: 2.2em; margin: 0; text-shadow: 0 0 12px var(--glow-color-primary), 0 0 6px #fff; letter-spacing: 1.5px; }
+        
+        #page-container {
+            flex-grow: 1; /* Takes up remaining space */
+            overflow-y: auto; /* Allows scrolling WITHIN this container if a single page is too tall */
+            padding: 20px 30px;
+            position: relative; /* For absolute positioning of pages if needed, but flex is better */
+        }
+        .page { display: none; /* Hidden by default */ flex-direction: column; gap: 20px; animation: fadeIn 0.5s ease-out; }
+        .page.active { display: flex; } /* Visible page */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Narrative & General Section Styles --- */
+        .narrative-section, .content-section { background: var(--activity-bg); padding: 20px; border-radius: 10px; border: 1px solid rgba(86, 204, 242, 0.15); box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
+        .narrative-section p, .content-section p { margin-bottom: 12px; font-size: 1.0em; line-height: 1.65; }
+        .narrative-section .highlight, .content-section .highlight { color: var(--accent-color); font-weight: 500; }
+        .narrative-section .important, .content-section .important { color: var(--primary-color); font-weight: 500; }
+        .narrative-section .critical, .content-section .critical { color: var(--danger-color); font-weight: 500; }
+        .narrative-section .emphasis { font-style: italic; opacity: 0.9; }
+        .content-section h2, .narrative-section h2 { /* Shared h2 style */
+            font-family: 'Orbitron', sans-serif; color: var(--secondary-color); margin: -20px -20px 15px -20px;
+            padding: 10px 20px; border-top-left-radius: 10px; border-top-right-radius: 10px;
+            background: linear-gradient(145deg, rgba(247, 95, 140, 0.1), rgba(86, 204, 242, 0.05));
+            border-bottom: 1px solid var(--border-color); font-size: 1.2em; display: flex; align-items: center; gap: 8px;
+        }
+        .content-section h2 .sim-icon, .narrative-section h2 .sim-icon { width: 1em; height: 1em; fill: currentColor; opacity: 0.8; }
+        .content-section .challenge-goal { font-weight: 500; color: var(--secondary-color); background-color: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 5px; display: inline-block; margin-top: 5px; }
+
+        /* --- Activity Specific Styles --- */
+        .activity-question { margin-bottom: 10px; font-weight: 500; }
+        .activity-options label { display: block; margin: 6px 0; padding: 8px 12px; background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; cursor: pointer; transition: background-color 0.2s, border-color 0.2s; }
+        .activity-options label:hover { background-color: rgba(255,255,255,0.1); border-color: var(--primary-color); }
+        .activity-options input[type="radio"], .activity-options input[type="checkbox"] { margin-right: 10px; accent-color: var(--primary-color); transform: scale(1.1); }
+        .activity-button { background: var(--button-bg); color: var(--button-text-color); font-family: 'Orbitron', sans-serif; font-size: 0.95em; font-weight: bold; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 8px rgba(86, 204, 242, 0.4), 0 0 5px rgba(247, 95, 140, 0.25); margin-top:10px; }
+        .activity-button:hover:not(:disabled) { transform: translateY(-2px) scale(1.03); box-shadow: 0 0 12px rgba(86, 204, 242, 0.6), 0 0 8px rgba(247, 95, 140, 0.4); }
+        .activity-button:disabled { background: grey; opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+        .feedback-message { margin-top: 10px; padding: 8px; border-radius: 6px; font-weight: 500; text-align: center; font-size: 0.9em; }
+        .feedback-message.correct { background-color: var(--feedback-correct-bg); border: 1px solid var(--status-best); color: var(--status-best); }
+        .feedback-message.incorrect { background-color: var(--feedback-incorrect-bg); border: 1px solid var(--danger-color); color: var(--danger-color); }
+        .code-snippet { background-color: rgba(0,0,0,0.4); border-left: 4px solid var(--accent-color); padding: 12px; border-radius: 5px; font-family: 'Roboto Mono', monospace; white-space: pre-wrap; margin: 12px 0; font-size: 0.85em; }
+        .code-snippet .comment { color: #88a; font-style: italic; } .code-snippet .keyword { color: var(--secondary-color); } .code-snippet .variable { color: var(--primary-color); } .code-snippet .value { color: var(--accent-color); }
+        .activity-slider-group { margin: 15px 0; }
+        .activity-slider-group label { display: block; margin-bottom: 5px; font-weight: 500; font-family: 'Roboto', sans-serif; font-size: 0.9em; }
+        .activity-slider-group input[type="range"] { width: 100%; appearance: none; -webkit-appearance: none; height: 8px; background: var(--slider-track); border-radius: 4px; cursor: pointer; outline: none; border: 1px solid rgba(255,255,255,0.1); }
+        .activity-slider-group input[type="range"]::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 20px; height: 20px; background: var(--primary-color); border-radius: 50%; border: 2px solid var(--bg-color); box-shadow: 0 0 8px var(--primary-color), 0 0 4px #fff; cursor: pointer; margin-top: -6px; }
+        .activity-slider-group input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; background: var(--primary-color); border-radius: 50%; border: 2px solid var(--bg-color); box-shadow: 0 0 8px var(--primary-color), 0 0 4px #fff; cursor: pointer; }
+        .activity-slider-output { font-family: 'Roboto Mono', monospace; font-size: 1em; color: var(--accent-color); background: rgba(0,0,0,0.3); padding: 6px 10px; border-radius: 5px; text-align: center; margin-top: 8px; }
+        .pseudocode-fill input[type="text"], .pseudocode-fill select { background-color: rgba(255,255,255,0.1); border: 1px solid var(--primary-color); color: var(--text-color); padding: 4px 6px; border-radius: 4px; font-family: 'Roboto Mono', monospace; width: auto; min-width:80px; margin: 0 5px; text-align: center; font-size: 0.9em;}
+
+        /* Flowchart Activity - Orderable List */
+        #flowchart-steps-container { list-style: none; padding: 0; margin: 15px 0; }
+        #flowchart-steps-container li { background-color: var(--flowchart-symbol-bg); border: 1px solid var(--flowchart-symbol-border); padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; cursor: grab; user-select: none; font-family: 'Roboto Mono', monospace; font-size: 0.9em; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
+        #flowchart-steps-container li.dragging { opacity: 0.5; background-color: var(--accent-color); }
+
+        /* --- Navigation Controls --- */
+        .navigation-controls { padding: 15px 30px; border-top: 1px solid rgba(86, 204, 242, 0.3); text-align: right; flex-shrink: 0; background-color: var(--card-bg); /* Match container bg for seamless look */ border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;}
+        #nextButton { /* Uses .activity-button styles */ }
+
+        /* --- Main Simulation Styles (condensed for brevity, assumed mostly same) --- */
+        .simulation-core { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+        .simulation-visuals { flex: 1.2; min-width:clamp(300px, 100%, 500px); background: rgba(0,0,0,0.35); border-radius: 10px; padding: 10px; border: 1px dashed rgba(255,255,255,0.15); }
+        .simulation-controls-data { flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 15px; }
+        #arctic-svg { width: 100%; height: auto; aspect-ratio: 16 / 9; background-color: var(--water-color); border-radius: 8px; overflow: hidden; position: relative; }
+        #ice-platform, #polar-bear, #seal, #sun { /* Basic definitions, transitions in JS logic if needed */ }
+        /* ... other simulation styles from before ... */
+        .data-readout { background: rgba(0,0,0,0.25); padding: 12px; border-radius: 8px; font-family: 'Roboto Mono', monospace; display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; }
+        .data-readout .label { font-size: 0.85em; } .data-readout .value { font-size: 0.95em; }
+        #bear-status-area { grid-column: 1 / -1; text-align: center; padding-top: 10px; border-top: 1px dashed rgba(86, 204, 242, 0.15); margin-top: 6px; }
+        #bear-status { font-size: 1.15em; } #bear-status-text { font-size: 0.8em; }
+        #systemStatus { font-size: 0.85em; padding: 8px; margin-top:10px;}
+
+        /* Responsive Design adjustments for fixed height */
+        @media (max-width: 768px) {
+            header h1 { font-size: 1.8em; }
+            .adventure-container { height: 90vh; max-height: none; } /* Allow more height on small screens */
+            #page-container { padding: 15px 20px; }
+            .content-section h2, .narrative-section h2 { font-size: 1.1em; padding: 8px 15px; margin: -15px -15px 12px -15px;}
+            .narrative-section p, .content-section p { font-size: 0.9em; }
+            .activity-button, #nextButton { font-size: 0.9em; padding: 8px 15px; }
+        }
+         .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
+    </style>
+</head>
+<body>
+    <!-- Embedded SVG Icons (keep all from previous for reuse) -->
+    <svg width="0" height="0" style="position:absolute;">
+        <symbol id="icon-data" viewBox="0 0 24 24"><path fill="currentColor" d="M3 3h18v2H3V3zm0 4h18v2H3V7zm0 4h18v2H3v-2zm0 4h18v2H3v-2zm0 4h18v2H3v-2z"/></symbol>
+        <symbol id="icon-thermometer" viewBox="0 0 24 24"><path fill="currentColor" d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1v7.17c-.31-.11-.65-.17-1-.17s-.69.06-1 .17V5zm3 15c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"/></symbol>
+        <symbol id="icon-algorithm" viewBox="0 0 24 24"><path fill="currentColor" d="M7 7h2v2H7V7zm0 4h2v2H7v-2zm0 4h2v2H7v-2zm4-8h2v2h-2V7zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2zm4-8h2v2h-2V7zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2zM5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></symbol>
+        <symbol id="icon-flowchart" viewBox="0 0 24 24"><path fill="currentColor" d="M9 2v2H7v2H5v2H3v2h2v2h2v2h2v2h2v-2h2v-2h2V8h2V6h-2V4h-2V2H9zm2 4h2v2h-2V6zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2z"/></symbol>
+        <symbol id="icon-code" viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></symbol>
+        <symbol id="icon-lab" viewBox="0 0 24 24"><path fill="currentColor" d="M16 2H8C6.9 2 6 2.9 6 4v12.55c-.59-.34-1.27-.55-2-.55c-2.21 0-4 1.79-4 4s1.79 4 4 4s4-1.79 4-4V6h2v2h4V6h2v12c0 1.1.9 2 2 2s2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 13c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2z"/></symbol>
+        <symbol id="icon-calendar" viewBox="0 0 24 24"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></symbol>
+        <symbol id="icon-co2" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8s8 3.59 8 8s-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></symbol> <!-- Simpler CO2 icon -->
+        <symbol id="polar-bear-shape" viewBox="0 0 100 60"><path d="M85,30 C85,45 75,55 60,55 C45,55 35,45 35,30 C35,15 45,5 60,5 C75,5 85,15 85,30 Z M38,28 C38,25 36,20 30,20 C24,20 22,25 22,28 C22,31 24,36 30,36 C36,36 38,31 38,28 Z M30,22 A 2 2 0 0 1 30 26 A 2 2 0 0 1 30 22 M60,10 A 5 5 0 0 0 55 15 A 5 5 0 0 0 60 20 A 5 5 0 0 0 65 15 A 5 5 0 0 0 60 10 M50,16 A 2 2 0 0 1 50 20 A 2 2 0 0 1 50 16 M70,16 A 2 2 0 0 1 70 20 A 2 2 0 0 1 70 16"/></symbol>
+        <symbol id="seal-shape" viewBox="0 0 80 40"><path d="M75,20 C75,30 65,38 50,38 C35,38 25,30 25,20 C25,10 35,2 50,2 C65,2 75,10 75,20 Z M30,18 Q20,18 15,20 Q20,22 30,22 C35,22 40,20 40,18 Z M68,15 A 3 3 0 0 1 68 21 A 3 3 0 0 1 68 15 M72,18 A 1 1 0 0 1 72 20 A 1 1 0 0 1 72 18"/></symbol>
+        <symbol id="sun-shape" viewBox="0 0 100 100"><circle cx="50" cy="50" r="30"/><line x1="50" y1="10" x2="50" y2="0" stroke="currentColor" stroke-width="5"/><line x1="50" y1="90" x2="50" y2="100" stroke="currentColor" stroke-width="5"/><line x1="10" y1="50" x2="0" y2="50" stroke="currentColor" stroke-width="5"/><line x1="90" y1="50" x2="100" y2="50" stroke="currentColor" stroke-width="5"/><line x1="29.3" y1="29.3" x2="22.2" y2="22.2" stroke="currentColor" stroke-width="5"/><line x1="70.7" y1="70.7" x2="77.8" y2="77.8" stroke="currentColor" stroke-width="5"/><line x1="29.3" y1="70.7" x2="22.2" y2="77.8" stroke="currentColor" stroke-width="5"/><line x1="70.7" y1="29.3" x2="77.8" y2="22.2" stroke="currentColor" stroke-width="5"/></symbol>
+    </svg>
+
+    <div class="adventure-container">
+        <header>
+            <h1>Arctic Data & Algorithms Adventure!</h1>
+        </header>
+
+        <div id="page-container">
+            <!-- PAGE 1: Introduction -->
+            <div class="page active" id="page-intro">
+                <section class="narrative-section">
+                    <h2><svg class="sim-icon" viewBox="0 0 24 24"><use href="#polar-bear-shape" transform="scale(0.24)"/></svg> Welcome, Explorer!</h2>
+                    <p>Imagine you're a scientist studying the <span class="important">polar bear's</span> icy world. This ice is crucial for their survival – it's where they hunt <span class="highlight">seals</span> and raise their young.</p>
+                    <p>But the Arctic is changing. The Earth's climate is warming, and this means the sea ice is shrinking. This makes life very hard for polar bears.</p>
+                    <p>In this adventure, we'll learn how scientists (and you!) use <span class="highlight">data</span> and simple rules called <span class="highlight">algorithms</span> to understand these changes. Ready to start?</p>
+                </section>
+            </div>
+
+            <!-- PAGE 2: Activity 1 - What is Data? -->
+            <div class="page" id="page-activity1">
+                <section class="content-section">
+                    <h2><svg class="sim-icon" viewBox="0 0 24 24"><use href="#icon-data"/></svg> Activity 1: Spot the Data!</h2>
+                    <p>Data is just facts or information. Which of these are pieces of data about our Arctic scene?</p>
+                    <div class="activity-options" id="act1-options">
+                        <label><input type="checkbox" name="act1" value="temp"> A) The temperature is -15°C.</label>
+                        <label><input type="checkbox" name="act1" value="bear_feeling"> B) The polar bear looks fluffy.</label>
+                        <label><input type="checkbox" name="act1" value="ice_size"> C) The ice is 5.2 million km² wide.</label>
+                        <label><input type="checkbox" name="act1" value="seal_name"> D) The seal's name is Slippy.</label>
+                    </div>
+                    <button class="activity-button" onclick="checkActivity('activity1', {temp: true, ice_size: true, seal_name: true}, 'checkbox', 'Data includes specific facts like temperature, size, and even names! "Fluffy" is an opinion.')">Check Answers</button>
+                    <div class="feedback-message" id="activity1-feedback"></div>
+                </section>
+            </div>
+            
+            <!-- PAGE 3: Activity 2 - Data Types Intro -->
+            <div class="page" id="page-activity2">
+                <section class="content-section">
+                    <h2><svg class="sim-icon" viewBox="0 0 24 24"><use href="#icon-data"/></svg> Activity 2: Data "Boxes" (Types)</h2>
+                    <p>Computers store data in different "boxes." Let's match the data to its box type!</p>
+                    <p class="activity-question">1. Current Year (e.g., 2024):</p>
+                    <div class="activity-options" id="act2_q1-options">
+                        <label><input type="radio" name="act2_q1" value="number"> Number (for counting)</label>
+                        <label><input type="radio" name="act2_q1" value="text"> Text (words)</label>
+                        <label><input type="radio" name="act2_q1" value="boolean"> True/False</label>
+                    </div>
+                    <p class="activity-question">2. Bear's Name (e.g., "Snowball"):</p>
+                    <div class="activity-options" id="act2_q2-options">
+                        <label><input type="radio" name="act2_q2" value="number"> Number</label>
+                        <label><input type="radio" name="act2_q2" value="text"> Text</label>
+                        <label><input type="radio" name="act2_q2" value="boolean"> True/False</label>
+                    </div>
+                    <p class="activity-question">3. Is the ice thick enough? (e.g., Yes/True):</p>
+                    <div class="activity-options" id="act2_q3-options">
+                        <label><input type="radio" name="act2_q3" value="number"> Number</label>
+                        <label><input type="radio" name="act2_q3" value="text"> Text</label>
+                        <label><input type="radio" name="act2_q3" value="boolean"> True/False</label>
+                    </div>
+                    <button class="activity-button" onclick="checkMultiMCQ('activity2', [{q: 'act2_q1', a: 'number'}, {q: 'act2_q2', a: 'text'}, {q: 'act2_q3', a: 'boolean'}], 'Great! Years are whole numbers, names are text, and yes/no questions are True/False.')">Check Data Types</button>
+                    <div class="feedback-message" id="activity2-feedback"></div>
+                </section>
+            </div>
+
+            <!-- PAGE 4: Activity 3 - Data Limits -->
+            <div class="page" id="page-activity3">
+                <section class="content-section">
+                     <h2><svg class="sim-icon" viewBox="0 0 24 24"><use href="#icon-thermometer"/></svg> Activity 3: The Tiny Ice Gauge!</h2>
+                    <p>Our special ice gauge can only measure thickness from <span class="important">1 meter</span> to <span class="important">4 meters</span>. What happens if the ice is different?</p>
+                    <div class="activity-slider-group">
+                        <label for="actualIceThicknessSlider">Actual Ice Thickness: <span id="actualIceThicknessValue">2.5m</span></label>
+                        <input type="range" id="actualIceThicknessSlider" min="0" max="6" value="2.5" step="0.1">
+                        <p>Tiny Ice Gauge Shows: <span class="activity-slider-output" id="limitedGaugeOutput">2.5m</span></p>
+                    </div>
+                    <div class="feedback-message" id="activity3-feedback">Adjust the slider to see the gauge's limits!</div>
+                </section>
+            </div>
+
+            <!-- PAGE 5: Activity 4 - Pseudocode -->
+            <div class="page" id="page-activity4">
+                 <section class="content-section">
+                    <h2><svg class="sim-icon" viewBox="0 0 24 24"><use href="#icon-algorithm"/></svg> Activity 4: Bear's Nap Time Rule!</h2>
+                    <p>Let's write a simple rule (pseudocode) for when the bear takes a nap.</p>
+                    <p>The Rule: <span class="emphasis">IF the sun is shining AND the bear is sleepy, THEN the bear takes a nap.</span></p>
+                    <div class="pseudocode-fill code-snippet">
+                        <span class="keyword">IF</span> sun_is_shining_is <select id="pseudoNapVal1"><option value="true">True</option><option value="false">False</option></select> 
+                        <select id="pseudoNapOp1"><option value="and">AND</option><option value="or">OR</option></select> bear_is_sleepy_is <select id="pseudoNapVal2"><option value="true">True</option><option value="false">False</option></select> <span class="keyword">THEN</span><br>
+                          Action = "<input type="text" id="pseudoNapAction" value="Take a nap" size="12">"<br>
+                        <span class="keyword">END IF</span>
+                    </div>
+                    <button class="activity-button" onclick="checkActivity4()">Check Nap Rule</button>
+                    <div class="feedback-message" id="activity4-feedback"></div>
+                </section>
+            </div>
+
+            <!-- PAGE 6: Activity 5 - Flowchart Order -->
+            <div class="page" id="page-activity5">
+                <section class="content-section">
+                    <h2><svg class="sim-icon" viewBox="0 0 24 24"><use href="#icon-flowchart"/></svg> Activity 5: Polar Bear's Fishing Trip!</h2>
+                    <p>A flowchart shows steps in order. Drag these steps to plan the bear's fishing trip!</p>
+                    <ul id="flowchart-steps-container">
+                        <!-- JS will populate this -->
+                    </ul>
+                    <button class="activity-button" onclick="checkActivity5()">Check Fishing Plan</button>
+                    <div class="feedback-message" id="activity5-feedback"></div>
+                </section>
+            </div>
+
+            <!-- PAGE 7: Code Structure Explanation -->
+            <div class="page" id="page-activity6">
+                <section class="content-section">
+                    <h2><svg class="sim-icon" viewBox="0 0 24 24"><use href="#icon-code"/></svg> Activity 6: How Code Works - A Peek!</h2>
+                    <p>This is like a recipe the computer follows to decide if a seal is nearby. It's called a <span class="highlight">function</span>.</p>
+                    <div class="code-snippet">
+<pre><span class="comment">// This function checks if a seal is close.</span>
+<span class="keyword">function</span> <span class="variable">isSealCloseBy</span>(<span class="variable">distanceToSeal</span>) {
+  <span class="keyword">let</span> <span class="variable">maxHuntingRange</span> = <span class="value">10</span>; <span class="comment">// Bear can hunt seals within 10 units.</span>
+
+  <span class="keyword">if</span> (<span class="variable">distanceToSeal</span> < <span class="variable">maxHuntingRange</span>) {
+    <span class="keyword">return</span> <span class="value">True</span>; <span class="comment">// Yes, seal is close!</span>
+  } <span class="keyword">else</span> {
+    <span class="keyword">return</span> <span class="value">False</span>; <span class="comment">// No, seal is too far.</span>
+  }
+}</pre>
+                    </div>
+                    <p>This "recipe" takes one piece of info (<span class="variable">distanceToSeal</span>), checks a rule, and gives back an answer (<span class="value">True</span> or <span class="value">False</span>).</p>
+                    <div class="feedback-message" id="activity6-feedback">Cool, huh? Code is just a set of instructions!</div>
+                </section>
+            </div>
+
+            <!-- PAGE 8: Main Simulation -->
+            <div class="page" id="page-simulation">
+                 <section class="content-section">
+                     <h2><svg class="sim-icon" viewBox="0 0 24 24"><use href="#icon-lab"/></svg> Arctic Forecaster: Your Turn!</h2>
+                    <p>Now you're the scientist! Use everything you've learned. Adjust the <span class="highlight">Year</span> and <span class="critical">Warming Gas</span>.</p>
+                    <p class="challenge-goal">Can you find settings that keep the polar bear's habitat (<span class="status-best">Great!</span> or <span class="status-ok">Okay...</span>) for many years?</p>
+                    <div class="simulation-core">
+                        <div class="simulation-visuals">
+                            <svg id="arctic-svg" viewBox="0 0 600 337.5" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                                <use id="sun" href="#sun-shape" x="520" y="10" width="70" height="70"/>
+                                <path id="ice-platform" d="M50,287.5 Q150,250 300,260 T550,287.5 L550,150 Q450,100 300,110 Q150,100 50,150 Z" />
+                                <use id="polar-bear" href="#polar-bear-shape" x="250" y="150" width="100" height="60" />
+                                <use id="seal" href="#seal-shape" x="100" y="220" width="80" height="40"/>
+                            </svg>
+                        </div>
+                        <div class="simulation-controls-data">
+                            <div class="slider-container">
+                                <label for="yearSlider"><span class="label-text"><svg class="label-icon" viewBox="0 0 24 24"><use href="#icon-calendar"/></svg>Which Year Is It?</span><span id="yearValue" class="value-display">1979</span></label>
+                                <input type="range" id="yearSlider" name="yearSlider" class="year-slider" min="1979" max="2100" value="1979" step="1">
+                            </div>
+                            <div class="slider-container">
+                                 <label for="co2Slider"><span class="label-text"><svg class="label-icon" viewBox="0 0 24 24"><use href="#icon-co2"/></svg>Warming Gas Level (CO₂)</span><span id="co2Value" class="value-display">337</span></label>
+                                 <input type="range" id="co2Slider" name="co2Slider" class="co2-slider" min="337" max="950" value="337" step="1">
+                            </div>
+                            <div class="data-readout">
+                                <span class="label">The Year:</span><span id="readout-year" class="value">1979</span>
+                                <span class="label">Warming Gas:</span><span id="readout-co2" class="value">337</span>
+                                <span class="label">Summer Ice Size:</span><span id="readout-ice" class="value">7.0 M km²</span>
+                                <span class="label">Change Since 1979:</span><span id="readout-change" class="value">0%</span>
+                                <div id="bear-status-area">
+                                    <span id="bear-status" class="value status-best">Great!</span>
+                                    <span id="bear-status-text">Perfect ice conditions.</span>
+                                </div>
+                            </div>
+                             <div id="systemStatus">Simulation starting... Keep the ice safe!</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+             <!-- PAGE 9: Conclusion -->
+            <div class="page" id="page-conclusion">
+                <section class="narrative-section">
+                    <h2><svg class="sim-icon" viewBox="0 0 24 24"><use href="#polar-bear-shape" transform="scale(0.24)"/></svg> Adventure Complete!</h2>
+                    <p>Wow, great job, Arctic Data Explorer! You've learned about how data, simple rules (algorithms), and even bits of code help us understand big challenges like climate change and its effect on polar bears.</p>
+                    <p>Remembering how data is stored and how instructions are given can help you think like a scientist or a computer programmer!</p>
+                    <p class="important">Keep exploring, keep learning, and think about how you can help protect our amazing planet and animals like the polar bear!</p>
+                </section>
+            </div>
+
+        </div> <!-- End #page-container -->
+
+        <div class="navigation-controls">
+            <button id="nextButton" class="activity-button">Next Step!</button>
+        </div>
+    </div>
+
+    <script>
+    // --- Page Navigation & Activity Logic ---
+    const pages = document.querySelectorAll('.page');
+    const nextButton = document.getElementById('nextButton');
+    let currentPageIndex = 0;
+    const totalPages = pages.length;
+
+    function showPage(index) {
+        pages.forEach((page, i) => {
+            page.classList.toggle('active', i === index);
+        });
+        // Default to disabled for pages with challenges, enable on success
+        // For intro/conclusion/display pages, enable immediately.
+        if (pages[index].id === 'page-intro' || 
+            pages[index].id === 'page-activity6' || /* Code display page */
+            pages[index].id === 'page-simulation' || /* Simulation sandbox */
+            pages[index].id === 'page-conclusion') {
+            nextButton.disabled = false;
+        } else {
+            nextButton.disabled = true;
+        }
+        if (index === totalPages - 1) {
+            nextButton.textContent = "Finish Adventure!";
+        } else if (index === totalPages -2 && pages[totalPages-1].id === 'page-conclusion') {
+            // If previous page was the simulation, make the button text "View Conclusion"
+            nextButton.textContent = "View Conclusion";
+        }
+        else {
+            nextButton.textContent = "Next Step!";
+        }
+    }
+
+    nextButton.addEventListener('click', () => {
+        if (currentPageIndex < totalPages - 1) {
+            currentPageIndex++;
+            showPage(currentPageIndex);
+            // Specific initializations for new pages if needed
+            if (pages[currentPageIndex].id === 'page-activity5') {
+                initializeFlowchartActivity5(); // Shuffle and display flowchart steps
+            }
+        } else {
+            // Could show a final message or reset
+            alert("Adventure Finished! Great job!");
+            currentPageIndex = 0;
+            showPage(currentPageIndex); // Go back to start
+        }
+    });
+
+    // --- Generic Activity Checkers ---
+    function checkActivity(activityId, correctAnswers, inputType, successMessage = "Correct!", failureMessage = "Try again!") {
+        const feedbackEl = document.getElementById(`${activityId}-feedback`);
+        let allCorrect = true;
+        let answered = false;
+
+        if (inputType === 'checkbox') {
+            const options = document.querySelectorAll(`#${activityId}-options input[type="checkbox"]`);
+            options.forEach(option => {
+                const isChecked = option.checked;
+                const shouldBeChecked = correctAnswers[option.value] === true;
+                if (isChecked !== shouldBeChecked) {
+                    allCorrect = false;
+                }
+                if (isChecked) answered = true;
+            });
+            if (!answered && Object.keys(correctAnswers).length > 0) { // Ensure at least one option must be checked if there are correct answers
+                allCorrect = false; 
+            }
+
+
+        } else if (inputType === 'radio') { // Assuming one question per activityId for this simple version
+            const selected = document.querySelector(`#${activityId}-options input[type="radio"]:checked`);
+            if (selected && selected.value === correctAnswers.answer) {
+                // Correct
+            } else {
+                allCorrect = false;
+            }
+        }
+
+        if (allCorrect) {
+            feedbackEl.textContent = successMessage;
+            feedbackEl.className = "feedback-message correct";
+            nextButton.disabled = false;
+        } else {
+            feedbackEl.textContent = failureMessage;
+            feedbackEl.className = "feedback-message incorrect";
+            nextButton.disabled = true;
+        }
+    }
+    
+    function checkMultiMCQ(activityId, questionsAndAnswers, successMessage) {
+        const feedbackEl = document.getElementById(`${activityId}-feedback`);
+        let allCorrect = true;
+        questionsAndAnswers.forEach(item => {
+            const selected = document.querySelector(`input[name="${item.q}"]:checked`);
+            if (!selected || selected.value !== item.a) {
+                allCorrect = false;
+            }
+        });
+        if (allCorrect) {
+            feedbackEl.textContent = successMessage;
+            feedbackEl.className = "feedback-message correct";
+            nextButton.disabled = false;
+        } else {
+            feedbackEl.textContent = "Not quite! Check all your answers.";
+            feedbackEl.className = "feedback-message incorrect";
+            nextButton.disabled = true;
+        }
+    }
+
+
+    // --- Activity 3: Data Limits (Ice Gauge) ---
+    const actualIceThicknessSlider = document.getElementById('actualIceThicknessSlider');
+    const actualIceThicknessValue = document.getElementById('actualIceThicknessValue');
+    const limitedGaugeOutput = document.getElementById('limitedGaugeOutput');
+    const activity3Feedback = document.getElementById('activity3-feedback');
+    const GAUGE_MIN = 1.0;
+    const GAUGE_MAX = 4.0;
+
+    if (actualIceThicknessSlider) {
+        actualIceThicknessSlider.addEventListener('input', () => {
+            const actualThick = parseFloat(actualIceThicknessSlider.value);
+            actualIceThicknessValue.textContent = actualThick.toFixed(1) + "m";
+            let displayedThick = actualThick;
+            let feedbackMsg = "Gauge shows the real thickness!";
+            let isCorrectRange = true;
+            activity3Feedback.className = "feedback-message";
+
+            if (actualThick < GAUGE_MIN) {
+                displayedThick = GAUGE_MIN;
+                feedbackMsg = `It's thinner than ${GAUGE_MIN.toFixed(1)}m, but the gauge can't show less!`;
+                activity3Feedback.className = "feedback-message incorrect";
+                isCorrectRange = false;
+            } else if (actualThick > GAUGE_MAX) {
+                displayedThick = GAUGE_MAX;
+                feedbackMsg = `It's thicker than ${GAUGE_MAX.toFixed(1)}m, but the gauge can't show more!`;
+                activity3Feedback.className = "feedback-message incorrect";
+                isCorrectRange = false;
+            } else {
+                 activity3Feedback.className = "feedback-message correct";
+            }
+            limitedGaugeOutput.textContent = displayedThick.toFixed(1) + "m";
+            activity3Feedback.textContent = feedbackMsg;
+            // For this activity, just interacting is enough to proceed
+            nextButton.disabled = false; 
+        });
+    }
+
+    // --- Activity 4: Pseudocode Nap Rule ---
+    function checkActivity4() {
+        const val1 = document.getElementById('pseudoNapVal1').value;
+        const op1 = document.getElementById('pseudoNapOp1').value;
+        const val2 = document.getElementById('pseudoNapVal2').value;
+        const action = document.getElementById('pseudoNapAction').value.toLowerCase();
+        const feedbackEl = document.getElementById('activity4-feedback');
+
+        if (val1 === 'true' && op1 === 'and' && val2 === 'true' && action.includes('nap')) {
+            feedbackEl.textContent = "Perfect! The bear naps if it's sunny AND sleepy.";
+            feedbackEl.className = "feedback-message correct";
+            nextButton.disabled = false;
+        } else {
+            feedbackEl.textContent = "Hmm, check the rule. Both conditions (sunny AND sleepy) need to be true for a nap.";
+            feedbackEl.className = "feedback-message incorrect";
+            nextButton.disabled = true;
+        }
+    }
+
+    // --- Activity 5: Flowchart Order ---
+    const flowchartStepsContainer = document.getElementById('flowchart-steps-container');
+    const correctFlowchartOrderAct5 = [
+        "START Fishing Trip",
+        "Is ice strong enough?",
+        "Find a good fishing spot",
+        "Wait for a fish",
+        "Catch a fish?",
+        "Eat fish (Happy!)",
+        "END Fishing Trip"
+    ];
+    let flowchartDraggableItem = null;
+
+    function initializeFlowchartActivity5() {
+        if (!flowchartStepsContainer) return;
+        flowchartStepsContainer.innerHTML = ''; // Clear previous
+        // Shuffle for variety
+        const shuffledSteps = [...correctFlowchartOrder].sort(() => Math.random() - 0.5);
+        
+        shuffledSteps.forEach(stepText => {
+            const li = document.createElement('li');
+            li.textContent = stepText;
+            li.draggable = true;
+            li.id = "fc_step_" + stepText.toLowerCase().replace(/\s+/g, '_').replace(/[?!().,']/g, '');
+            flowchartStepsContainer.appendChild(li);
+        });
+
+        const listItems = flowchartStepsContainer.querySelectorAll('li');
+        listItems.forEach(item => {
+            item.addEventListener('dragstart', () => {
+                flowchartDraggableItem = item;
+                item.classList.add('dragging');
+            });
+            item.addEventListener('dragend', () => {
+                if(flowchartDraggableItem) flowchartDraggableItem.classList.remove('dragging');
+                flowchartDraggableItem = null;
+            });
+        });
+
+        flowchartStepsContainer.addEventListener('dragover', e => {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(flowchartStepsContainer, e.clientY);
+            if (flowchartDraggableItem) { // Check if an item is actually being dragged
+                 if (afterElement == null) {
+                    flowchartStepsContainer.appendChild(flowchartDraggableItem);
+                } else {
+                    flowchartStepsContainer.insertBefore(flowchartDraggableItem, afterElement);
+                }
+            }
+        });
+    }
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function checkActivity5() {
+        const feedbackEl = document.getElementById('activity5-feedback');
+        if (!flowchartStepsContainer) {
+             feedbackEl.textContent = "Error: Flowchart not found.";
+             feedbackEl.className = "feedback-message incorrect";
+             return;
+        }
+        const currentOrder = [...flowchartStepsContainer.querySelectorAll('li')].map(li => li.textContent);
+        let isCorrect = true;
+        if (currentOrder.length !== correctFlowchartOrderAct5.length) {
+            isCorrect = false;
+        } else {
+            for (let i = 0; i < correctFlowchartOrderAct5.length; i++) {
+                if (currentOrder[i] !== correctFlowchartOrderAct5[i]) {
+                    isCorrect = false;
+                    break;
+                }
+            }
+        }
+
+        if (isCorrect) {
+            feedbackEl.textContent = "Excellent! That's a logical fishing plan.";
+            feedbackEl.className = "feedback-message correct";
+            nextButton.disabled = false;
+        } else {
+            feedbackEl.textContent = "Not quite the right order. Think about the steps a bear would take.";
+            feedbackEl.className = "feedback-message incorrect";
+            nextButton.disabled = true;
+        }
+    }
+    
+    // --- Main Simulation JS (from previous, with minor ID changes for consistency if any) ---
+    // Variables and functions are prefixed with 'sim' to avoid clashes
+    const simYearSlider = document.getElementById('yearSlider'); // Note: These IDs are now specific to the simulation page
+    const simCo2Slider = document.getElementById('co2Slider');
+    const simYearValueDisplay = document.getElementById('yearValue');
+    const simCo2ValueDisplay = document.getElementById('co2Value');
+    const simArcticSvg = document.getElementById('arctic-svg');
+    const simIcePlatform = document.getElementById('ice-platform');
+    const simPolarBear = document.getElementById('polar-bear');
+    const simSeal = document.getElementById('seal');
+    const simSun = document.getElementById('sun');
+    const simReadoutYear = document.getElementById('readout-year');
+    const simReadoutCo2 = document.getElementById('readout-co2');
+    const simReadoutIce = document.getElementById('readout-ice');
+    const simReadoutChange = document.getElementById('readout-change');
+    const simBearStatus = document.getElementById('bear-status');
+    const simBearStatusText = document.getElementById('bear-status-text');
+    const simSystemStatus = document.getElementById('systemStatus');
+    const simResetButton = document.getElementById('resetBtn');
+
+    const simStartYear = 1979, simEndYear = 2100, simStartCO2 = 337, simEndCO2 = 950;
+    const simMaxIceArea = 7.0, simMinIceArea = 0.5;
+    const simBaseMeltRatePerYear = (simMaxIceArea - 4.5) / (2023 - simStartYear) * 0.9;
+    const simBearInitialX = 250, simBearInitialY = 150, simSealInitialX = 100, simSealInitialY = 220;
+    const SIM_SVG_WIDTH = 600, SIM_SVG_HEIGHT = 337.5; // Define these if used in calculations
+    const SIM_THRESHOLD_BEST = 6.0, SIM_THRESHOLD_OK = 4.0, SIM_THRESHOLD_BAD = 2.0;
+
+    function simCalculateIceArea(year, co2) { /* ... same as before ... */ 
+        const yearsPassed = year - simStartYear;
+        const co2Factor = Math.max(0, (co2 - simStartCO2)) / (simEndCO2 - simStartCO2);
+        const co2Multiplier = 1 + (co2Factor * co2Factor * 3.0);
+        const baseMelt = yearsPassed * simBaseMeltRatePerYear;
+        const projectedMelt = baseMelt * co2Multiplier;
+        let currentIceArea = simMaxIceArea - projectedMelt;
+        currentIceArea = Math.max(simMinIceArea, Math.min(simMaxIceArea, currentIceArea));
+        if (year === simStartYear && co2 === simStartCO2) return simMaxIceArea;
+        return currentIceArea;
+    }
+
+    function updateMainSimulation() {
+        if (!simYearSlider) return; 
+        const currentYear = parseInt(simYearSlider.value); const currentCO2 = parseInt(simCo2Slider.value);
+        const iceArea = simCalculateIceArea(currentYear, currentCO2); const iceAreaPercentage = Math.max(0, iceArea / simMaxIceArea);
+        const iceScale = Math.sqrt(iceAreaPercentage);
+        simIcePlatform.style.transform = `scale(${iceScale.toFixed(3)})`;
+        let bearX = simBearInitialX; let bearY = simBearInitialY;
+        if (iceScale < 0.45) { const dF = (1-(iceScale/0.45)); bearY=simBearInitialY+(SIM_SVG_HEIGHT-simBearInitialY-30)*dF*0.5; bearX=simBearInitialX+(SIM_SVG_WIDTH/2-simBearInitialX-50)*dF*0.3; }
+        simPolarBear.style.transform = `translate(${(bearX - simBearInitialX).toFixed(1)}px, ${(bearY - simBearInitialY).toFixed(1)}px)`;
+        let sealX = simSealInitialX; let sealY = simSealInitialY; let sealOp = 1;
+        if (iceScale < 0.65) { sealOp=(iceScale-0.3)/(0.65-0.3); sealOp=Math.max(0,Math.min(1,sealOp)); sealY=simSealInitialY+(1-iceScale/0.65)*30; sealX=simSealInitialX-(1-iceScale/0.65)*20; }
+        if (iceScale < 0.3) { sealOp = 0; }
+        simSeal.style.opacity = sealOp.toFixed(2); simSeal.style.transform = `translate(${(sealX-simSealInitialX).toFixed(1)}px, ${(sealY-simSealInitialY).toFixed(1)}px)`;
+        const co2R = Math.max(0,(currentCO2-simStartCO2))/(simEndCO2-simStartCO2); const sunH=Math.max(35,50-co2R*15); const sunS=90+co2R*10; const sunL=70-co2R*5; const sunC=`hsl(${sunH}, ${sunS}%, ${sunL}%)`;
+        simSun.style.fill = sunC; simSun.style.filter = `drop-shadow(0 0 ${15+co2R*10}px ${sunC})`;
+        const thumbH=Math.max(0,60-co2R*60); const thumbC=`hsl(${thumbH},90%,60%)`; simCo2Slider.style.setProperty('--slider-thumb-co2',thumbC);
+        simYearValueDisplay.textContent=currentYear; simCo2ValueDisplay.textContent=currentCO2; simReadoutYear.textContent=currentYear; simReadoutCo2.textContent=currentCO2; simReadoutIce.textContent=`${iceArea.toFixed(1)} M km²`; const chgP=((iceArea-simMaxIceArea)/simMaxIceArea*100); simReadoutChange.textContent=`${chgP.toFixed(0)}%`;
+        let sMainTxt="", sSubTxt="", sClass="", logCls="";
+        if(iceArea>SIM_THRESHOLD_BEST){sMainTxt="Great!";sSubTxt="Perfect ice conditions.";sClass="status-best";logCls="best";}
+        else if(iceArea>SIM_THRESHOLD_OK){sMainTxt="Okay...";sSubTxt="Ice is shrinking, getting harder.";sClass="status-ok";logCls="ok";}
+        else if(iceArea>SIM_THRESHOLD_BAD){sMainTxt="Worried Bear!";sSubTxt="Not much ice left. Seals are scarce.";sClass="status-bad";logCls="bad";}
+        else{sMainTxt="SOS!";sSubTxt="Survival threatened! Very little ice.";sClass="status-critical";logCls="critical";}
+        simBearStatus.textContent=sMainTxt; simBearStatusText.textContent=sSubTxt; simBearStatus.className=`value ${sClass}`;
+        showSimSystemStatus(`Y:${currentYear} CO₂:${currentCO2} Ice:${iceArea.toFixed(1)} Status:${sMainTxt}`,logCls);
+    }
+    function showSimSystemStatus(message, type = 'best', makeVisible = true) {
+        if (!simSystemStatus) return;
+        simSystemStatus.textContent = `[LOG] ${message}`; simSystemStatus.className = type;
+        if(makeVisible){simSystemStatus.classList.add('visible');}else{simSystemStatus.classList.remove('visible');}
+    }
+    function resetMainSimulation() {
+        if (simYearSlider) simYearSlider.value = simStartYear; if (simCo2Slider) simCo2Slider.value = simStartCO2;
+        updateMainSimulation(); showSimSystemStatus('Back to the start (1979)! Best conditions.', 'best');
+        if(simResetButton) { simResetButton.style.transform = 'scale(0.95)'; setTimeout(() => { simResetButton.style.transform = 'scale(1)'; }, 150); }
+    }
+    if (simYearSlider) simYearSlider.addEventListener('input', updateMainSimulation);
+    if (simCo2Slider) simCo2Slider.addEventListener('input', updateMainSimulation);
+    if (simResetButton) simResetButton.addEventListener('click', resetMainSimulation);
+
+    // --- Initialisation ---
+    document.addEventListener('DOMContentLoaded', () => {
+        showPage(currentPageIndex); // Show the first page
+        if (pages[currentPageIndex].id === 'page-activity5') { // If first page is flowchart
+            initializeFlowchartActivity5();
+        }
+        if (typeof updateMainSimulation === "function" && document.getElementById('page-simulation').classList.contains('active')) {
+             updateMainSimulation(); // Initialize main simulation if it's the active page
+        }
+        if (actualIceThicknessSlider) { // Init Activity 3 slider display
+            actualIceThicknessValue.textContent = parseFloat(actualIceThicknessSlider.value).toFixed(1) + "m";
+            limitedGaugeOutput.textContent = parseFloat(actualIceThicknessSlider.value).toFixed(1) + "m";
+        }
+        // For simulation page, next button is always enabled as it's a sandbox
+        if (pages[currentPageIndex].id === 'page-simulation') { nextButton.disabled = false; }
+    });
+
+    </script>
+</body>
+</html>

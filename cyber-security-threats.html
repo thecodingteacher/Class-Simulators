@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cybersecurity Breach Response & Strategy Simulator</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50; /* Dark Blue/Grey */
+            --secondary-color: #3498db; /* Bright Blue */
+            --accent-color: #e74c3c; /* Red */
+            --success-color: #2ecc71; /* Green */
+            --warning-color: #f39c12; /* Orange */
+            --info-color: #8e44ad; /* Purple */
+            --light-bg: #ecf0f1;
+            --text-color: #333;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .worksheet-container {
+            background-color: #fff;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            width: 95%;
+            max-width: 950px;
+            padding: 20px 30px;
+            margin-top: 20px;
+        }
+
+        h1, h2, h3 { color: var(--primary-color); }
+        h1 { text-align: center; margin-bottom: 20px; font-size: 1.8em;}
+        h2 { margin-top: 0; border-bottom: 2px solid var(--secondary-color); padding-bottom: 10px; font-size: 1.5em;}
+        .activity-title { font-size: 1.4em; color: var(--secondary-color); margin-bottom: 15px; }
+
+        .progress-bar-container {
+            width: 100%; background-color: #e0e0e0; border-radius: var(--border-radius);
+            margin-bottom: 25px; height: 25px;
+        }
+        #progress-bar {
+            width: 0%; height: 100%; background-color: var(--success-color);
+            border-radius: var(--border-radius); text-align: center; line-height: 25px;
+            color: white; font-weight: bold; transition: width 0.5s ease-in-out;
+        }
+
+        .activity { display: none; padding: 20px; border: 1px solid #ddd; border-radius: var(--border-radius); margin-bottom: 20px; background-color: #f9f9f9;}
+        .activity.active { display: block; }
+        .instructions { margin-bottom: 15px; font-style: italic; color: #555; }
+
+        .interactive-area { padding: 15px; background-color: #fff; border: 1px dashed #ccc; border-radius: var(--border-radius); margin-bottom: 15px; min-height: 100px;}
+        .feedback-message { padding: 10px; border-radius: var(--border-radius); margin-top: 15px; font-weight: bold; display: none; }
+        .feedback-message.correct { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .feedback-message.incorrect { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .feedback-message.info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+        .navigation-buttons { text-align: right; margin-top: 20px; }
+        .nav-button {
+            padding: 10px 20px; background-color: var(--secondary-color); color: white;
+            border: none; border-radius: var(--border-radius); cursor: pointer;
+            font-size: 1em; transition: background-color 0.2s; margin-left: 10px;
+        }
+        .nav-button:hover:not(:disabled) { background-color: var(--primary-color); }
+        .nav-button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .check-answer-btn {
+            padding: 8px 15px; background-color: var(--warning-color); color: white;
+            border: none; border-radius: var(--border-radius); cursor: pointer;
+            font-size: 0.95em; transition: background-color 0.2s;
+        }
+        .check-answer-btn:hover:not(:disabled) { background-color: #d35400; }
+        .check-answer-btn:disabled { background-color: #bdc3c7; cursor: not-allowed;}
+
+
+        /* --- Activity Specific Styles --- */
+
+        /* Activity: Terminology Matching (from previous, adapted) */
+        .term-matching-container { display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap;}
+        .term-list-container { margin-right: 20px; margin-bottom: 10px; min-width:150px; border:1px solid #eee; padding:5px; min-height: 100px;}
+        .term-draggable { padding: 8px 12px; background-color: var(--secondary-color); color: white; border-radius: 4px; margin: 5px; cursor: grab; user-select: none; border: 1px solid var(--primary-color); }
+        .term-dropzone { width: 160px; min-height: 80px; border: 2px dashed #aaa; border-radius: var(--border-radius); margin: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5px; text-align: center; font-size: 0.9em;}
+        .term-dropzone svg { margin-bottom: 5px; }
+        .term-dropzone.over { background-color: #e0e0e0; border-style: solid; }
+        .term-dropzone.dropped .term-draggable { background-color: var(--success-color); border-color: #1e7e34;}
+
+        /* Activity: Identify Initial Vector (SVG Hotspot - adapted) */
+        #initialVectorSvg .clickable-hotspot { cursor: pointer; transition: fill 0.2s, stroke 0.2s; }
+        #initialVectorSvg .clickable-hotspot:hover rect { fill: var(--warning-color) !important; }
+        #initialVectorSvg .clickable-hotspot.selected rect { stroke: var(--accent-color); stroke-width: 3px; }
+
+        /* Activity: Spot Phishing Clues (adapted) */
+        .phishing-email-container { border: 1px solid #ccc; padding: 15px; font-family: 'Courier New', Courier, monospace; background-color: #fff8e1; }
+        .phishing-clue { cursor: pointer; text-decoration: underline; color: #007bff; transition: background-color 0.2s; }
+        .phishing-clue:hover { background-color: #ffff00; }
+        .phishing-clue.found { background-color: var(--success-color); color: white; text-decoration: none; padding: 2px 4px; border-radius: 3px;}
+
+        /* Activity: Remediation Steps Ordering (adapted) */
+        .remediation-steps-container { list-style-type: none; padding: 0; min-height:100px; border:1px solid #eee; padding:5px; }
+        .remediation-step { padding: 10px; background-color: #e9ecef; border: 1px solid #ced4da; margin-bottom: 5px; border-radius: 4px; cursor: move; user-select: none; }
+        .remediation-step.dragging { opacity: 0.5; background-color: var(--secondary-color); color: white;}
+
+        /* Activity: Tracing Attacker Movement (adapted) */
+        #attackerPathSvg .network-node { cursor: pointer; }
+        #attackerPathSvg .network-node circle { transition: fill 0.2s; }
+        #attackerPathSvg .network-node:hover circle { fill: var(--warning-color); }
+        #attackerPathSvg .network-node.clicked circle { fill: var(--accent-color); stroke: #a03028; stroke-width:2px; }
+        #attackerPathSvg .path-line { stroke: var(--accent-color); stroke-width: 3px; marker-end: url(#arrowMarkerGeneral); }
+
+        /* Activity: Security Strategy Simulation (NEW) */
+        #sim-budget-display { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; text-align: center; }
+        #sim-budget-value { color: var(--success-color); }
+        #sim-budget-value.negative { color: var(--accent-color); }
+        .sim-measures-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 20px;}
+        .sim-measure-card {
+            width: 180px; border: 1px solid #ccc; border-radius: var(--border-radius); padding: 10px;
+            background-color: #fdfdfd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .sim-measure-card:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .sim-measure-card.selected { border-left: 5px solid var(--success-color); background-color: #e8f5e9; }
+        .sim-measure-card h4 { margin-top: 0; margin-bottom: 5px; color: var(--primary-color); font-size: 1.1em; }
+        .sim-measure-card p { font-size: 0.85em; margin-bottom: 8px; color: #555; min-height: 50px;}
+        .sim-measure-cost { font-weight: bold; color: var(--secondary-color); }
+        #sim-run-button { display: block; margin: 20px auto; width: 200px; padding: 12px; font-size: 1.1em;}
+
+        .sim-results-container { margin-top: 20px; }
+        .sim-attack-vector-result {
+            display: flex; align-items: center; padding: 8px; margin-bottom: 8px;
+            border-radius: var(--border-radius); border: 1px solid #ddd;
+        }
+        .sim-attack-vector-result svg { width: 24px; height: 24px; margin-right: 10px; }
+        .sim-attack-vector-result.blocked { background-color: #d4edda; border-color: #c3e6cb;}
+        .sim-attack-vector-result.succeeded { background-color: #f8d7da; border-color: #f5c6cb;}
+        .sim-attack-consequence { font-size: 0.9em; margin-left: 5px; color: #721c24;}
+        #sim-overall-result { font-size: 1.2em; font-weight: bold; text-align: center; margin-top: 15px;}
+
+        /* General SVG marker for arrows */
+        #arrowMarkerGeneral { fill: var(--accent-color); }
+
+    </style>
+</head>
+<body>
+    <svg style="display:none;"> <!-- Hidden SVG definitions -->
+        <defs>
+            <marker id="arrowMarkerGeneral" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" />
+            </marker>
+            <!-- Icons for simulation results -->
+            <symbol id="icon-blocked" viewBox="0 0 24 24">
+                <path fill="var(--success-color)" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </symbol>
+            <symbol id="icon-succeeded" viewBox="0 0 24 24">
+                <path fill="var(--accent-color)" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </symbol>
+        </defs>
+    </svg>
+
+    <div class="worksheet-container">
+        <h1>Cybersecurity Breach Response & Strategy Simulator</h1>
+        <div class="progress-bar-container">
+            <div id="progress-bar">0%</div>
+        </div>
+
+        <!-- ACTIVITY: Intro (Fixed Start) -->
+        <div class="activity" id="activity-intro">
+            <h2>Welcome, Cybersecurity Analyst!</h2>
+            <p>You are tasked with investigating the "CipherLock" ransomware attack on Innovatech Solutions and then devising a strategy to prevent future incidents.</p>
+            <p><strong>Scenario Recap:</strong> Innovatech, a mid-sized tech company, was breached by "ShadowByte Crew." They exploited an <strong>unpatched external web server</strong>, gained network access, deployed ransomware, encrypted files, and exfiltrated data.</p>
+            <p>This simulation will test your knowledge through various activities, culminating in a strategic defense planning exercise. Pay attention to the details from the scenario as they will be relevant. Click "Begin Investigation" to start.</p>
+        </div>
+
+        <!-- ACTIVITY: Terminology Matching (Module 1) -->
+        <div class="activity" id="activity-terminology">
+            <h3 class="activity-title">Module 1: Understanding the Lingo</h3>
+            <p class="instructions">Drag each cybersecurity term from the left to its correct definition or representative icon on the right. One term is an extra distractor.</p>
+            <div class="interactive-area term-matching-container">
+                <div class="term-list-container" id="term-list-act1">
+                    <!-- Draggable terms will be populated here by JS -->
+                </div>
+                <div id="term-definitions-act1" style="display:flex; flex-wrap:wrap;">
+                    <div class="term-dropzone" data-accepts="term-vulnerability">
+                        <svg width="40" height="40" viewBox="0 0 24 24"><path fill="#e74c3c" d="M12 1.318L3.086 5.682v5.636c0 5.309 3.691 10.254 8.914 11.682 5.223-1.428 8.914-6.373 8.914-11.682V5.682L12 1.318zm-1 14.045l-3-3 1.06-1.06 1.94 1.94 4.24-4.24L15.3 9.063l-5.3 5.3z"/><path fill="#fff" d="M11.5 12.5h1v-5h-1v5zm0 2h1v-1h-1v2z" transform="scale(0.5) translate(7,7)" /></svg>
+                        A weakness in a system or its design that can be exploited.
+                    </div>
+                    <div class="term-dropzone" data-accepts="term-threat-actor">
+                        <svg width="40" height="40" viewBox="0 0 24 24"><path fill="#2c3e50" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        An individual or group posing a threat (e.g., hacker, cybercriminal).
+                    </div>
+                    <div class="term-dropzone" data-accepts="term-exploit">
+                         <svg width="30" height="30" viewBox="0 0 24 24"><path fill="#f39c12" d="M19.41,6.59L18,5.17L12,11.17L6,5.17L4.59,6.59L10.17,12L4.59,17.41L6,18.83L12,12.83L18,18.83L19.41,17.41L13.83,12L19.41,6.59Z"/></svg>
+                        A piece of software, data, or sequence of commands that takes advantage of a bug or vulnerability.
+                    </div>
+                     <div class="term-dropzone" data-accepts="term-malware">
+                        <svg width="30" height="30" viewBox="0 0 24 24"><path fill="#8e44ad" d="M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3"/></svg>
+                        Software designed to disrupt, damage, or gain unauthorized access.
+                    </div>
+                </div>
+            </div>
+            <button class="check-answer-btn">Check Answers</button>
+            <div class="feedback-message"></div>
+        </div>
+
+        <!-- ACTIVITY: Identify Initial Vector (Module 2) -->
+        <div class="activity" id="activity-initial-vector">
+            <h3 class="activity-title">Module 2: The Way In</h3>
+            <p class="instructions">The scenario mentioned the attackers exploited an "unpatched external-facing web server." Click on the component in the diagram that represents this initial point of compromise for the ShadowByte Crew.</p>
+            <div class="interactive-area" style="text-align:center;">
+                <svg id="initialVectorSvg" width="450" height="200" viewBox="0 0 450 200">
+                    <!-- Internet -->
+                    <rect x="10" y="75" width="80" height="50" fill="#e0f7fa" stroke="#00796b" stroke-width="2" rx="5"/>
+                    <text x="50" y="103" text-anchor="middle" font-size="12">Internet</text>
+                    <line x1="90" y1="100" x2="130" y2="100" stroke="#333" stroke-width="2" marker-end="url(#arrowMarkerGeneral)"/>
+                    <!-- Firewall -->
+                    <g class="clickable-hotspot" data-component="firewall">
+                        <rect x="130" y="60" width="30" height="80" fill="#ffe0b2" stroke="#e65100" stroke-width="2" rx="3"/>
+                        <text x="145" y="103" text-anchor="middle" font-size="10" transform="rotate(-90 145 100)">Firewall</text>
+                    </g>
+                    <line x1="160" y1="100" x2="200" y2="100" stroke="#333" stroke-width="2" marker-end="url(#arrowMarkerGeneral)"/>
+                    <!-- External Web Server -->
+                    <g class="clickable-hotspot" data-component="external-server">
+                        <rect x="200" y="75" width="100" height="50" fill="#ffcdd2" stroke="#c62828" stroke-width="2" rx="5"/>
+                        <text x="250" y="95" text-anchor="middle" font-size="11">External Web</text>
+                        <text x="250" y="110" text-anchor="middle" font-size="11">Server (Unpatched)</text>
+                    </g>
+                    <line x1="300" y1="100" x2="340" y2="100" stroke="#333" stroke-width="2" marker-end="url(#arrowMarkerGeneral)"/>
+                    <!-- Internal Network -->
+                     <g class="clickable-hotspot" data-component="internal-network">
+                        <rect x="340" y="75" width="100" height="50" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2" rx="5"/>
+                        <text x="390" y="95" text-anchor="middle" font-size="11">Internal</text>
+                        <text x="390" y="110" text-anchor="middle" font-size="11">Network</text>
+                    </g>
+                </svg>
+            </div>
+            <div class="feedback-message"></div>
+        </div>
+        
+        <!-- ACTIVITY: Spot Phishing Clues (Module 3) -->
+        <div class="activity" id="activity-phishing-clues">
+            <h3 class="activity-title">Module 3: Don't Get Hooked!</h3>
+            <p class="instructions">After initial access, attackers might use phishing to escalate privileges or gather more credentials. Click on at least <strong>three</strong> suspicious elements in the email mock-up below.</p>
+            <div class="interactive-area">
+                <div class="phishing-email-container">
+                    <p><strong>From:</strong> <span class="phishing-clue" data-clue-id="sender">Innovatech Support &lt;support@innovatech-servce.co&gt;</span></p>
+                    <p><strong>Subject:</strong> <span class="phishing-clue" data-clue-id="subject">URGENT Security Notification: Your Account Comprmised!</span></p>
+                    <hr>
+                    <p><span class="phishing-clue" data-clue-id="greeting">Dear User,</span></p>
+                    <p>We detected suspicious login attempt on your account. For you're safety, please verify your credentials immediately by clicking the link below.</p>
+                    <p>Login Securely: <span class="phishing-clue" data-clue-id="link">http://innovatech.secure-login-portal.com/verify?id=user123</span></p>
+                    <p><span class="phishing-clue" data-clue-id="urgency">If you do not do this in 12 hours your account will be locked.</span></p>
+                    <p>Thank you,<br/>The Innovatech IT Departement</p>
+                </div>
+                <p style="margin-top:10px;">Clues found: <span id="clues-found-count">0</span> / 3</p>
+            </div>
+            <div class="feedback-message"></div>
+        </div>
+
+        <!-- ACTIVITY: Remediation Steps Ordering (Module 4) -->
+        <div class="activity" id="activity-remediation-order">
+            <h3 class="activity-title">Module 4: Cleaning Up the Mess</h3>
+            <p class="instructions">Innovatech is in crisis mode! Drag and drop the following incident response steps into a logical order (Top = First Step).</p>
+            <div class="interactive-area">
+                <ul class="remediation-steps-container" id="remediation-list-act6">
+                    <!-- Draggable steps will be populated here by JS -->
+                </ul>
+            </div>
+            <button class="check-answer-btn">Check Order</button>
+            <div class="feedback-message"></div>
+        </div>
+        
+        <!-- ACTIVITY: Tracing Attacker Movement (Module 5) -->
+        <div class="activity" id="activity-attacker-path">
+            <h3 class="activity-title">Module 5: Following the Trail</h3>
+            <p class="instructions">After breaching the external server, the ShadowByte Crew moved laterally. Click on the systems (circles) in the likely order they compromised to reach valuable data and deploy ransomware. (A path will be drawn. Select 3-4 systems in order starting from the known entry point).</p>
+            <div class="interactive-area" style="text-align:center;">
+                <svg id="attackerPathSvg" width="550" height="320" viewBox="0 0 550 320">
+                    <g id="attacker-path-nodes">
+                        <g class="network-node" data-node-id="ext-server" data-x="70" data-y="160">
+                            <circle cx="70" cy="160" r="35" fill="#ffcdd2" stroke="#c62828" stroke-width="2"/>
+                            <text x="70" y="155" text-anchor="middle" font-size="9">External Web</text>
+                            <text x="70" y="167" text-anchor="middle" font-size="9">Server (Entry)</text>
+                        </g>
+                        <g class="network-node" data-node-id="domain-ctrl" data-x="230" data-y="80">
+                            <circle cx="230" cy="80" r="35" fill="#e1bee7" stroke="#8e24aa" stroke-width="2"/>
+                            <text x="230" y="75" text-anchor="middle" font-size="9">Domain</text>
+                            <text x="230" y="87" text-anchor="middle" font-size="9">Controller</text>
+                        </g>
+                        <g class="network-node" data-node-id="file-server" data-x="230" data-y="240">
+                            <circle cx="230" cy="240" r="35" fill="#c5cae9" stroke="#3f51b5" stroke-width="2"/>
+                            <text x="230" y="235" text-anchor="middle" font-size="9">File Server</text>
+                            <text x="230" y="247" text-anchor="middle" font-size="9">(Critical Data)</text>
+                        </g>
+                        <g class="network-node" data-node-id="db-server" data-x="390" data-y="160">
+                            <circle cx="390" cy="160" r="35" fill="#bbdefb" stroke="#1e88e5" stroke-width="2"/>
+                            <text x="390" y="155" text-anchor="middle" font-size="9">Database</text>
+                            <text x="390" y="167" text-anchor="middle" font-size="9">Server (PII)</text>
+                        </g>
+                        <g class="network-node" data-node-id="workstations" data-x="500" data-y="250">
+                            <circle cx="500" cy="250" r="35" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2"/>
+                            <text x="500" y="245" text-anchor="middle" font-size="9">Employee</text>
+                            <text x="500" y="257" text-anchor="middle" font-size="9">Workstations</text>
+                        </g>
+                    </g>
+                    <g id="attacker-path-lines"></g>
+                </svg>
+            </div>
+            <button id="reset-path-btn-act8" class="check-answer-btn" style="background-color:var(--info-color);">Reset Path</button>
+            <button class="check-answer-btn" id="check-path-btn-act8">Check Path</button>
+            <div class="feedback-message"></div>
+        </div>
+
+        <!-- ACTIVITY: Security Strategy Simulation (Module 6) -->
+        <div class="activity" id="activity-simulation">
+            <h3 class="activity-title">Module 6: Building a Stronger Defense</h3>
+            <p class="instructions">Innovatech wants to prevent future attacks. You have <strong><span id="sim-initial-budget"></span> Security Points (SP)</strong> to allocate to different security measures. Click on measures to select them. Your goal is to build the most effective defense possible within your budget. After allocating, run the attack simulation.</p>
+            
+            <div id="sim-budget-display">Budget Remaining: <span id="sim-budget-value"></span> SP</div>
+            
+            <div class="interactive-area">
+                <div class="sim-measures-container" id="sim-measures-list">
+                    <!-- Security measures will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <button id="sim-run-button" class="nav-button" style="background-color: var(--success-color);">Run Attack Simulation</button>
+            
+            <div class="sim-results-container" id="sim-results" style="display:none;">
+                <h4>Simulation Results:</h4>
+                <div id="sim-attack-outcomes">
+                    <!-- Attack outcomes will be populated here -->
+                </div>
+                <div id="sim-overall-result"></div>
+            </div>
+            <div class="feedback-message"></div> <!-- General feedback for this activity, e.g. after simulation -->
+        </div>
+
+
+        <!-- ACTIVITY: Summary (Fixed End) -->
+        <div class="activity" id="activity-summary">
+            <h2>Investigation & Strategy Debrief</h2>
+            <p>Congratulations on completing the Innovatech Solutions Cybersecurity Challenge!</p>
+            <p>Key Learnings:</p>
+            <ul>
+                <li><strong>Layered Security is Key:</strong> No single solution is foolproof. A combination of technical controls (patching, EDR, firewalls, MFA) and human elements (training) is essential.</li>
+                <li><strong>Proactive vs. Reactive:</strong> While incident response is crucial, proactive measures like regular patching, vulnerability management, and robust authentication can prevent many attacks.</li>
+                <li><strong>Understand Attacker Tactics:</strong> Knowing common TTPs (Tactics, Techniques, and Procedures) like exploiting unpatched systems, phishing, and lateral movement helps in designing effective defenses.</li>
+                <li><strong>Risk-Based Decisions:</strong> Security investments often involve trade-offs. Prioritize defenses based on the likelihood and impact of threats to your specific organization.</li>
+                <li><strong>Continuous Improvement:</strong> The threat landscape is always evolving. Regular reviews, updates to security posture, and learning from incidents (even simulated ones!) are vital.</li>
+            </ul>
+            <p>We hope this simulation provided valuable insights into the complexities of cybersecurity. Keep learning and stay vigilant!</p>
+            <p>Make sure to complete your accompanying paper worksheet with your reflections and notes from this digital activity.</p>
+        </div>
+
+        <div class="navigation-buttons">
+            <button id="prevButton" class="nav-button" disabled>Previous Module</button>
+            <button id="nextButton" class="nav-button">Begin Investigation</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Global State & Configuration ---
+        let currentActivityId = 'activity-intro';
+        const orderedCoreActivityIds = [
+            'activity-terminology',      // Module 1
+            'activity-initial-vector',   // Module 2
+            'activity-phishing-clues',   // Module 3
+            'activity-remediation-order',// Module 4
+            'activity-attacker-path',    // Module 5
+            'activity-simulation'        // Module 6
+        ];
+        let coreActivityPointer = -1; 
+
+        const activityStates = {}; 
+        
+        const progressBar = document.getElementById('progress-bar');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+
+        // --- Utility Function for Shuffling ---
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        // --- Utility Functions (updateProgressBar, displayActivityFeedback, markActivityAttempt, showActivity, updateNavigation - No changes needed from previous) ---
+        function updateProgressBar() {
+            let completedCoreCount = 0;
+            orderedCoreActivityIds.forEach(id => {
+                if (activityStates[id] && activityStates[id].completed && activityStates[id].correct) {
+                    completedCoreCount++;
+                }
+            });
+            const progress = orderedCoreActivityIds.length > 0 ? (completedCoreCount / orderedCoreActivityIds.length) * 100 : 0;
+            progressBar.style.width = progress + '%';
+            progressBar.textContent = Math.round(progress) + '%';
+        }
+
+        function displayActivityFeedback(activityId, isCorrect, message, typeOverride = null) {
+            const activityElement = document.getElementById(activityId);
+            if (!activityElement) return;
+            const feedbackDiv = activityElement.querySelector('.feedback-message');
+            if (!feedbackDiv) return;
+
+            feedbackDiv.innerHTML = message; 
+            feedbackDiv.className = 'feedback-message'; 
+            
+            let feedbackClass = '';
+            if (typeOverride) {
+                feedbackClass = typeOverride;
+            } else {
+                feedbackClass = isCorrect === true ? 'correct' : (isCorrect === false ? 'incorrect' : 'info');
+            }
+            feedbackDiv.classList.add(feedbackClass);
+            feedbackDiv.style.display = 'block';
+        }
+        
+        function markActivityAttempt(activityId, isCorrect = null, data = {}) {
+            if (!activityStates[activityId]) activityStates[activityId] = {};
+            activityStates[activityId].completed = true;
+            activityStates[activityId].correct = isCorrect; 
+            activityStates[activityId].data = { ...activityStates[activityId].data, ...data };
+            updateProgressBar();
+            updateNavigation(); 
+        }
+
+
+        function showActivity(activityIdToShow) {
+            document.querySelectorAll('.activity').forEach(act => act.classList.remove('active'));
+            const nextActivityElement = document.getElementById(activityIdToShow);
+            if (nextActivityElement) {
+                nextActivityElement.classList.add('active');
+                currentActivityId = activityIdToShow;
+            } else {
+                console.error("Activity not found:", activityIdToShow);
+                currentActivityId = 'activity-intro'; 
+                document.getElementById(currentActivityId).classList.add('active');
+            }
+            updateNavigation();
+        }
+
+        function updateNavigation() {
+            if (currentActivityId === 'activity-intro') {
+                prevButton.disabled = true;
+                nextButton.textContent = 'Begin Investigation';
+                nextButton.disabled = false;
+            } else if (currentActivityId === 'activity-summary') {
+                prevButton.disabled = false;
+                nextButton.textContent = 'Finished';
+                nextButton.disabled = true;
+            } else { 
+                prevButton.disabled = false; 
+                nextButton.textContent = 'Next Module';
+                const state = activityStates[currentActivityId];
+                if (state && state.completed) {
+                    if (document.getElementById(currentActivityId).querySelector('.check-answer-btn')) {
+                        nextButton.disabled = state.correct !== true;
+                    } else { 
+                        nextButton.disabled = false; 
+                    }
+                } else {
+                     nextButton.disabled = true; 
+                }
+                if (currentActivityId === 'activity-phishing-clues' && state && state.data && state.data.foundCluesCount >= 3 && state.correct !== false) { 
+                    nextButton.disabled = false;
+                }
+            }
+        }
+
+
+        // --- Navigation Event Listeners (No changes needed from previous) ---
+        prevButton.addEventListener('click', () => {
+            if (currentActivityId === 'activity-summary') {
+                coreActivityPointer = orderedCoreActivityIds.length - 1;
+                showActivity(orderedCoreActivityIds[coreActivityPointer]);
+            } else if (orderedCoreActivityIds.includes(currentActivityId)) {
+                const currentIndexInCore = orderedCoreActivityIds.indexOf(currentActivityId);
+                if (currentIndexInCore > 0) {
+                    coreActivityPointer = currentIndexInCore - 1;
+                    showActivity(orderedCoreActivityIds[coreActivityPointer]);
+                } else { 
+                    coreActivityPointer = -1;
+                    showActivity('activity-intro');
+                }
+            }
+        });
+
+        nextButton.addEventListener('click', () => {
+            if (currentActivityId === 'activity-intro') {
+                coreActivityPointer = 0;
+                showActivity(orderedCoreActivityIds[coreActivityPointer]);
+            } else if (orderedCoreActivityIds.includes(currentActivityId)) {
+                const currentIndexInCore = orderedCoreActivityIds.indexOf(currentActivityId);
+                if (currentIndexInCore < orderedCoreActivityIds.length - 1) {
+                    coreActivityPointer = currentIndexInCore + 1;
+                    showActivity(orderedCoreActivityIds[coreActivityPointer]);
+                } else { 
+                    coreActivityPointer = -1; 
+                    showActivity('activity-summary');
+                }
+            }
+        });
+
+
+        // --- Activity Setup Functions ---
+
+        // Activity 1: Terminology (MODIFIED FOR SHUFFLING)
+        function setupTerminologyActivity() {
+            const activityId = 'activity-terminology';
+            const termListContainer = document.getElementById('term-list-act1');
+            termListContainer.innerHTML = ''; // Clear previous items if any
+
+            // Define terms to be shuffled
+            const termsData = [
+                { id: 'term-vulnerability', text: 'Vulnerability' },
+                { id: 'term-threat-actor', text: 'Threat Actor' },
+                { id: 'term-exploit', text: 'Exploit' },
+                { id: 'term-malware', text: 'Malware' },
+                { id: 'term-dos', text: 'DoS Attack (Distractor)' }
+            ];
+            const shuffledTerms = shuffleArray(termsData);
+
+            // Populate draggable terms
+            shuffledTerms.forEach(term => {
+                const div = document.createElement('div');
+                div.classList.add('term-draggable');
+                div.setAttribute('draggable', 'true');
+                div.id = term.id;
+                div.textContent = term.text;
+                termListContainer.appendChild(div);
+            });
+            
+            // Rest of the setup is the same
+            const draggables = document.querySelectorAll(`#${activityId} .term-draggable`);
+            const dropzones = document.querySelectorAll(`#${activityId} .term-dropzone`);
+            let draggedItem = null;
+            
+            if (!activityStates[activityId] || !activityStates[activityId].data) {
+                activityStates[activityId] = { ...activityStates[activityId], data: { dropped: {} } };
+            } else if (!activityStates[activityId].data.dropped) {
+                 activityStates[activityId].data.dropped = {};
+            }
+
+
+            draggables.forEach(draggable => {
+                draggable.addEventListener('dragstart', (e) => {
+                    draggedItem = e.target;
+                    e.target.style.opacity = '0.5';
+                });
+                draggable.addEventListener('dragend', (e) => {
+                    e.target.style.opacity = '1';
+                    draggedItem = null;
+                });
+            });
+
+            dropzones.forEach(zone => {
+                zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('over'); });
+                zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('over');
+                    if (draggedItem && !zone.querySelector('.term-draggable')) { 
+                        zone.appendChild(draggedItem);
+                        zone.classList.add('dropped');
+                        activityStates[activityId].data.dropped[zone.dataset.accepts] = draggedItem.id;
+                    }
+                });
+            });
+            termListContainer.addEventListener('dragover', (e) => e.preventDefault());
+            termListContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (draggedItem && draggedItem.parentElement.classList.contains('term-dropzone')) {
+                    for (const key in activityStates[activityId].data.dropped) {
+                        if (activityStates[activityId].data.dropped[key] === draggedItem.id) {
+                            delete activityStates[activityId].data.dropped[key];
+                            break;
+                        }
+                    }
+                    draggedItem.parentElement.classList.remove('dropped');
+                    termListContainer.appendChild(draggedItem);
+                }
+            });
+
+
+            document.querySelector(`#${activityId} .check-answer-btn`).addEventListener('click', () => {
+                let correctCount = 0;
+                const expected = {
+                    'term-vulnerability': 'term-vulnerability',
+                    'term-threat-actor': 'term-threat-actor',
+                    'term-exploit': 'term-exploit',
+                    'term-malware': 'term-malware'
+                };
+                const totalExpected = Object.keys(expected).length;
+                for (const zoneAccepts in activityStates[activityId].data.dropped) {
+                    if (expected[zoneAccepts] && activityStates[activityId].data.dropped[zoneAccepts] === expected[zoneAccepts]) {
+                        correctCount++;
+                    }
+                }
+                const isFullyCorrect = correctCount === totalExpected && Object.keys(activityStates[activityId].data.dropped).length === totalExpected;
+                const message = isFullyCorrect ? "Excellent! All terms matched correctly." : `You matched ${correctCount} out of ${totalExpected} correctly. Review and try again. The 'DoS Attack' term is a distractor.`;
+                displayActivityFeedback(activityId, isFullyCorrect, message);
+                markActivityAttempt(activityId, isFullyCorrect);
+            });
+        }
+
+        // Activity 2: Initial Vector (No changes needed)
+        function setupInitialVectorActivity() {
+            const activityId = 'activity-initial-vector';
+            const hotspots = document.querySelectorAll(`#${activityId} #initialVectorSvg .clickable-hotspot`);
+            
+            hotspots.forEach(hotspot => {
+                hotspot.addEventListener('click', () => {
+                    hotspots.forEach(h => h.classList.remove('selected'));
+                    hotspot.classList.add('selected');
+                    const component = hotspot.dataset.component;
+                    const isCorrect = component === 'external-server';
+                    const message = isCorrect ? "Correct! The unpatched external web server was the entry point." : "Not quite. The scenario specified an 'unpatched external-facing web server'. Think about where attackers from the Internet would first land.";
+                    displayActivityFeedback(activityId, isCorrect, message);
+                    markActivityAttempt(activityId, isCorrect, {selected: component});
+                });
+            });
+        }
+        
+        // Activity 3: Phishing Clues (No changes needed)
+        function setupPhishingCluesActivity() {
+            const activityId = 'activity-phishing-clues';
+            const clues = document.querySelectorAll(`#${activityId} .phishing-clue`);
+            const cluesFoundCountEl = document.getElementById('clues-found-count');
+            const requiredClues = 3;
+            
+            if (!activityStates[activityId] || !activityStates[activityId].data) {
+                activityStates[activityId] = { ...activityStates[activityId], data: { foundClues: new Set(), foundCluesCount: 0 } };
+            } else {
+                 activityStates[activityId].data.foundClues = new Set(); 
+                 activityStates[activityId].data.foundCluesCount = 0;
+            }
+            cluesFoundCountEl.textContent = '0'; 
+            clues.forEach(c => c.classList.remove('found')); 
+
+            clues.forEach(clue => {
+                clue.addEventListener('click', () => {
+                    if (!clue.classList.contains('found')) {
+                        clue.classList.add('found');
+                        activityStates[activityId].data.foundClues.add(clue.dataset.clueId);
+                        activityStates[activityId].data.foundCluesCount = activityStates[activityId].data.foundClues.size;
+                        cluesFoundCountEl.textContent = activityStates[activityId].data.foundCluesCount;
+
+                        if (activityStates[activityId].data.foundCluesCount >= requiredClues) {
+                            const correctClueIds = ['sender', 'subject', 'greeting', 'link', 'urgency']; 
+                            let correctlyFoundCount = 0;
+                            activityStates[activityId].data.foundClues.forEach(foundId => {
+                                if(correctClueIds.includes(foundId)) correctlyFoundCount++;
+                            });
+
+                            const isSufficientlyCorrect = correctlyFoundCount >= requiredClues;
+                            const message = `You've spotted ${activityStates[activityId].data.foundCluesCount} clues. Good job! Key indicators of phishing include: suspicious sender emails (like 'servce.co'), typos ('Comprmised', 'Departement'), generic greetings, urgent calls to action, and misleading links (hover to inspect!).`;
+                            displayActivityFeedback(activityId, isSufficientlyCorrect, message);
+                            markActivityAttempt(activityId, isSufficientlyCorrect); 
+                        } else {
+                            displayActivityFeedback(activityId, null, `You found ${activityStates[activityId].data.foundCluesCount} clue(s). Keep looking for more suspicious elements!`, 'info');
+                            markActivityAttempt(activityId, null); 
+                        }
+                    }
+                });
+            });
+        }
+
+        // Activity 4: Remediation Order (MODIFIED FOR SHUFFLING)
+        function setupRemediationOrderActivity() {
+            const activityId = 'activity-remediation-order';
+            const listContainer = document.getElementById('remediation-list-act6');
+            listContainer.innerHTML = ''; // Clear previous items
+
+            const stepsData = [
+                { id: 'eradicate', text: 'Eradicate: Remove malware, fix vulnerabilities.' },
+                { id: 'contain', text: 'Containment: Isolate affected systems, prevent spread.' },
+                { id: 'recover', text: 'Recovery: Restore systems from clean backups, monitor.' },
+                { id: 'identify', text: 'Identification: Analyze scope, root cause, affected data.' },
+                { id: 'lessons', text: 'Lessons Learned: Post-incident review, improve defenses.' },
+                { id: 'prepare', text: 'Preparation: (This is pre-incident, but key to good response)' }
+            ];
+            const shuffledSteps = shuffleArray(stepsData);
+
+            shuffledSteps.forEach(stepData => {
+                const li = document.createElement('li');
+                li.classList.add('remediation-step');
+                li.setAttribute('draggable', 'true');
+                li.dataset.stepId = stepData.id;
+                li.textContent = stepData.text;
+                listContainer.appendChild(li);
+            });
+
+            // Rest of the setup is the same
+            let draggingElement = null;
+            listContainer.querySelectorAll('.remediation-step').forEach(step => {
+                step.addEventListener('dragstart', (e) => { draggingElement = e.target; e.target.classList.add('dragging'); });
+                step.addEventListener('dragend', (e) => { e.target.classList.remove('dragging'); draggingElement = null; });
+            });
+
+            listContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(listContainer, e.clientY);
+                if (draggingElement) {
+                    if (afterElement == null) listContainer.appendChild(draggingElement);
+                    else listContainer.insertBefore(draggingElement, afterElement);
+                }
+            });
+
+            function getDragAfterElement(container, y) {
+                const draggableElements = [...container.querySelectorAll('.remediation-step:not(.dragging)')];
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+                    return closest;
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
+
+            document.querySelector(`#${activityId} .check-answer-btn`).addEventListener('click', () => {
+                const currentOrder = [...listContainer.querySelectorAll('.remediation-step')].map(step => step.dataset.stepId);
+                const correctOrder = ['identify', 'contain', 'eradicate', 'recover', 'lessons'];
+                const userResponseOrder = currentOrder.filter(step => step !== 'prepare');
+                
+                let isCorrect = true;
+                if(userResponseOrder.length === correctOrder.length){
+                    for(let i=0; i < correctOrder.length; i++){
+                        if(userResponseOrder[i] !== correctOrder[i]){
+                            isCorrect = false;
+                            break;
+                        }
+                    }
+                } else {
+                    isCorrect = false; 
+                }
+
+                const message = isCorrect ? "Excellent! That's a standard and logical order for incident response (after initial preparation)." : "The order isn't quite standard. A common flow (NIST) is: Identification -> Containment -> Eradication -> Recovery -> Lessons Learned. Preparation is ongoing and pre-incident.";
+                displayActivityFeedback(activityId, isCorrect, message);
+                markActivityAttempt(activityId, isCorrect, {order: currentOrder});
+            });
+        }
+
+        // Activity 5: Attacker Path (No changes needed)
+        function setupAttackerPathActivity() {
+            const activityId = 'activity-attacker-path';
+            const svg = document.getElementById('attackerPathSvg');
+            const nodes = svg.querySelectorAll('.network-node');
+            const linesGroup = svg.getElementById('attacker-path-lines');
+            const maxClicks = 4;
+            
+            if (!activityStates[activityId] || !activityStates[activityId].data) {
+                 activityStates[activityId] = { ...activityStates[activityId], data: { path: [], pathCoords: [] } };
+            } else {
+                 activityStates[activityId].data.path = []; 
+                 activityStates[activityId].data.pathCoords = []; 
+            }
+            linesGroup.innerHTML = ''; 
+            nodes.forEach(n => n.classList.remove('clicked')); 
+            document.getElementById(`check-path-btn-act8`).disabled = false;
+
+
+            function drawPath() {
+                linesGroup.innerHTML = '';
+                for (let i = 0; i < activityStates[activityId].data.pathCoords.length - 1; i++) {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', activityStates[activityId].data.pathCoords[i].x);
+                    line.setAttribute('y1', activityStates[activityId].data.pathCoords[i].y);
+                    line.setAttribute('x2', activityStates[activityId].data.pathCoords[i+1].x);
+                    line.setAttribute('y2', activityStates[activityId].data.pathCoords[i+1].y);
+                    line.classList.add('path-line');
+                    linesGroup.appendChild(line);
+                }
+            }
+            
+            function resetPath() {
+                activityStates[activityId].data.path = [];
+                activityStates[activityId].data.pathCoords = [];
+                linesGroup.innerHTML = '';
+                nodes.forEach(n => n.classList.remove('clicked'));
+                displayActivityFeedback(activityId, null, "Path reset. Start by clicking the initial entry point.", 'info');
+                document.getElementById(`check-path-btn-act8`).disabled = false;
+                markActivityAttempt(activityId, null); 
+            }
+            document.getElementById(`reset-path-btn-act8`).addEventListener('click', resetPath);
+
+            nodes.forEach(node => {
+                node.addEventListener('click', () => {
+                    if (activityStates[activityId].data.path.length < maxClicks && !node.classList.contains('clicked')) {
+                        if (activityStates[activityId].data.path.length === 0 && node.dataset.nodeId !== 'ext-server') {
+                            displayActivityFeedback(activityId, false, "Start the path from the 'External Web Server (Entry)'.");
+                            return;
+                        }
+                        node.classList.add('clicked');
+                        activityStates[activityId].data.path.push(node.dataset.nodeId);
+                        activityStates[activityId].data.pathCoords.push({ x: node.dataset.x, y: node.dataset.y });
+                        drawPath();
+                        if (activityStates[activityId].data.path.length === maxClicks) {
+                             displayActivityFeedback(activityId, null, "Maximum path length reached. Check your path or reset.", 'info');
+                        }
+                        markActivityAttempt(activityId, null); 
+                    }
+                });
+            });
+
+            document.getElementById(`check-path-btn-act8`).addEventListener('click', () => {
+                const userPath = activityStates[activityId].data.path;
+                const plausiblePaths = [
+                    ['ext-server', 'domain-ctrl', 'file-server', 'workstations'],
+                    ['ext-server', 'domain-ctrl', 'db-server', 'workstations'],
+                    ['ext-server', 'domain-ctrl', 'file-server'], 
+                    ['ext-server', 'domain-ctrl', 'db-server']
+                ];
+                let isCorrect = plausiblePaths.some(p => JSON.stringify(p) === JSON.stringify(userPath));
+
+                if (userPath.length < 3) isCorrect = false; 
+
+                const message = isCorrect ? "That's a plausible attacker path to access valuable assets and deploy ransomware!" : "This path is less likely or incomplete. A common pattern: initial compromise (External Server), escalate privileges (Domain Controller), access data (File/DB Server), then spread/damage (Workstations). Ensure your path starts at the known entry point.";
+                displayActivityFeedback(activityId, isCorrect, message);
+                markActivityAttempt(activityId, isCorrect);
+                if(isCorrect) document.getElementById(`check-path-btn-act8`).disabled = true;
+            });
+        }
+        
+        // Activity 6: Security Strategy Simulation (No changes needed)
+        function setupSimulationActivity() {
+            const activityId = 'activity-simulation';
+            const initialBudget = 12;
+            document.getElementById('sim-initial-budget').textContent = initialBudget;
+            
+            activityStates[activityId] = { 
+                completed: false, 
+                correct: null, 
+                data: {
+                    budget: initialBudget,
+                    selectedMeasures: new Set()
+                }
+            };
+            
+            const budgetValueEl = document.getElementById('sim-budget-value');
+            const measuresContainer = document.getElementById('sim-measures-list');
+            const runSimButton = document.getElementById('sim-run-button');
+            const resultsContainer = document.getElementById('sim-results');
+            const attackOutcomesEl = document.getElementById('sim-attack-outcomes');
+            const overallResultEl = document.getElementById('sim-overall-result');
+
+            measuresContainer.innerHTML = '';
+            resultsContainer.style.display = 'none';
+            attackOutcomesEl.innerHTML = '';
+            overallResultEl.textContent = '';
+            runSimButton.disabled = false;
+
+
+            const securityMeasures = {
+                patching: { id: 'patching', name: "Patch Management", cost: 3, description: "Regularly update systems to fix known vulnerabilities.", effectiveness: { exploit: 5, ransomware_spread: 2 } },
+                training: { id: 'training', name: "Employee Training", cost: 2, description: "Educate staff on phishing, social engineering, and safe practices.", effectiveness: { phishing: 4, malware_human: 2 } },
+                firewall: { id: 'firewall', name: "Next-Gen Firewall", cost: 4, description: "Filter network traffic, block known malicious IPs/domains, basic intrusion prevention.", effectiveness: { exploit: 2, malware_network: 3, ddos: 4 } },
+                edr: { id: 'edr', name: "Endpoint Detection & Response (EDR)", cost: 5, description: "Monitor endpoints for suspicious activity, detect and respond to threats like malware/ransomware.", effectiveness: { malware_execution: 5, ransomware_execution: 4, lateral_movement: 3 } },
+                mfa: { id: 'mfa', name: "Multi-Factor Authentication (MFA)", cost: 3, description: "Require multiple verification methods for account access.", effectiveness: { phishing: 3, account_takeover: 5 } },
+                ir_plan: { id: 'ir_plan', name: "Incident Response Plan & Drills", cost: 2, description: "Defined procedures for handling breaches, reducing recovery time and impact.", effectiveness: { impact_reduction: 5 } } 
+            };
+
+            function updateBudgetText() {
+                budgetValueEl.textContent = activityStates[activityId].data.budget;
+                budgetValueEl.classList.toggle('negative', activityStates[activityId].data.budget < 0);
+            }
+            updateBudgetText();
+
+            for (const key in securityMeasures) {
+                const measure = securityMeasures[key];
+                const card = document.createElement('div');
+                card.classList.add('sim-measure-card');
+                card.dataset.measureId = measure.id;
+                card.innerHTML = `
+                    <h4>${measure.name}</h4>
+                    <p>${measure.description}</p>
+                    <p class="sim-measure-cost">Cost: ${measure.cost} SP</p>
+                `;
+                card.style.pointerEvents = 'auto'; 
+                card.addEventListener('click', () => {
+                    if (activityStates[activityId].data.selectedMeasures.has(measure.id)) {
+                        activityStates[activityId].data.selectedMeasures.delete(measure.id);
+                        activityStates[activityId].data.budget += measure.cost;
+                        card.classList.remove('selected');
+                    } else {
+                        if (activityStates[activityId].data.budget >= measure.cost) {
+                            activityStates[activityId].data.selectedMeasures.add(measure.id);
+                            activityStates[activityId].data.budget -= measure.cost;
+                            card.classList.add('selected');
+                        } else {
+                            displayActivityFeedback(activityId, false, "Not enough budget for this measure!");
+                            setTimeout(() => {
+                                const feedbackMsg = document.querySelector(`#${activityId} .feedback-message`);
+                                if (feedbackMsg) feedbackMsg.style.display = 'none';
+                            }, 3000);
+                        }
+                    }
+                    updateBudgetText();
+                });
+                measuresContainer.appendChild(card);
+            }
+
+            runSimButton.addEventListener('click', () => {
+                if (activityStates[activityId].data.budget < 0) {
+                     displayActivityFeedback(activityId, false, "You've overspent your budget! Please adjust your selections.");
+                     return;
+                }
+                resultsContainer.style.display = 'block';
+                attackOutcomesEl.innerHTML = ''; 
+                
+                const chosenMeasureObjects = [];
+                activityStates[activityId].data.selectedMeasures.forEach(id => chosenMeasureObjects.push(securityMeasures[id]));
+
+                const attackVectors = [
+                    { id: 'exploit', name: "Unpatched Server Exploit (Initial Access)", difficulty: 6, impact: "Gained initial network access.", relevantEffectiveness: ['exploit'] },
+                    { id: 'phishing', name: "Phishing for Credentials (Privilege Escalation)", difficulty: 5, impact: "Stole admin credentials.", relevantEffectiveness: ['phishing', 'account_takeover'] },
+                    { id: 'malware_execution', name: "Malware Execution (Data Exfiltration)", difficulty: 7, impact: "Sensitive data exfiltrated.", relevantEffectiveness: ['malware_execution', 'malware_human', 'malware_network'] },
+                    { id: 'ransomware_execution', name: "Ransomware Deployment (System Encryption)", difficulty: 8, impact: "Critical systems encrypted, operations halted.", relevantEffectiveness: ['ransomware_execution', 'ransomware_spread'] }
+                ];
+
+                let attacksSucceeded = 0;
+                let totalImpactReduction = 0;
+                if (activityStates[activityId].data.selectedMeasures.has('ir_plan')) {
+                    totalImpactReduction = securityMeasures.ir_plan.effectiveness.impact_reduction;
+                }
+
+                attackVectors.forEach(vector => {
+                    let defenseScore = 0;
+                    chosenMeasureObjects.forEach(measure => {
+                        vector.relevantEffectiveness.forEach(effKey => {
+                            if (measure.effectiveness[effKey]) {
+                                defenseScore += measure.effectiveness[effKey];
+                            }
+                        });
+                    });
+
+                    const outcomeDiv = document.createElement('div');
+                    outcomeDiv.classList.add('sim-attack-vector-result');
+                    let iconType, outcomeText;
+
+                    if (defenseScore >= vector.difficulty) {
+                        outcomeDiv.classList.add('blocked');
+                        iconType = 'icon-blocked';
+                        outcomeText = `${vector.name}: <strong>BLOCKED</strong> (Defense: ${defenseScore} vs Difficulty: ${vector.difficulty})`;
+                    } else {
+                        attacksSucceeded++;
+                        outcomeDiv.classList.add('succeeded');
+                        iconType = 'icon-succeeded';
+                        outcomeText = `${vector.name}: <strong>SUCCEEDED</strong> (Defense: ${defenseScore} vs Difficulty: ${vector.difficulty}) <span class="sim-attack-consequence">Impact: ${vector.impact}</span>`;
+                    }
+                    outcomeDiv.innerHTML = `<svg><use xlink:href="#${iconType}"></use></svg> <span>${outcomeText}</span>`;
+                    attackOutcomesEl.appendChild(outcomeDiv);
+                });
+
+                let overallMsg, isOverallSuccess;
+                if (attacksSucceeded === 0) {
+                    overallMsg = "Congratulations! Your security strategy successfully defended Innovatech against all simulated attacks!";
+                    isOverallSuccess = true;
+                    overallResultEl.style.color = 'var(--success-color)';
+                } else {
+                    let mitigatedAttacks = Math.floor(totalImpactReduction / 2.5); 
+                    let effectiveAttacks = attacksSucceeded - mitigatedAttacks;
+                    if (effectiveAttacks < 0) effectiveAttacks = 0;
+
+                    if (effectiveAttacks === 0 && attacksSucceeded > 0) {
+                         overallMsg = `BREACH OCCURRED, but your Incident Response Plan significantly mitigated the impact! ${attacksSucceeded} attack(s) initially succeeded, but strong response minimized damage.`;
+                         isOverallSuccess = true; 
+                         overallResultEl.style.color = 'var(--warning-color)';
+                    } else {
+                         overallMsg = `BREACH OCCURRED! ${attacksSucceeded} attack vector(s) succeeded. Innovatech suffered damages. Review your strategy.`;
+                         if(totalImpactReduction > 0 && attacksSucceeded > 0) overallMsg += " Your IR plan helped, but wasn't enough for all these threats.";
+                         isOverallSuccess = false;
+                         overallResultEl.style.color = 'var(--accent-color)';
+                    }
+                }
+                overallResultEl.textContent = overallMsg;
+                displayActivityFeedback(activityId, isOverallSuccess, "Simulation complete. See results above. This module is now finished.");
+                markActivityAttempt(activityId, isOverallSuccess); 
+                runSimButton.disabled = true; 
+                document.querySelectorAll(`#${activityId} .sim-measure-card`).forEach(c => c.style.pointerEvents = 'none'); 
+            });
+        }
+
+
+        // --- Initialize ---
+        function initializeWorksheet() {
+            ['activity-intro', ...orderedCoreActivityIds, 'activity-summary'].forEach(id => {
+                activityStates[id] = { completed: false, correct: null, data: {} };
+            });
+            
+            setupTerminologyActivity(); // This will now shuffle its items
+            setupInitialVectorActivity();
+            setupPhishingCluesActivity();
+            setupRemediationOrderActivity(); // This will now shuffle its items
+            setupAttackerPathActivity();
+            setupSimulationActivity();
+
+            showActivity('activity-intro'); 
+        }
+
+        initializeWorksheet();
+
+    </script>
+</body>
+</html>

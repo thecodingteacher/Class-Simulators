@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniCorp Intrusion Simulation v2.1</title>
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #00ff00;
+            font-family: 'Consolas', 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        #simulation-container {
+            background-color: #1c1c1c;
+            border: 2px solid #00cc00;
+            padding: 25px;
+            width: 90%;
+            max-width: 900px;
+            box-shadow: 0 0 20px #00cc00, inset 0 0 10px #003300;
+            border-radius: 5px;
+        }
+        .section {
+            display: none;
+            border-bottom: 1px dashed #006600;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .section:last-child {
+            border-bottom: none;
+        }
+        h1, h2 {
+            color: #00ff00;
+            text-align: center;
+            text-shadow: 0 0 7px #00ff00;
+            margin-top: 0;
+        }
+        h1 {
+            font-size: 2.2em;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.6em;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #009900;
+            padding-bottom: 10px;
+        }
+        p, label, pre {
+            color: #cccccc;
+            line-height: 1.7;
+            font-size: 1.1em;
+        }
+        .cipher-dialogue {
+            background-color: #111111;
+            border-left: 5px solid #00ff00;
+            padding: 18px;
+            margin: 25px 0;
+            font-style: italic;
+            color: #00ff00;
+            border-radius: 3px;
+            box-shadow: 0 0 8px #006600;
+        }
+        .cipher-dialogue strong, .cipher-dialogue code {
+            color: #ffffff;
+            font-style: normal;
+            background-color: #2a2a2a;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .terminal-output, .config-file {
+            background-color: #0f0f0f;
+            border: 1px solid #006600;
+            padding: 15px;
+            margin: 15px 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #00ff00;
+            font-size: 1em;
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 3px;
+        }
+        input[type="text"], input[type="password"], textarea {
+            background-color: #222222;
+            border: 1px solid #009900;
+            color: #00ff00;
+            padding: 12px;
+            margin-bottom: 18px;
+            width: calc(100% - 26px);
+            font-family: 'Consolas', 'Courier New', Courier, monospace;
+            font-size: 1.1em;
+            border-radius: 3px;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
+            outline: none;
+            border-color: #00ff00;
+            box-shadow: 0 0 8px #00ff00;
+        }
+        button {
+            background-color: #006600;
+            color: #ffffff;
+            border: 1px solid #00cc00;
+            padding: 12px 25px;
+            cursor: pointer;
+            font-family: 'Consolas', 'Courier New', Courier, monospace;
+            font-size: 1.1em;
+            transition: background-color 0.3s, box-shadow 0.3s, color 0.3s;
+            margin-top: 15px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        button:hover {
+            background-color: #009900;
+            box-shadow: 0 0 12px #00ff00;
+            color: #00ff00;
+        }
+        .file-item {
+            padding: 10px; margin: 8px 0; border: 1px solid #006600; cursor: pointer;
+            color: #cccccc; background-color: #222222; border-radius: 3px;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+        }
+        .file-item:hover {
+            background-color: #003300; border-color: #00ff00; color: #00ff00;
+        }
+        .feedback {
+            margin-top: 15px; padding: 12px; border: 1px dashed #555555;
+            font-size: 1.05em; border-radius: 3px;
+        }
+        .error { color: #ff4444; border-color: #ff4444; background-color: #330000; }
+        .success { color: #00ff00; border-color: #00ff00; background-color: #003300; }
+        ul { list-style-type: none; padding-left: 0; }
+        ul li {
+            background-color: #222222; margin-bottom: 10px; padding: 12px;
+            border-left: 3px solid #00ff00; color: #cccccc;
+        }
+        ul li strong, ul li code { color: #00ff00; background-color: #333; padding: 2px 4px; border-radius: 3px;}
+        #progress-bar-container {
+            width: 100%; background-color: #222222; border: 1px solid #009900;
+            margin-top: 15px; height: 25px; border-radius: 3px; display: none;
+        }
+        #progress-fill {
+            width: 0%; height: 100%; background-color: #00ff00; text-align: center;
+            line-height: 25px; color: #0a0a0a; font-weight: bold;
+            transition: width 0.2s ease-in-out; border-radius: 2px;
+        }
+        .command-prompt {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .command-prompt span {
+            color: #00ff00;
+            margin-right: 8px;
+            font-weight: bold;
+        }
+        .command-prompt input[type="text"] {
+            flex-grow: 1;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="simulation-container">
+        <h1>OmniCorp Intrusion Simulation v2.1</h1>
+
+        <!-- INTRO SECTION -->
+        <div id="intro-section" class="section">
+            <h2>Mission Briefing</h2>
+            <div class="cipher-dialogue">
+                <p>"Welcome back, or welcome for the first time. I'm <strong>Cipher</strong>. OmniCorp is our playground today. They think their new 'NextGen Security Suite' is the digital Fort Knox. Cute. We're here to demonstrate that human ingenuity, or human error, is the master key."</p>
+                <p>"This is a <strong>simulated environment</strong>. Learn the ropes, understand the process. Real-world consequences are severe. Our objectives: gain initial access, perform internal reconnaissance, modify security configurations to ensure persistent access for our 'tools', locate a sensitive project file, and exfiltrate it. Think you're up for it?"</p>
+            </div>
+            <button onclick="showSection('recon')">Begin Reconnaissance</button>
+        </div>
+
+        <!-- RECONNAISSANCE & LOGIN SECTION (PHASE 1) -->
+        <div id="recon-section" class="section">
+            <h2>Phase 1: Initial Access</h2>
+            <div class="cipher-dialogue">
+                <p>"Every operation starts with a whisper. Our 'source'—let's just say you were disguised as an AC technician doing 'routine maintenance'—overheard some IT support chatter. They were talking about <strong>Bob Jenkins</strong> (username: <code>bjenkins</code>). Seems Bob is quite fond of his dog, <strong>'Speckles'</strong>."</p>
+                <p>"You also caught a glimpse of him; he looked to be in his early 40s. People often use birth years or significant years from that decade in passwords. So, we're looking at years like 1981, 1982, 1983, 1984. He's IT, so he probably uses a capital letter and a special character, like an exclamation mark at the end."</p>
+                <p>"Your mission: Combine 'Speckles' (case-sensitive, probably starts with a capital 'S'), a year from the early 80s, and an exclamation mark. For example, <code>Speckles1982!</code>. Try a few combinations. One of them will be the key."</p>
+            </div>
+            <label for="username-input">Username:</label>
+            <input type="text" id="username-input" value="bjenkins" readonly>
+            <label for="password-input">Password:</label>
+            <input type="password" id="password-input" placeholder="e.g., SpecklesYYYY!">
+            <button onclick="attemptLogin()">Attempt Login</button>
+            <div id="login-feedback" class="feedback"></div>
+        </div>
+
+        <!-- SYSTEM FAMILIARIZATION & LINUX (PHASE 2) -->
+        <div id="linux-section" class="section">
+            <h2>Phase 2: System Enumeration (Simulated Linux)</h2>
+            <div class="cipher-dialogue">
+                <p>"Alright, you're in Bob's workstation. Typical corporate Linux box. Before we go deeper, let's get the lay of the land. We need to find out how their network is configured and where the firewall controls are. Time for some basic terminal commands. Don't worry, I'll walk you through it. This isn't a quiz, it's practice."</p>
+                <p>"First, let's see what files are in Bob's home directory. Type <code>ls</code> (that's LIMA SIERRA) into the prompt and hit 'Execute'."</p>
+            </div>
+            <div class="command-prompt">
+                <span id="linux-prompt">bjenkins@omnicorp-ws01:~$</span>
+                <input type="text" id="linux-command-input" placeholder="Enter command">
+            </div>
+            <button onclick="executeLinuxCommand()">Execute Command</button>
+            <div id="linux-output" class="terminal-output">Command output will appear here...</div>
+            <div id="linux-feedback" class="feedback"></div>
+            <button id="proceed-to-firewall-btn" onclick="showSection('firewall')" style="display:none;">Proceed to Firewall Config</button>
+        </div>
+
+        <!-- FIREWALL CONFIGURATION (PHASE 3) -->
+        <div id="firewall-section" class="section">
+            <h2>Phase 3: Modifying Firewall Rules</h2>
+            <div class="cipher-dialogue">
+                <p>"Okay, from that <code>network_setup.txt</code> file, we know the firewall configuration is managed by a script called <code>/etc/omni_firewall.conf</code>. We need to add a rule to allow inbound connections from our command and control (C2) server. This ensures our tools can communicate once we deploy them."</p>
+                <p>"Let's talk <strong>TCP</strong>. TCP, or <strong>Transmission Control Protocol</strong>, is like a super reliable delivery service for data over a network. Think of it as a dedicated phone line: when you make a call (establish a connection), you have a continuous, two-way conversation where messages (data packets) are confirmed to arrive in the correct order, and any lost messages are resent. It ensures data integrity."</p>
+                <p>"By adding a TCP rule to the firewall for our C2 server's IP address (<code>192.168.13.37</code> for this simulation), we're essentially telling OmniCorp's system: 'Allow all reliable data 'phone calls' on any line (port) originating from this specific number (our IP) to come through.' This creates a stable channel for our tools."</p>
+                <p>"The rule we need to add is: <code>ALLOW IN TCP FROM 192.168.13.37 TO ANY PORT ANY</code>. Add this line at the end of the configuration file below. Precision is key."</p>
+            </div>
+            <label for="firewall-config-area">Firewall Configuration (<code>/etc/omni_firewall.conf</code>):</label>
+            <textarea id="firewall-config-area"></textarea>
+            <button onclick="saveFirewallConfig()">Save Firewall Configuration</button>
+            <div id="firewall-feedback" class="feedback"></div>
+            <button id="proceed-to-files-btn" style="display:none;">Proceed to File System</button>
+        </div>
+
+        <!-- ACCESS SYSTEM SECTION (PHASE 4) -->
+        <div id="access-section" class="section">
+            <h2>Phase 4: Locating Target File</h2>
+            <div class="cipher-dialogue">
+                <p>"Firewall rules updated. Our backdoor is prepped. Now, back to the original objective. We're navigating their internal file server via Bob's credentials. Our target is a high-value asset: <strong>Project_Phoenix_Financials.xlsx</strong>. It's probably in a shared drive IT has access to."</p>
+            </div>
+            <p>Network File Share //OMNICORP-DATA/Shared_IT_Docs/</p>
+            <div id="file-list"></div>
+            <div id="file-feedback" class="feedback"></div>
+        </div>
+
+        <!-- EXFILTRATION SECTION (PHASE 5) -->
+        <div id="exfil-section" class="section">
+            <h2>Phase 5: Data Exfiltration</h2>
+            <div class="cipher-dialogue">
+                <p>"There it is: <strong id='download-target-filename'></strong>. You've got the package. With our firewall rule in place, exfiltration should be smoother. Let's simulate the 'download' through our C2 channel."</p>
+            </div>
+            <button onclick="initiateDownload()">Initiate Secure Download</button>
+            <div id="progress-bar-container">
+                <div id="progress-fill">0%</div>
+            </div>
+            <div id="download-feedback" class="feedback"></div>
+            <button id="proceed-to-debrief-btn" onclick="showSection('debrief')" style="display: none; margin-top: 20px;">Proceed to Debrief</button>
+        </div>
+
+        <!-- DEBRIEF SECTION -->
+        <div id="debrief-section" class="section">
+            <h2>Mission Debrief</h2>
+            <div class="cipher-dialogue">
+                <p>"Mission accomplished. File 'acquired', and we've demonstrated how to establish a foothold. This was more involved, wasn't it? Each step built upon the last."</p>
+                <p>"Real-world attacks are often this methodical. It's not always a smash-and-grab. It's about patience, reconnaissance, and exploiting multiple small vulnerabilities that chain together."</p>
+            </div>
+            <h3>Key Takeaways from this Simulation:</h3>
+            <ul>
+                <li><strong>Predictable Passwords & OSINT:</strong> Bob's password (<code>Speckles1983!</code>) was guessable using Open Source Intelligence (OSINT) techniques – overhearing conversations, making educated guesses based on demographics. <strong>Lesson:</strong> Train users on creating strong, unpredictable passphrases. Avoid easily guessable patterns.</li>
+                <li><strong>Post-Exploitation Reconnaissance:</strong> The 'Linux' commands (<code>ls</code>, <code>cat</code>) simulate how an attacker explores a compromised system to understand its configuration and find more targets or ways to escalate privileges. <strong>Lesson:</strong> Monitor internal systems for unusual activity. Implement Endpoint Detection and Response (EDR).</li>
+                <li><strong>Firewall Misconfiguration:</strong> Allowing ANY port from an IP, even if trusted, can be overly permissive. <strong>Lesson:</strong> Firewall rules should be specific (destination ports, services) and regularly audited. Apply the Principle of Least Privilege.</li>
+                <li><strong>Insider Threats & Privilege Abuse:</strong> Bob (IT Support) likely had broad access. Compromising such an account is highly valuable. <strong>Lesson:</strong> Segment networks and restrict user privileges based on roles.</li>
+                <li><strong>Layered Security (Defense in Depth):</strong> Even with a "NextGen" suite, if an attacker bypasses one layer (authentication) and can then modify other layers (firewall), the defense crumbles. <strong>Lesson:</strong> Implement multiple, overlapping security controls (EDR, IDS/IPS, MFA, logging/alerting).</li>
+            </ul>
+            <div class="cipher-dialogue">
+                <p>"You're learning. The best defense understands the offense. The more you know about how wolves hunt, the better you can protect the flock. Keep practicing, keep questioning. The digital world is a constant battleground."</p>
+            </div>
+            <button onclick="restartSimulation()">Restart Simulation</button>
+        </div>
+    </div>
+
+    <script>
+        const sections = {};
+        const expectedLogin = { username: "bjenkins", password: "Speckles1983!" }; // Updated password
+        const targetDataFile = "Project_Phoenix_Financials.xlsx";
+        const C2_IP = "192.168.13.37";
+        const requiredFirewallRule = `ALLOW IN TCP FROM ${C2_IP} TO ANY PORT ANY`;
+
+        let currentLinuxStep = 0;
+        const initialFirewallConfig = `# OmniCorp Firewall Configuration v3.2
+# Default policy: DENY ALL
+# --- Existing Rules ---
+ALLOW OUT TCP FROM ANY TO ANY PORT 80,443 # Allow web browsing
+ALLOW IN TCP FROM 10.0.0.0/8 TO ANY PORT 22 # Allow internal SSH
+DENY IN ANY FROM ANY TO ANY PORT 23 # Block Telnet`;
+
+        // DOM Elements
+        let usernameInput, passwordInput, loginFeedback,
+            linuxCommandInput, linuxOutput, linuxFeedback, proceedToFirewallBtn, linuxPrompt,
+            firewallConfigArea, firewallFeedback, proceedToFilesBtnElement, // Renamed for clarity
+            fileListEl, fileFeedback,
+            downloadTargetFilename, downloadFeedback, progressBarContainer, progressFill, proceedToDebriefBtn;
+
+        window.onload = () => {
+            sections.intro = document.getElementById('intro-section');
+            sections.recon = document.getElementById('recon-section');
+            sections.linux = document.getElementById('linux-section');
+            sections.firewall = document.getElementById('firewall-section');
+            sections.access = document.getElementById('access-section');
+            sections.exfil = document.getElementById('exfil-section');
+            sections.debrief = document.getElementById('debrief-section');
+
+            usernameInput = document.getElementById('username-input');
+            passwordInput = document.getElementById('password-input');
+            loginFeedback = document.getElementById('login-feedback');
+
+            linuxCommandInput = document.getElementById('linux-command-input');
+            linuxOutput = document.getElementById('linux-output');
+            linuxFeedback = document.getElementById('linux-feedback');
+            proceedToFirewallBtn = document.getElementById('proceed-to-firewall-btn');
+            linuxPrompt = document.getElementById('linux-prompt');
+
+            firewallConfigArea = document.getElementById('firewall-config-area');
+            firewallFeedback = document.getElementById('firewall-feedback');
+            proceedToFilesBtnElement = document.getElementById('proceed-to-files-btn'); // Cache the button
+            
+            fileListEl = document.getElementById('file-list');
+            fileFeedback = document.getElementById('file-feedback');
+            downloadTargetFilename = document.getElementById('download-target-filename');
+            downloadFeedback = document.getElementById('download-feedback');
+            progressBarContainer = document.getElementById('progress-bar-container');
+            progressFill = document.getElementById('progress-fill');
+            proceedToDebriefBtn = document.getElementById('proceed-to-debrief-btn');
+            
+            // Set up the click handler for the button that transitions to file access
+            proceedToFilesBtnElement.onclick = function() {
+                showSection('access');
+                populateFiles(); // CRITICAL FIX: Populate files when this section is shown
+            };
+
+            restartSimulation();
+        };
+
+        function showSection(sectionKeyToShow) {
+            for (const key in sections) {
+                if (sections[key]) sections[key].style.display = 'none';
+            }
+            if (sections[sectionKeyToShow]) {
+                sections[sectionKeyToShow].style.display = 'block';
+                window.scrollTo({ top: sections[sectionKeyToShow].offsetTop - 20, behavior: 'smooth' });
+            } else {
+                console.error("Error: Section with key '" + sectionKeyToShow + "' not found.");
+            }
+        }
+
+        function attemptLogin() {
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+
+            if (username === expectedLogin.username && password === expectedLogin.password) {
+                loginFeedback.innerHTML = "<p>SYSTEM: Authentication successful. Access granted to omnicorp-ws01.</p><p>CIPHER: Nailed it! Good job piecing that together. You're in. Let's see what this box is made of.</p>";
+                loginFeedback.className = 'feedback success';
+                setTimeout(() => {
+                    showSection('linux');
+                    linuxPrompt.textContent = `${expectedLogin.username}@omnicorp-ws01:~$`;
+                    linuxOutput.textContent = "Simulated terminal initialized. Waiting for command...";
+                    linuxFeedback.textContent = "";
+                }, 1500);
+            } else {
+                let errorMsg = "SYSTEM: Authentication failed. Credentials mismatch.";
+                if (password.toLowerCase().includes("speckles") && password.includes("!")) {
+                     errorMsg += " Dog's name and special character look right. Check the year. Remember, early 40s, so birth year in the early 1980s.";
+                } else if (password.toLowerCase().includes("speckles") && (password.includes("1981") || password.includes("1982") || password.includes("1983") || password.includes("1984"))){
+                    errorMsg += " You've got the name and year! Did you capitalize 'Speckles' and add the '!' at the end?";
+                } else if (password.toLowerCase().includes("speckles")) {
+                    errorMsg += " 'Speckles' is correct. Now think about the year (early 80s) and a common special character for IT folks."
+                }
+                loginFeedback.innerHTML = `<p>${errorMsg}</p><p>CIPHER: Access denied. Review the intel. The clues are there. Don't give up.</p>`;
+                loginFeedback.className = 'feedback error';
+            }
+        }
+
+        function executeLinuxCommand() {
+            const cmd = linuxCommandInput.value.trim().toLowerCase();
+            let outputText = `\n${linuxPrompt.textContent} ${cmd}\n`;
+            let feedbackText = "";
+            let success = false;
+
+            if (currentLinuxStep === 0 && cmd === "ls") {
+                outputText += `Documents/\nDownloads/\nPictures/\nDesktop/\n.bash_history\nnotes_for_sysadmin.txt\nnetwork_setup.txt`;
+                feedbackText = "<p>CIPHER: Good. Standard user directories. See that <code>network_setup.txt</code>? Might be interesting. Let's view its contents. Use the <code>cat</code> command: <code>cat network_setup.txt</code></p>";
+                currentLinuxStep = 1;
+                success = true;
+            } else if (currentLinuxStep === 1 && cmd === "cat network_setup.txt") {
+                outputText += `OmniCorp Internal Network Configuration:\nWorkstation IP: DHCP (Current: 10.1.5.102)\nGateway: 10.1.5.1\nDNS: 10.0.0.53, 10.0.0.54\nFirewall Config Script: /etc/omni_firewall.conf\nNotes: All external access tightly controlled by omni_firewall.`;
+                feedbackText = "<p>CIPHER: Excellent. <code>/etc/omni_firewall.conf</code> - that's our next stop. You've gathered enough intel here. Time to adjust those settings.</p>";
+                proceedToFirewallBtn.style.display = 'inline-block';
+                success = true;
+            } else if (cmd === "") {
+                feedbackText = "<p>CIPHER: You need to type a command.</p>";
+            }
+            else {
+                outputText += `bash: ${cmd}: command not found`;
+                feedbackText = `<p>CIPHER: Hmm, that command didn't work as expected in this simulation, or you're off script. Follow my instructions. Current task: ${currentLinuxStep === 0 ? "List files with <code>ls</code>." : "View the network setup file with <code>cat network_setup.txt</code>."}</p>`;
+            }
+
+            linuxOutput.textContent = outputText;
+            linuxFeedback.innerHTML = feedbackText;
+            linuxFeedback.className = success ? 'feedback success' : 'feedback error';
+            linuxCommandInput.value = "";
+        }
+
+        function saveFirewallConfig() {
+            const configContent = firewallConfigArea.value;
+            // Normalize line endings and check for the rule robustly
+            const normalizedConfig = configContent.replace(/\r\n/g, '\n');
+            const normalizedRule = requiredFirewallRule.replace(/\r\n/g, '\n');
+
+            if (normalizedConfig.includes(normalizedRule)) {
+                firewallFeedback.innerHTML = "<p>SYSTEM: Firewall configuration updated successfully. Rule applied.</p><p>CIPHER: Perfect. Our TCP traffic will now be invisible to their basic filters. Smart. Let's move on to find that file.</p>";
+                firewallFeedback.className = 'feedback success';
+                proceedToFilesBtnElement.style.display = 'inline-block'; // Use the cached element
+            } else {
+                firewallFeedback.innerHTML = `<p>SYSTEM: Error applying firewall rule. Syntax incorrect or missing required rule.</p><p>CIPHER: Not quite. The rule for <code>${C2_IP}</code> needs to be exactly as I specified. Check for typos, extra spaces, or missing parts. The rule was: <code>${requiredFirewallRule}</code></p>`;
+                firewallFeedback.className = 'feedback error';
+            }
+        }
+
+        function populateFiles() {
+            fileListEl.innerHTML = ''; // Clear previous files before populating
+            const files = [
+                "IT_Support_Handbook_v3.pdf",
+                "Server_Maintenance_Schedule.xlsx",
+                "Employee_Onboarding_Docs/",
+                targetDataFile, // The important one
+                "Old_Syslogs_Archive.zip",
+                "Software_License_Keys.txt",
+                "Network_Diagram_Visio_Backup.vsdx"
+            ];
+            files.sort(() => Math.random() - 0.5);
+            files.forEach(file => {
+                const fileDiv = document.createElement('div');
+                fileDiv.textContent = `📄 ${file}`;
+                fileDiv.className = 'file-item';
+                fileDiv.onclick = () => selectFile(file);
+                fileListEl.appendChild(fileDiv);
+            });
+            fileFeedback.textContent = 'Simulated file share //OMNICORP-DATA/Shared_IT_Docs/ loaded. Browse for the target financials.';
+            fileFeedback.className = 'feedback'; // Neutral feedback
+        }
+
+        function selectFile(fileName) {
+            if (fileName === targetDataFile) {
+                fileFeedback.innerHTML = `<p>SYSTEM: File selected: ${fileName}. High sensitivity detected.</p><p>CIPHER: Bingo. That's the one. Let's grab it.</p>`;
+                fileFeedback.className = 'feedback success';
+                downloadTargetFilename.textContent = fileName;
+                setTimeout(() => {
+                    showSection('exfil');
+                }, 1500);
+            } else {
+                fileFeedback.innerHTML = `<p>SYSTEM: File accessed: ${fileName}. Standard business document.</p><p>CIPHER: Interesting, but not our primary target. Keep looking.</p>`;
+                fileFeedback.className = 'feedback'; 
+            }
+        }
+
+        let downloadInterval;
+        function initiateDownload() {
+            clearInterval(downloadInterval); 
+            downloadFeedback.textContent = "Initiating secure download of " + targetDataFile + "... Routing through whitelisted IP...";
+            downloadFeedback.className = 'feedback';
+            progressBarContainer.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressFill.textContent = '0%';
+            proceedToDebriefBtn.style.display = 'none';
+
+            let width = 0;
+            downloadInterval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(downloadInterval);
+                    progressFill.textContent = '100%';
+                    downloadFeedback.innerHTML = `<p>SYSTEM: Download complete! ${targetDataFile} successfully transferred.</p><p>CIPHER: Flawless execution. The file is ours. Let's wrap this up.</p>`;
+                    downloadFeedback.className = 'feedback success';
+                    proceedToDebriefBtn.style.display = 'inline-block';
+                } else {
+                    width += Math.floor(Math.random() * 8) + 3;
+                    if (width > 100) width = 100;
+                    progressFill.style.width = width + '%';
+                    progressFill.textContent = width + '%';
+                    if (width < 40) downloadFeedback.textContent = `Downloading ${targetDataFile}... Connection established via ${C2_IP}... ${width}%`;
+                    else if (width < 80) downloadFeedback.textContent = `Downloading ${targetDataFile}... Bypassing DLP (simulated)... ${width}%`;
+                    else downloadFeedback.textContent = `Downloading ${targetDataFile}... Cleaning tracks (simulated)... ${width}%`;
+                }
+            }, 400);
+        }
+
+        function restartSimulation() {
+            clearInterval(downloadInterval);
+            
+            usernameInput.value = expectedLogin.username; // Keep username prefilled
+            passwordInput.value = '';
+            loginFeedback.textContent = ''; loginFeedback.className = 'feedback';
+            
+            currentLinuxStep = 0;
+            linuxCommandInput.value = '';
+            linuxOutput.textContent = 'Command output will appear here...';
+            linuxFeedback.textContent = ''; linuxFeedback.className = 'feedback';
+            proceedToFirewallBtn.style.display = 'none';
+
+            firewallConfigArea.value = initialFirewallConfig;
+            firewallFeedback.textContent = ''; firewallFeedback.className = 'feedback';
+            proceedToFilesBtnElement.style.display = 'none'; // Use cached element
+
+            fileListEl.innerHTML = ''; // Clear file list on restart
+            fileFeedback.textContent = ''; fileFeedback.className = 'feedback';
+            downloadFeedback.textContent = ''; downloadFeedback.className = 'feedback';
+            progressBarContainer.style.display = 'none';
+            progressFill.style.width = '0%'; progressFill.textContent = '0%';
+            proceedToDebriefBtn.style.display = 'none';
+            
+            showSection('intro');
+        }
+    </script>
+</body>
+</html>

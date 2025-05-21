@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Fundamentals - Interactive Lesson</title>
+    <!-- Google Fonts: Inter for a clean, modern look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Variables for easy theme changes */
+        :root {
+            --primary-color: #2196f3; /* Brilliant blue */
+            --secondary-color: #607d8b; /* Grey-blue for subheadings/borders */
+            --success-color: #4caf50; /* Green for correct feedback */
+            --danger-color: #f44336; /* Red for incorrect feedback */
+            --bg-light: #f5f7f9; /* Light background */
+            --border-color: #e0e0e0; /* Light border */
+            --text-color: #333; /* Darker text */
+            --header-bg: #e3f2fd; /* Lighter blue for header */
+            --card-bg: #ffffff; /* White for lesson cards */
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Subtle shadow */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-light);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top */
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 900px; /* Slightly wider */
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        header {
+            background-color: var(--header-bg);
+            padding: 25px 35px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 1.6em;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-align: center;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+
+        .lesson-content {
+            padding: 30px;
+            min-height: 400px; /* Ensure a minimum height for consistent layout */
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 2.2em;
+            text-align: center;
+        }
+
+        h3 {
+            color: var(--secondary-color);
+            margin-top: 30px;
+            margin-bottom: 18px;
+            font-size: 1.7em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+
+        p {
+            margin-bottom: 18px;
+            font-size: 1.05em;
+        }
+
+        .key-definition {
+            background-color: #e8f5e9; /* Light green-blue */
+            border-left: 6px solid #81c784; /* Medium green */
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .key-definition strong {
+            color: #388e3c; /* Darker green */
+            font-size: 1.15em;
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background-color: var(--bg-light);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .question-block p {
+            font-weight: 600;
+            margin-bottom: 20px;
+            font-size: 1.15em;
+            color: var(--primary-color);
+        }
+
+        .options label {
+            display: flex; /* Use flex for alignment */
+            align-items: center;
+            margin-bottom: 15px;
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 6px;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            border: 1px solid transparent; /* For feedback border */
+        }
+
+        .options label:hover {
+            background-color: #e0f2f7; /* Light blue on hover */
+        }
+
+        .options input[type="radio"] {
+            margin-right: 15px;
+            transform: scale(1.3); /* Slightly larger radio buttons */
+        }
+
+        .options label.correct-answer {
+            background-color: #e8f5e9;
+            border-color: var(--success-color);
+        }
+        .options label.incorrect-answer {
+            background-color: #ffebee;
+            border-color: var(--danger-color);
+        }
+
+
+        .feedback {
+            margin-top: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: none; /* Hidden by default */
+            font-size: 1.05em;
+        }
+
+        .feedback.correct {
+            background-color: #e8f5e9; /* Light green */
+            color: var(--success-color);
+            border: 1px solid #c8e6c9;
+        }
+
+        .feedback.incorrect {
+            background-color: #ffebee; /* Light red */
+            color: var(--danger-color);
+            border: 1px solid #ffcdd2;
+        }
+
+        .feedback p {
+            margin: 0;
+        }
+
+        .buttons {
+            text-align: right;
+            padding: 20px 30px;
+            border-top: 1px solid var(--border-color);
+            background-color: #fcfcfc;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            display: flex; /* Use flexbox for button alignment */
+            justify-content: flex-end; /* Push buttons to the right */
+            gap: 15px; /* Space between buttons */
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.05em;
+            font-weight: 600;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .btn:hover:not(:disabled) {
+            background-color: #1976d2; /* Darker blue */
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background-color: var(--secondary-color);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            height: 10px;
+            overflow: hidden;
+            margin-top: 20px;
+            position: sticky;
+            bottom: 0;
+            z-index: 100;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--success-color);
+            border-radius: 5px;
+            transition: width 0.4s ease-in-out;
+        }
+
+        .quiz-title {
+            font-size: 1.7em;
+            margin-bottom: 25px;
+            color: var(--primary-color);
+            text-align: center;
+            font-weight: 700;
+        }
+
+        /* Drag and Drop Specific Styles */
+        .drag-drop-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            justify-content: center;
+            margin-top: 30px;
+            margin-bottom: 40px;
+        }
+
+        .drag-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 12px 18px;
+            border-radius: 8px;
+            cursor: grab;
+            font-size: 1em;
+            width: 220px; /* Fixed width for consistency */
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            transition: transform 0.1s ease-in-out, opacity 0.2s ease;
+        }
+
+        .drag-item:active {
+            cursor: grabbing;
+            transform: scale(1.03);
+        }
+
+        .drop-target {
+            background-color: #f0f4f7; /* Light blue-grey */
+            border: 2px dashed var(--secondary-color);
+            padding: 20px;
+            border-radius: 10px;
+            min-height: 120px;
+            width: 280px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: 600;
+            color: var(--secondary-color);
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+
+        .drop-target.hover {
+            border-color: var(--primary-color);
+            background-color: #e3f2fd; /* Lighter blue */
+        }
+
+        .drop-target.correct-target {
+            border-color: var(--success-color);
+            background-color: #e8f5e9;
+        }
+        .drop-target.incorrect-target {
+            border-color: var(--danger-color);
+            background-color: #ffebee;
+        }
+
+        .drop-target.has-item .drag-item {
+            margin-top: 15px;
+            pointer-events: none; /* Make dropped item non-draggable from target */
+        }
+
+        .drop-target p {
+            margin: 0;
+            color: var(--text-color);
+            font-weight: 700;
+            font-size: 1.2em;
+        }
+
+        /* Categorization/Multiple Choice Question Styles */
+        .categorization-item {
+            margin-bottom: 18px;
+            padding: 15px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .categorization-item span {
+            flex-grow: 1;
+            font-weight: 500;
+            font-size: 1.05em;
+            color: var(--text-color);
+            transition: color 0.3s ease; /* For feedback color change */
+        }
+        .categorization-item select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: white;
+            cursor: pointer;
+            font-size: 0.95em;
+            appearance: none; /* Remove default dropdown arrow */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23607d8b'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 24px;
+        }
+        .categorization-item select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+
+        /* True/False Specific Styles */
+        .true-false-question {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 12px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        .true-false-question p {
+            margin: 0;
+            flex-grow: 1;
+            font-size: 1.05em;
+            font-weight: normal;
+        }
+        .true-false-question .options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 0;
+        }
+        .true-false-question .options label {
+            margin-bottom: 0;
+            padding: 5px 10px;
+            font-size: 0.95em;
+            border: 1px solid transparent; /* For feedback */
+        }
+        .true-false-question .options input[type="radio"] {
+            margin-right: 8px;
+            transform: scale(1.1);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            Robot Fundamentals: Hardware & Ethics
+        </header>
+
+        <div class="lesson-content" id="lessonContent">
+            <!-- Content will be loaded here by JavaScript -->
+        </div>
+
+        <div class="buttons">
+            <button id="resetBtn" class="btn" style="display: none;">Reset</button>
+            <button id="checkAnswerBtn" class="btn" style="display: none;">Check Answer</button>
+            <button id="nextLessonBtn" class="btn" disabled>Next Lesson</button>
+        </div>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </div>
+
+    <script>
+        const lessonContent = document.getElementById('lessonContent');
+        const checkAnswerBtn = document.getElementById('checkAnswerBtn');
+        const nextLessonBtn = document.getElementById('nextLessonBtn');
+        const resetBtn = document.getElementById('resetBtn'); // Get the new reset button
+        const progressBar = document.getElementById('progressBar');
+
+        let currentStep = 0;
+        // Total number of steps, excluding the final 'completion' step for progress calculation
+        const totalQuizSteps = 8; // Number of quiz steps
+        const totalInfoSteps = 4; // Number of info/definition steps
+        const totalSteps = totalQuizSteps + totalInfoSteps + 1; // +1 for the final completion page
+
+        // Helper to get CSS variable color
+        function getCssVarColor(varName) {
+            return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        }
+
+        // Lesson data: An array of objects, each representing a step/page in the lesson
+        const lessons = [
+            // Step 0: Hardware Requirements - Key Definitions (Informational)
+            {
+                type: 'info',
+                title: 'Hardware Requirements',
+                content: `
+                    <h2>Hardware Requirements: Core Components</h2>
+                    <h3>Key Definitions</h3>
+                    <p>Understanding the fundamental building blocks of robots is crucial. Here are some key components that make robots work:</p>
+                    <div class="key-definition">
+                        <p><strong>Sensor:</strong> A device that measures a physical property (e.g., distance, light, temperature, pressure, sound) from the environment and converts it into an electrical signal that a processor can read and interpret.</p>
+                        <p><em>Example: An ultrasonic sensor (like a bat's sonar) measures distance to an object; a photoresistor measures light intensity; a microphone detects sound.</em></p>
+                    </div>
+                    <div class="key-definition">
+                        <p><strong>Actuator/Motor:</strong> A component (e.g., DC motor, servo motor, stepper motor, LED, speaker) that converts electrical signals from a processor into physical action or output, such as mechanical movement, light, or sound.</p>
+                        <p><em>Example: A DC motor spins wheels on a robot car; a servo motor precisely controls the angle of a robotic arm; an LED illuminates to indicate status.</em></p>
+                    </div>
+                    <div class="key-definition">
+                        <p><strong>Processor / Microcontroller:</strong> Often referred to as the "brain" of a robot or embedded system. It's a small computer on a single integrated circuit that runs code (instructions), reads sensor inputs, processes data, makes decisions, and sends signals to control actuators.</p>
+                        <p><em>Example: An Arduino board, micro:bit, or a Raspberry Pi controlling a robot's functions. It's where the robot's "intelligence" resides.</em></p>
+                    </div>
+                    <p>Take a moment to read these definitions carefully. We'll test your understanding next!</p>
+                `,
+                hasCheck: false,
+                canProceed: true
+            },
+            // Step 1: Practice Questions - Hardware Q1 Part 1 (Drag and Drop Definitions)
+            {
+                type: 'quiz',
+                quizId: 'hardware-def-dragdrop',
+                title: 'Practice Question 1: Hardware Components (Part 1)',
+                content: `
+                    <p class="quiz-title">Drag each definition to its correct hardware component type.</p>
+                    <div class="drag-drop-container">
+                        <div class="drop-target" data-term="Sensor">
+                            <p>Sensor</p>
+                        </div>
+                        <div class="drop-target" data-term="Actuator/Motor">
+                            <p>Actuator/Motor</p>
+                        </div>
+                        <div class="drop-target" data-term="Processor/Microcontroller">
+                            <p>Processor / Microcontroller</p>
+                        </div>
+                    </div>
+                    <div class="drag-drop-container" id="draggable-items-container">
+                        <div class="drag-item" draggable="true" data-definition="converts electrical signals into mechanical movement">Converts electrical signals into mechanical movement</div>
+                        <div class="drag-item" draggable="true" data-definition="measures physical property and converts to signal">Measures physical property and converts to signal</div>
+                        <div class="drag-item" draggable="true" data-definition="brain that runs code, reads input, drives output">Brain that runs code, reads input, drives output</div>
+                    </div>
+                `,
+                hasCheck: true,
+                checkAnswer: function() {
+                    const dropTargets = document.querySelectorAll('.drop-target');
+                    const correctAnswers = {
+                        "Sensor": "measures physical property and converts to signal",
+                        "Actuator/Motor": "converts electrical signals into mechanical movement",
+                        "Processor/Microcontroller": "brain that runs code, reads input, drives output"
+                    };
+                    let allCorrect = true;
+                    const feedbackDiv = document.createElement('div');
+                    feedbackDiv.className = 'feedback';
+
+                    dropTargets.forEach(target => {
+                        target.classList.remove('correct-target', 'incorrect-target');
+                        const term = target.dataset.term;
+                        const droppedItem = target.querySelector('.drag-item');
+                        if (droppedItem) {
+                            const definition = droppedItem.dataset.definition;
+                            if (correctAnswers[term] === definition) {
+                                target.classList.add('correct-target');
+                            } else {
+                                allCorrect = false;
+                                target.classList.add('incorrect-target');
+                            }
+                        } else {
+                            allCorrect = false;
+                        }
+                    });
+
+                    if (allCorrect) {
+                        feedbackDiv.classList.add('correct');
+                        feedbackDiv.innerHTML = '<p>Correct! You\'ve successfully matched the definitions to their components.</p>';
+                        this.canProceed = true;
+                        checkAnswerBtn.disabled = true; // Disable check once correct
+                    } else {
+                        feedbackDiv.classList.add('incorrect');
+                        feedbackDiv.innerHTML = '<p>Not quite. Review the definitions and try again by dragging the items to the correct boxes!</p>';
+                        this.canProceed = false;
+                    }
+                    if (this.feedbackElement) {
+                        this.feedbackElement.remove();
+                    }
+                    this.feedbackElement = feedbackDiv;
+                    lessonContent.appendChild(feedbackDiv);
+                    nextLessonBtn.disabled = !this.canProceed;
+                },
+                canProceed: false,
+                reset: function() {
+                    if (this.feedbackElement) {
+                        this.feedbackElement.remove();
+                        this.feedbackElement = null;
+                    }
+                    document.querySelectorAll('#draggable-items-container .drag-item').forEach(item => {
+                         item.style.opacity = '1';
+                         item.style.pointerEvents = 'auto'; // Make it draggable again
+                    });
+                    document.querySelectorAll('.drop-target').forEach(target => {
+                        const droppedItem = target.querySelector('.drag-item');
+                        if (droppedItem) {
+                            droppedItem.style.opacity = '1';
+                            droppedItem.style.pointerEvents = 'auto'; // Make it draggable again
+                            document.getElementById('draggable-items-container').appendChild(droppedItem); // Move back to source
+                        }
+                        target.classList.remove('correct-target', 'incorrect-target', 'hover');
+                        target.innerHTML = `<p>${target.dataset.term}</p>`;
+                    });
+                    this.canProceed = false;
+                    nextLessonBtn.disabled = true;
+                    checkAnswerBtn.disabled = false; // Re-enable check button
+                }
+            },
+            // Step 2: Practice Questions - Hardware Q1 Part 2 (Categorization Examples)
+            {
+                type: 'quiz',
+                quizId: 'hardware-examples-categorization',
+                title: 'Practice Question 1: Hardware Components (Part 2)',
+                content: `
+                    <p class="quiz-title">Categorize each item into the correct hardware component type.</p>
+                    <div class="question-block categorization-question">
+                        <div class="categorization-item">
+                            <span>Ultrasonic Sensor</span>
+                            <select data-answer="Sensor">
+                                <option value="">Select Category</option>
+                                <option value="Sensor">Sensor</option>
+                                <option value="Actuator/Motor">Actuator/Motor</option>
+                                <option value="Processor/Microcontroller">Processor / Microcontroller</option>
+                            </select>
+                        </div>
+                        <div class="categorization-item">
+                            <span>DC Motor</span>
+                            <select data-answer="Actuator/Motor">
+                                <option value="">Select Category</option>
+                                <option value="Sensor">Sensor</option>
+                                <option value="Actuator/Motor">Actuator/Motor</option>
+                                <option value="Processor/Microcontroller">Processor / Microcontroller</option>
+                            </select>
+                        </div>
+                        <div class="categorization-item">
+                            <span>Arduino Uno</span>
+                            <select data-answer="Processor/Microcontroller">
+                                <option value="">Select Category</option>
+                                <option value="Sensor">Sensor</option>
+                                <option value="Actuator/Motor">Actuator/Motor</option>
+                                <option value="Processor/Microcontroller">Processor / Microcontroller</option>
+                            </select>
+                        </div>
+                        <div class="categorization-item">
+                            <span>LED (Light Emitting Diode)</span>
+                            <select data-answer="Actuator/Motor">
+                                <option value="">Select Category</option>
+                                <option value="Sensor">Sensor</option>
+                                <option value="Actuator/Motor">Actuator/Motor</option>
+                                <option value="Processor/Microcontroller">Processor / Microcontroller</option>
+                            </select>
+                        </div>
+                        <div class="categorization-item">
+                            <span>Temperature Sensor</span>
+                            <select data-answer="Sensor">
+                                <option value="">Select Category</option>
+                                <option value="Sensor">Sensor</option>
+                                <option value="Actuator/Motor">Actuator/Motor</option>
+                                <option value="Processor/Microcontroller">Processor / Microcontroller</option>
+                            </select>
+                        </div>
+                    </div>
+                `,
+                hasCheck: true,
+                checkAnswer: function() {
+                    const selects = lessonContent.querySelectorAll('.categorization-item select');
+                    let allCorrect = true;
+                    selects.forEach(select => {
+                        const selectedValue = select.value;
+                        const correctAnswer = select.dataset.answer;
+                        const itemSpan = select.previousElementSibling;
+                        if (selectedValue === correctAnswer && selectedValue !== "") {
+                            itemSpan.style.color = getCssVarColor('--success-color');
+                        } else {
+                            itemSpan.style.color = getCssVarColor('--danger-color');
+                            allCorrect = false;
+                        }
+                    });
+
+                    const feedbackDiv = document.createElement('div');
+                    feedbackDiv.className = 'feedback';
+                    if (allCorrect) {
+                        feedbackDiv.classList.add('correct');
+                        feedbackDiv.innerHTML = '<p>Excellent! You\'ve correctly categorized all the examples.</p>';
+                        this.canProceed = true;
+                        checkAnswerBtn.disabled = true;
+                    } else {
+                        feedbackDiv.classList.add('incorrect');
+                        feedbackDiv.innerHTML = '<p>Some answers are incorrect. Review the definitions and try again!</p>';
+                        this.canProceed = false;
+                    }
+                    if (this.feedbackElement) {
+                        this.feedbackElement.remove();
+                    }
+                    this.feedbackElement = feedbackDiv;
+                    lessonContent.appendChild(feedbackDiv);
+                    nextLessonBtn.disabled = !this.canProceed;
+                },
+                canProceed: false,
+                reset: function() {
+                    if (this.feedbackElement) {
+                        this.feedbackElement.remove();
+                        this.feedbackElement = null;
+                    }
+                    lessonContent.querySelectorAll('.categorization-item select').forEach(select => {
+                        select.value = '';
+                    });
+                    lessonContent.querySelectorAll('.categorization-item span').forEach(span => {
+                        span.style.color = '';
+                    });
+                    this.canProceed = false;
+                    nextLessonBtn.disabled = true;
+                    checkAnswerBtn.disabled = false;
+                }
+            },
+            // Step 3: Practice Questions - Hardware Q2 (Servo vs Stepper) - Part 1 (Advantages)
+            {
+                type: 'quiz',
+                quizId: 'servo-stepper-advantages',
+                title: 'Practice Question 2: Servo vs. Stepper Motors (Part 1)',
+                content: `
+                    <p class="quiz-title">Compare Servo and Stepper Motors.</p>
+                    <div class="question-block">
+                        <p>1. Which of the following is a primary advantage of a <strong>Servo Motor</strong>?</p>
+                        <div class="options" data-correct="a">
+                            <label><input type="radio" name="q1_servo" value="a"> Can maintain a specific position accurately and efficiently under load (closed-loop feedback).</label>
+                            <label><input type="radio" name="q1_servo" value="b"> Provides very high torque at very high speeds, suitable for continuous rotation.</label>
+                            <label><input type="radio" name="q1_servo" value="c"> Can achieve continuous rotation with extremely precise, open-loop steps over 360 degrees.</label>
+                            <label><input type="radio" name="q1_servo" value="d"> Simpler to control for movements where exact angle isn't critical, only speed.</label>
+                        </div>
+                        <div class="feedback" id="q1_servo_feedback"></div>
+                    </div>
+                    <div class="question-block">
+                        <p>2. Which of the following is a primary advantage of a <strong>Stepper Motor</strong>?</p>
+                        <div class="options" data-correct="c">
+                            <label><input type="radio" name="q2_stepper" value="a"> Excellent for applications requiring smooth, high-speed continuous rotation.</label>
+                            <label><input type="radio" name="q2_stepper" value="b"> Offers easy, energy-efficient continuous rotation with simple control.</label>
+                            <label><input type="radio" name="q2_stepper" value="c"> Capable of very precise, repeatable incremental movements (steps) without complex feedback mechanisms (open-loop control).</label>
+                            <label><input type="radio" name="q2_stepper" value="d"> Generally provides a high torque-to-size ratio and is less noisy than other motors.</label>
+                        </div>
+                        <div class="feedback" id="q2_stepper_feedback"></div>
+                    </div>
+                `,
+                hasCheck: true,
+                checkAnswer: function() {
+                    let allCorrect = true;
+
+                    function checkRadioQuestion(qName, correctValue, feedbackId, correctExplanation, incorrectExplanation) {
+                        const answer = document.querySelector(`input[name="${qName}"]:checked`);
+                        const feedbackElem = document.getElementById(feedbackId);
+                        const optionsDiv = document.querySelector(`input[name="${qName}"]`).closest('.options');
+
+                        optionsDiv.querySelectorAll('label').forEach(label => {
+                            label.classList.remove('correct-answer', 'incorrect-answer');
+                            if (label.querySelector('input').value === correctValue) {
+                                label.classList.add('correct-answer'); // Show correct answer
+                            }
+                        });
+
+                        if (answer && answer.value === correctValue) {
+                            feedbackElem.className = 'feedback correct';
+                            feedbackElem.innerHTML = `<p>${correctExplanation}</p>`;
+                        } else {
+                            feedbackElem.className = 'feedback incorrect';
+                            feedbackElem.innerHTML = `<p>${incorrectExplanation}</p>`;
+                            allCorrect = false;
+                        }
+                        feedbackElem.style.display = 'block';
+                    }
+
+                    checkRadioQuestion(
+                        'q1_servo', 'a', 'q1_servo_feedback',
+                        'Correct! Servo motors excel at holding a specific angle precisely due to their closed-loop feedback.',
+                        'Incorrect. Servo motors are best known for their ability to accurately hold specific positions due to their closed-loop control.'
+                    );
+                    checkRadioQuestion(
+                        'q2_stepper', 'c', 'q2_stepper_feedback',
+                        'Correct! Stepper motors are great for precise, incremental movements without needing external sensors to confirm position (open-loop control).',
+                        'Incorrect. Stepper motors are characterized by their ability to move in very precise, discrete steps, making them ideal for precise positioning without complex feedback.'
+                    );
+
+                    this.canProceed = allCorrect;
+                    nextLessonBtn.disabled = !this.canProceed;
+                    checkAnswerBtn.disabled = allCorrect;
+                },
+                canProceed: false,
+                reset: function() {
+                    document.querySelectorAll('input[name="q1_servo"]').forEach(radio => { radio.checked = false; radio.closest('label').classList.remove('correct-answer', 'incorrect-answer'); });
+                    document.querySelectorAll('input[name="q2_stepper"]').forEach(radio => { radio.checked = false; radio.closest('label').classList.remove('correct-answer', 'incorrect-answer'); });
+                    document.getElementById('q1_servo_feedback').style.display = 'none';
+                    document.getElementById('q2_stepper_feedback').style.display = 'none';
+                    document.getElementById('q1_servo_feedback').className = 'feedback';
+                    document.getElementById('q2_stepper_feedback').className = 'feedback';
+                    this.canProceed = false;
+                    nextLessonBtn.disabled = true;
+                    checkAnswerBtn.disabled = false;
+                }
+            },
+            // Step 4: Practice Questions - Hardware Q2 (Servo vs Stepper) - Part 2 (Use Cases)
+            {
+                type: 'quiz',
+                quizId: 'servo-stepper-usecases',
+                title: 'Practice Question 2: Servo vs. Stepper Motors (Part 2)',
+                content: `
+                    <p class="quiz-title">Match the motor type to its typical use-case.</p>
+                    <div class="question-block">
+                        <p>1. Which motor would be best suited for controlling the precise angle of a robot's arm joint, where it needs to move to a specific position and hold it firmly?</p>
+                        <div class="options" data-correct="a">
+                            <label><input type="radio" name="q3_usecase" value="a"> Servo Motor</label>
+                            <label><input type="radio" name="q3_usecase" value="b"> Stepper Motor</label>
+                        </div>
+                        <div class="feedback" id="q3_usecase_feedback"></div>
+                    </div>
+                    <div class="question-block">
+                        <p>2. Which motor would be best for moving a 3D printer's print head or an engraving machine's tool in exact, small increments along an axis?</p>
+                        <div class="options" data-correct="b">
+                            <label><input type="radio" name="q4_usecase" value="a"> Servo Motor</label>
+                            <label><input type="radio" name="q4_usecase" value="b"> Stepper Motor</label>
+                        </div>
+                        <div class="feedback" id="q4_usecase_feedback"></div>
+                    </div>
+                `,
+                hasCheck: true,
+                checkAnswer: function() {
+                    let allCorrect = true;
+
+                    function checkRadioQuestion(qName, correctValue, feedbackId, correctExplanation, incorrectExplanation) {
+                        const answer = document.querySelector(`input[name="${qName}"]:checked`);
+                        const feedbackElem = document.getElementById(feedbackId);
+                        const optionsDiv = document.querySelector(`input[name="${qName}"]`).closest('.options');
+
+                        optionsDiv.querySelectorAll('label').forEach(label => {
+                            label.classList.remove('correct-answer', 'incorrect-answer');
+                            if (label.querySelector('input').value === correctValue) {
+                                label.classList.add('correct-answer'); // Show correct answer
+                            }
+                        });
+
+                        if (answer && answer.value === correctValue) {
+                            feedbackElem.className = 'feedback correct';
+                            feedbackElem.innerHTML = `<p>${correctExplanation}</p>`;
+                        } else {
+                            feedbackElem.className = 'feedback incorrect';
+                            feedbackElem.innerHTML = `<p>${incorrectExplanation}</p>`;
+                            allCorrect = false;
+                        }
+                        feedbackElem.style.display = 'block';
+                    }
+
+                    checkRadioQuestion(
+                        'q3_usecase', 'a', 'q3_usecase_feedback',
+                        'Correct! Servo motors are ideal for precise angular positioning and holding, like robot arms.',
+                        'Incorrect. Think about which motor specializes in moving to and holding precise angles.'
+                    );
+                    checkRadioQuestion(
+                        'q4_usecase', 'b', 'q4_usecase_feedback',
+                        'Correct! Stepper motors provide the high precision and step-by-step control needed for applications like 3D printers and CNC machines.',
+                        'Incorrect. Consider which motor type allows for very accurate, small, repeatable movements, often in an "open-loop" fashion.'
+                    );
+
+                    this.canProceed = allCorrect;
+                    nextLessonBtn.disabled = !this.canProceed;
+                    checkAnswerBtn.disabled = allCorrect;
+                },
+                canProceed: false,
+                reset: function() {
+                    document.querySelectorAll('input[name="q3_usecase"]').forEach(radio => { radio.checked = false; radio.closest('label').classList.remove('correct-answer', 'incorrect-answer'); });
+                    document.querySelectorAll('input[name="q4_usecase"]').forEach(radio => { radio.checked = false; radio.closest('label').classList.remove('correct-answer', 'incorrect-answer'); });
+                    document.getElementById('q3_usecase_feedback').style.display = 'none';
+                    document.getElementById('q4_usecase_feedback').style.display = 'none';
+                    document.getElementById('q3_usecase_feedback').className = 'feedback';
+                    document.getElementById('q4_usecase_feedback').className = 'feedback';
+                    this.canProceed = false;
+                    nextLessonBtn.disabled = true;
+                    checkAnswerBtn.disabled = false;
+                }
+            },
+            // Step 5: NEW: Hardware - Input/Output & Power (Definitions)
+            {
+                type: 'info',
+                title: 'Hardware Requirements: Supporting Components',
+                content: `
+                    <h2>Hardware Requirements: Supporting Components</h2>
+                    <h3>Input/Output (I/O) Devices</h3>
+                    <p>Robots interact with the world through various input and output methods:</p>
+                    <div class="key-definition">
+                        <p><strong>Input Device:</strong> Any component that provides information or signals *into* the processor. Sensors are a type of input device.</p>
+                        <p><em>Example: Buttons, switches, joysticks, keyboards, microphones, cameras, light sensors, temperature sensors.</em></p>
+                    </div>
+                    <div class="key-definition">
+                        <p><strong>Output Device:</strong> Any component that receives information or signals *from* the processor to perform an action or display information.</p>
+                        <p><em>Example: LEDs, displays (LCD/OLED), speakers, motors (actuators), buzzers, printers.</em></p>
+                    </div>
+                    <h3>Power Source</h3>
+                    <div class="key-definition">
+                        <p><strong>Power Source:</strong> Supplies the electrical energy needed to operate all robot components. This is fundamental for any robotic system.</p>
+                        <p><em>Example: Batteries (rechargeable or disposable), wall adapters (AC/DC power supplies), solar panels.</em></p>
+                    </div>
+                    <p>These components are essential for a robot to sense its environment, process information, and respond accordingly.</p>
+                `,
+                hasCheck: false,
+                canProceed: true
+            },
+            // Step 6: NEW: Hardware Q5: Input/Output & Power (Categorization)
+            {
+                type: 'quiz',
+                quizId: 'hardware-io-power-categorization',
+                title: 'Practice Question 3: Input/Output & Power',
+                content: `
+                    <p class="quiz-title">Categorize each item as an Input Device, Output Device, or Power Source.</p>
+                    <div class="question-block categorization-question">
+                        <div class="categorization-item">
+                            <span>Push Button</span>
+                            <select data-answer="Input Device">
+                                <option value="">Select Category</option>
+                                <option value="Input Device">Input Device</option>
+                                <option value="Output Device">Output Device</option>
+                                <option value="Power Source">Power Source</option>
+                            </select>
+                        </div>
+                        <div class="categorization-item">
+                            <span>Speaker</span>
+                            <select data-answer="Output Device">
+                                <option value="">Select Category</option>
+                                <option value="Input Device">Input Device</option>
+                                <option value="Output Device">Output Device</option>
+                                <option value="Power Source">Power Source</option>
+                            </select>
+                        </div>
+                        <div class="categorization-item">
+                            <span>9V Battery</span>
+                            <select data-answer="Power Source">
+                                <option value="">Select Category</option>
+                                <option value="Input Device">Input Device</option>
+                                <option value="Output Device">Output Device</option>
+                                <option value="Power Source">Power Source</option>
+                            </select>
+                        </div>
+                        <div class="categorization-item">
+                            <span>LCD Screen</span>
+                            <select data-answer="Output Device">
+                                <option value="">Select Category</option>
+                                <option value="Input Device">Input Device</option>
+                                <option value="Output Device">Output Device</option>
+                                <option value="Power Source">Power Source</option>
+                            </select>
+                        </div>
+                        <div class="categorization-item">
+                            <span>Microphone</span>
+                            <select data-answer="Input Device">
+                                <option value="">Select Category</option>
+                                <option value="Input Device">Input Device</option>
+                                <option value="Output Device">Output Device</option>
+                                <option value="Power Source">Power Source</option>
+                            </select>
+                        </div>
+                    </div>
+                `,
+                hasCheck: true,
+                checkAnswer: function() {
+                    const selects = lessonContent.querySelectorAll('.categorization-item select');
+                    let allCorrect = true;
+                    selects.forEach(select => {
+                        const selectedValue = select.value;
+                        const correctAnswer = select.dataset.answer;
+                        const itemSpan = select.previousElementSibling;
+                        if (selectedValue === correctAnswer && selectedValue !== "") {
+                            itemSpan.style.color = getCssVarColor('--success-color');
+                        } else {
+                            itemSpan.style.color = getCssVarColor('--danger-color');
+                            allCorrect = false;
+                        }
+                    });
+
+                    const feedbackDiv = document.createElement('div');
+                    feedbackDiv.className = 'feedback';
+                    if (allCorrect) {
+                        feedbackDiv.classList.add('correct');
+                        feedbackDiv.innerHTML = '<p>Fantastic! You\'ve correctly identified input, output, and power components.</p>';
+                        this.canProceed = true;
+                        checkAnswerBtn.disabled = true;
+                    } else {
+                        feedbackDiv.classList.add('incorrect');
+                        feedbackDiv.innerHTML = '<p>Not all categories are correct. Remember: Input brings data IN, Output sends data OUT, Power provides energy.</p>';
+                        this.canProceed = false;
+                    }
+                    if (this.feedbackElement) {
+                        this.feedbackElement.remove();
+                    }
+                    this.feedbackElement = feedbackDiv;
+                    lessonContent.appendChild(feedbackDiv);
+                    nextLessonBtn.disabled = !this.canProceed;
+                },
+                canProceed: false,
+                reset: function() {
+                    if (this.feedbackElement) {
+                        this.feedbackElement.remove();
+                        this.feedbackElement = null;
+                    }
+                    lessonContent.querySelectorAll('.categorization-item select').forEach(select => {
+                        select.value = '';
+                    });
+                    lessonContent.querySelectorAll('.categorization-item span').forEach(span => {
+                        span.style.color = '';
+                    });
+                    this.canProceed = false;
+                    nextLessonBtn.disabled = true;
+                    checkAnswerBtn.disabled = false;
+                }
+            },
+            // Step 7: Ethical Concerns - Privacy Definition
+            {
+                type: 'info',
+                title: 'Ethical Concerns of Robots: Privacy',
+                content: `
+                    <h2>Ethical Concerns of Robots: Privacy</h2>
+                    <h3>Key Definition</h3>
+                    <p>As robots become more integrated into our lives, it's vital to consider the ethical implications of their design and use. One of the most significant concerns is privacy.</p>
+                    <div class="key-definition">
+                        <p><strong>Privacy:</strong> This refers to protecting personal data gathered by robots (e.g., through embedded cameras, microphones, location tracking, or biometric sensors) to ensure individuals' information and autonomy are respected, secured, and not misused or exposed without consent.</p>
+                        <p><em>Example: A robotic vacuum cleaner mapping your home's layout could expose sensitive information about your living space if the data is not properly secured or is shared with third parties without your explicit permission.</em></p>
+                    </div>
+                    <p>Safeguarding personal data is paramount in the age of intelligent, data-collecting machines.</p>
+                `,
+                hasCheck: false,
+                canProceed: true
+            },
+            // Step 8: Ethical Concerns Q1: Privacy (MCQ)
+            {
+                type: 'quiz',
+                quizId: 'ethical-privacy',
+                title: 'Ethical Concerns: Practice Question (Privacy)',
+                content: `
+                    <p class="quiz-title">Test your understanding of Privacy in Robotics.</p>
+                    <div class="question-block">
+                        <p>A new facial recognition robot is deployed in public spaces to help identify missing persons. While beneficial, a major concern arises if the robot collects and stores the facial data of all passersby without their knowledge or consent, or if this data is then shared with third parties.</p>
+                        <p>Which ethical concern is primarily highlighted in this scenario?</p>
+                        <div class="options" data-correct="c">
+                            <label><input type="radio" name="ethical_concern_privacy" value="a"> Algorithmic Bias</label>
+                            <label><input type="radio" name="ethical_concern_privacy" value="b"> Job Displacement</label>
+                            <label><input type="radio" name="ethical_concern_privacy" value="c"> Privacy</label>
+                            <label><input type="radio" name="ethical_concern_privacy" value="d"> Environmental Impact</label>
+                        </div>
+                        <div class="feedback" id="ethical_feedback_privacy"></div>
+                    </div>
+                `,
+                hasCheck: true,
+                checkAnswer: function() {
+                    const answer = document.querySelector('input[name="ethical_concern_privacy"]:checked');
+                    const feedback = document.getElementById('ethical_feedback_privacy');
+                    const optionsDiv = document.querySelector('input[name="ethical_concern_privacy"]').closest('.options');
+                    const correctValue = optionsDiv.dataset.correct;
+
+                    optionsDiv.querySelectorAll('label').forEach(label => {
+                        label.classList.remove('correct-answer', 'incorrect-answer');
+                        if (label.querySelector('input').value === correctValue) {
+                            label.classList.add('correct-answer');
+                        }
+                    });
+
+                    if (answer && answer.value === correctValue) {
+                        feedback.className = 'feedback correct';
+                        feedback.innerHTML = '<p>Correct! The unconsented collection, storage, and potential sharing of facial data directly relates to Privacy concerns.</p>';
+                        this.canProceed = true;
+                        checkAnswerBtn.disabled = true;
+                    } else {
+                        feedback.className = 'feedback incorrect';
+                        feedback.innerHTML = '<p>Incorrect. Consider what happens when personal information (like biometric data) is collected and potentially exposed or misused.</p>';
+                        this.canProceed = false;
+                    }
+                    feedback.style.display = 'block';
+                    nextLessonBtn.disabled = !this.canProceed;
+                },
+                canProceed: false,
+                reset: function() {
+                    document.querySelectorAll('input[name="ethical_concern_privacy"]').forEach(radio => { radio.checked = false; radio.closest('label').classList.remove('correct-answer', 'incorrect-answer'); });
+                    document.getElementById('ethical_feedback_privacy').style.display = 'none';
+                    document.getElementById('ethical_feedback_privacy').className = 'feedback';
+                    this.canProceed = false;
+                    nextLessonBtn.disabled = true;
+                    checkAnswerBtn.disabled = false;
+                }
+            },
+            // Step 9: NEW: Ethical Concerns - Bias & Accountability (Definitions)
+            {
+                type: 'info',
+                title: 'Ethical Concerns of Robots: Bias & Accountability',
+                content: `
+                    <h2>Ethical Concerns of Robots: Bias & Accountability</h2>
+                    <h3>Key Definitions</h3>
+                    <p>Beyond privacy, two other critical ethical considerations arise in robotics:</p>
+                    <div class="key-definition">
+                        <p><strong>Bias:</strong> Occurs when a robot's behavior or decisions unfairly favor or discriminate against certain groups or individuals. This often stems from biased data used to train AI models or from human prejudices encoded into the robot's design or algorithms.</p>
+                        <p><em>Example: A hiring robot that disproportionately rejects candidates from certain demographics because its training data was not diverse or contained historical biases.</em></p>
+                    </div>
+                    <div class="key-definition">
+                        <p><strong>Accountability:</strong> Refers to determining who is responsible when a robot causes harm or makes a significant error. Is it the designer, manufacturer, programmer, operator, or the robot itself?</p>
+                        <p><em>Example: If an autonomous delivery robot causes an accident, establishing accountability is crucial for legal and ethical reasons.</em></p>
+                    </div>
+                    <p>Addressing bias ensures fairness, while establishing accountability is vital for trust and justice.</p>
+                `,
+                hasCheck: false,
+                canProceed: true
+            },
+            // Step 10: NEW: Ethical Concerns Q2: Bias & Accountability (MCQ)
+            {
+                type: 'quiz',
+                quizId: 'ethical-bias-accountability',
+                title: 'Ethical Concerns: Practice Question (Bias & Accountability)',
+                content: `
+                    <p class="quiz-title">Evaluate ethical scenarios.</p>
+                    <div class="question-block">
+                        <p>1. An AI-powered medical diagnostic robot is found to consistently misdiagnose rare conditions in patients of a specific ethnic background, leading to delayed treatment. This issue was traced back to a lack of diverse patient data in its training set.</p>
+                        <p>Which ethical concern does this primarily represent?</p>
+                        <div class="options" data-correct="a">
+                            <label><input type="radio" name="ethical_q1" value="a"> Bias</label>
+                            <label><input type="radio" name="ethical_q1" value="b"> Accountability</label>
+                            <label><input type="radio" name="ethical_q1" value="c"> Privacy</label>
+                        </div>
+                        <div class="feedback" id="ethical_q1_feedback"></div>
+                    </div>
+                    <div class="question-block">
+                        <p>2. A self-driving car, operating fully autonomously, is involved in a collision that injures a pedestrian. Legal experts are debating whether the car's manufacturer, the software developer, or the car's owner should bear the primary responsibility.</p>
+                        <p>Which ethical concern is central to this debate?</p>
+                        <div class="options" data-correct="b">
+                            <label><input type="radio" name="ethical_q2" value="a"> Bias</label>
+                            <label><input type="radio" name="ethical_q2" value="b"> Accountability</label>
+                            <label><input type="radio" name="ethical_q2" value="c"> Transparency</label>
+                        </div>
+                        <div class="feedback" id="ethical_q2_feedback"></div>
+                    </div>
+                `,
+                hasCheck: true,
+                checkAnswer: function() {
+                    let allCorrect = true;
+
+                    function checkRadioQuestion(qName, correctValue, feedbackId, correctExplanation, incorrectExplanation) {
+                        const answer = document.querySelector(`input[name="${qName}"]:checked`);
+                        const feedbackElem = document.getElementById(feedbackId);
+                        const optionsDiv = document.querySelector(`input[name="${qName}"]`).closest('.options');
+
+                        optionsDiv.querySelectorAll('label').forEach(label => {
+                            label.classList.remove('correct-answer', 'incorrect-answer');
+                            if (label.querySelector('input').value === correctValue) {
+                                label.classList.add('correct-answer');
+                            }
+                        });
+
+                        if (answer && answer.value === correctValue) {
+                            feedbackElem.className = 'feedback correct';
+                            feedbackElem.innerHTML = `<p>${correctExplanation}</p>`;
+                        } else {
+                            feedbackElem.className = 'feedback incorrect';
+                            feedbackElem.innerHTML = `<p>${incorrectExplanation}</p>`;
+                            allCorrect = false;
+                        }
+                        feedbackElem.style.display = 'block';
+                    }
+
+                    checkRadioQuestion(
+                        'ethical_q1', 'a', 'ethical_q1_feedback',
+                        'Correct! Misdiagnosis due to training data issues indicates algorithmic bias.',
+                        'Incorrect. This scenario directly points to unfairness stemming from data, which is bias.'
+                    );
+                    checkRadioQuestion(
+                        'ethical_q2', 'b', 'ethical_q2_feedback',
+                        'Correct! Determining responsibility for harm caused by an autonomous system is a key aspect of accountability.',
+                        'Incorrect. The core of this issue is deciding who is responsible for the robot\'s actions.'
+                    );
+
+                    this.canProceed = allCorrect;
+                    nextLessonBtn.disabled = !this.canProceed;
+                    checkAnswerBtn.disabled = allCorrect;
+                },
+                canProceed: false,
+                reset: function() {
+                    document.querySelectorAll('input[name="ethical_q1"]').forEach(radio => { radio.checked = false; radio.closest('label').classList.remove('correct-answer', 'incorrect-answer'); });
+                    document.querySelectorAll('input[name="ethical_q2"]').forEach(radio => { radio.checked = false; radio.closest('label').classList.remove('correct-answer', 'incorrect-answer'); });
+                    document.getElementById('ethical_q1_feedback').style.display = 'none';
+                    document.getElementById('ethical_q2_feedback').style.display = 'none';
+                    document.getElementById('ethical_q1_feedback').className = 'feedback';
+                    document.getElementById('ethical_q2_feedback').className = 'feedback';
+                    this.canProceed = false;
+                    nextLessonBtn.disabled = true;
+                    checkAnswerBtn.disabled = false;
+                }
+            },
+            // Step 11: Completion Page
+            {
+                type: 'completion',
+                title: 'Lesson Complete!',
+                content: `
+                    <h2>Congratulations!</h2>
+                    <p>You've successfully completed this comprehensive lesson on Robot Hardware and Ethical Concerns.</p>
+                    <p>You now have a foundational understanding of:</p>
+                    <ul>
+                        <li>Key hardware components: <strong>sensors</strong>, <strong>actuators/motors</strong>, and <strong>microcontrollers</strong>.</li>
+                        <li>The differences and typical use-cases for <strong>servo</strong> and <strong>stepper motors</strong>.</li>
+                        <li>Essential supporting components like <strong>input/output devices</strong> and <strong>power sources</strong>.</li>
+                        <li>Crucial ethical considerations in robotics: <strong>privacy</strong>, <strong>bias</strong>, and <strong>accountability</strong>.</li>
+                    </ul>
+                    <p>Your journey into robotics has begun! Keep exploring and building your knowledge!</p>
+                `,
+                hasCheck: false,
+                canProceed: false // No further steps
+            }
+        ];
+
+        // Function to load content for a given lesson step
+        function loadLesson(step) {
+            // Ensure step is within bounds
+            if (step < 0 || step >= lessons.length) {
+                console.warn("Attempted to load out-of-bounds lesson step:", step);
+                return;
+            }
+
+            currentStep = step;
+            const lesson = lessons[currentStep];
+
+            lessonContent.innerHTML = lesson.content;
+
+            // Update button visibility and state
+            checkAnswerBtn.style.display = lesson.hasCheck ? 'inline-block' : 'none';
+            resetBtn.style.display = lesson.hasCheck ? 'inline-block' : 'none'; // Show reset button for quiz steps
+            nextLessonBtn.disabled = !lesson.canProceed; // Disable next until quiz is passed or if it's an info page
+            checkAnswerBtn.disabled = false; // Always re-enable check button on new quiz load
+
+            // Specific setup for drag and drop (only for the relevant step)
+            if (lesson.type === 'quiz' && lesson.quizId === 'hardware-def-dragdrop') {
+                setupDragAndDrop();
+            }
+
+            // Update the progress bar visually
+            updateProgressBar();
+
+            // Scroll to top of lesson content when new lesson loads
+            lessonContent.scrollTop = 0;
+            window.scrollTo(0, 0); // Also scroll window to top
+        }
+
+        // Updates the width of the progress bar
+        function updateProgressBar() {
+            // Calculate progress based on quiz steps completed
+            // (Current step index for quizzes) / (Total quiz steps + 1 for completion)
+            // Or calculate total steps including info, but exclude the final completion step
+            const progress = (currentStep / (lessons.length - 1)) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        // Event listener for the "Check Answer" button
+        checkAnswerBtn.addEventListener('click', () => {
+            const lesson = lessons[currentStep];
+            if (lesson && lesson.checkAnswer) {
+                lesson.checkAnswer();
+            }
+        });
+
+        // Event listener for the "Next Lesson" button
+        nextLessonBtn.addEventListener('click', () => {
+            const currentLesson = lessons[currentStep];
+            // No need to call reset here directly, as it's handled by loadLesson if needed.
+            // But if a quiz allows partial progress, this would be the place to ensure full reset.
+            // For now, the `loadLesson` handles the initial state of the quiz.
+
+            // Proceed to the next step if available
+            if (currentStep < lessons.length - 1) {
+                loadLesson(currentStep + 1);
+            }
+        });
+
+        // Event listener for the "Reset" button
+        resetBtn.addEventListener('click', () => {
+            const lesson = lessons[currentStep];
+            if (lesson && lesson.reset) {
+                lesson.reset();
+            }
+        });
+
+        // Function to set up drag-and-drop interactivity
+        function setupDragAndDrop() {
+            const draggables = document.querySelectorAll('.drag-item');
+            const dropTargets = document.querySelectorAll('.drop-target');
+            let draggedItem = null;
+
+            draggables.forEach(draggable => {
+                draggable.addEventListener('dragstart', (e) => {
+                    draggedItem = draggable;
+                    e.dataTransfer.setData('text/plain', e.target.id); // Required for Firefox
+                    setTimeout(() => {
+                        draggable.style.opacity = '0.5';
+                    }, 0);
+                });
+
+                draggable.addEventListener('dragend', () => {
+                    if (draggedItem) {
+                        draggedItem.style.opacity = '1';
+                    }
+                    draggedItem = null;
+                });
+            });
+
+            dropTargets.forEach(target => {
+                target.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    target.classList.add('hover');
+                });
+
+                target.addEventListener('dragleave', () => {
+                    target.classList.remove('hover');
+                });
+
+                target.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    target.classList.remove('hover');
+                    if (draggedItem && !target.querySelector('.drag-item')) { // Only allow if target is empty
+                        const termParagraph = target.querySelector('p');
+                        if (termParagraph) {
+                            termParagraph.remove();
+                        }
+                        target.appendChild(draggedItem);
+                        draggedItem.style.position = 'static';
+                        // draggedItem.style.pointerEvents = 'none'; // Item should be draggable again on reset, so keep it 'auto'
+                    }
+                });
+            });
+        }
+
+        // Initialize the first lesson when the page loads
+        loadLesson(currentStep);
+
+    </script>
+</body>
+</html>

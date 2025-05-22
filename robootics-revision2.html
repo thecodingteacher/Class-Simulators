@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AV Hardware Interactive Challenge</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #2c3e50; /* Darker, techy background */
+            color: #ecf0f1; /* Light text */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for long content */
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: #34495e; /* Slightly lighter container */
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+        }
+        h1, h2 {
+            color: #1abc9c; /* Teal accent */
+            text-align: center;
+        }
+        .challenge {
+            border: 2px solid #16a085; /* Darker teal border */
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            background-color: #4a627a; /* Slightly different shade for challenge box */
+            transition: opacity 0.5s ease-in-out;
+        }
+        .challenge.hidden {
+            display: none;
+            opacity: 0;
+        }
+        .challenge-title {
+            font-size: 1.8em;
+            color: #1abc9c;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #1abc9c;
+            padding-bottom: 10px;
+        }
+        .task-description {
+            margin-bottom: 20px;
+            font-style: italic;
+            color: #bdc3c7; /* Lighter grey for task description */
+            background-color: #56708a;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #1abc9c;
+        }
+        .task-description ol li { margin-bottom: 8px; }
+
+        button {
+            background-color: #1abc9c; /* Teal for primary action */
+            color: #2c3e50; /* Dark text for contrast */
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #16a085; /* Darker teal on hover */
+            transform: translateY(-2px);
+        }
+        button:active { transform: translateY(0px); }
+        button.reset-button {
+            background-color: #e67e22; /* Orange for reset */
+            color: white;
+        }
+        button.reset-button:hover { background-color: #d35400; } /* Darker orange */
+        
+        .definitions {
+            background-color: #4a627a;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 6px;
+            border-left: 5px solid #1abc9c;
+        }
+        .definitions h3 { margin-top: 0; color: #1abc9c; }
+        .definitions ul { list-style-type: none; padding-left: 0; }
+        .definitions li { margin-bottom: 10px; }
+        .definitions strong { color: #1dd2af; } /* Brighter teal */
+
+        .progress-bar-container {
+            width: 100%;
+            background-color: #2c3e50;
+            border-radius: 25px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            height: 30px;
+            border: 1px solid #1abc9c;
+        }
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #1abc9c, #16a085);
+            text-align: center;
+            line-height: 30px;
+            color: #2c3e50;
+            font-size: 1em;
+            font-weight: bold;
+            transition: width 0.6s ease-in-out;
+        }
+        .status-message {
+            text-align: center;
+            font-weight: bold;
+            min-height: 24px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            color: #fff;
+        }
+        .status-message.error { background-color: #c0392b; } /* Red */
+        .status-message.success { background-color: #27ae60; } /* Green */
+        .challenge-icon { font-size: 1.5em; margin-right: 10px; vertical-align: middle; }
+
+        .completed-message {
+            text-align: center;
+            padding: 40px;
+            background-color: #27ae60;
+            color: #fff;
+            border: 2px solid #2ecc71;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .completed-message h2 { color: #fff; }
+
+        /* Interactive Elements Styling */
+        .palette, .drop-zone-container, .selection-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            min-height: 60px;
+            border-radius: 6px;
+        }
+        .palette { background-color: #56708a; border: 1px dashed #7f8c8d; }
+        .drop-zone-container { justify-content: space-around; }
+        .drop-zone {
+            border: 2px dashed #7f8c8d; /* Grey dashed border */
+            background-color: #3b5268; /* Darker drop zone */
+            padding: 15px;
+            min-width: 150px;
+            min-height: 50px;
+            text-align: center;
+            border-radius: 4px;
+            transition: background-color 0.3s, border-color 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .drop-zone.drag-over { background-color: #1abc9c; border-color: #16a085; }
+        .drop-zone .label { font-size: 0.9em; color: #bdc3c7; margin-bottom: 5px; }
+
+        .draggable {
+            padding: 10px 15px;
+            background-color: #1abc9c;
+            color: #2c3e50;
+            border-radius: 4px;
+            cursor: grab;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+            user-select: none; /* Prevent text selection while dragging */
+        }
+        .draggable:active { cursor: grabbing; transform: scale(1.05); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+
+        .clickable-option {
+            padding: 10px 15px;
+            background-color: #56708a;
+            color: #ecf0f1;
+            border: 2px solid #7f8c8d;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.3s, border-color 0.3s;
+            margin: 5px;
+        }
+        .clickable-option.selected { background-color: #1abc9c; border-color: #16a085; color: #2c3e50; font-weight: bold; }
+        .selection-group { margin-bottom: 15px; }
+        .selection-group h4 { margin-top: 0; margin-bottom: 5px; color: #bdc3c7;}
+
+        .ordered-slots-container .drop-zone { min-width: 180px; margin-bottom: 10px; }
+
+        /* Shake animation for incorrect attempt */
+        .shake {
+            animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translateX(-2px); }
+            20%, 80% { transform: translateX(3px); }
+            30%, 50%, 70% { transform: translateX(-4px); }
+            40%, 60% { transform: translateX(4px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span class="challenge-icon">🚀</span>AV Interactive Hardware Certification</h1>
+
+        <div class="definitions">
+            <h3><span class="challenge-icon">ℹ️</span>Reference Data</h3>
+            <ul>
+                <li><strong>Sensor:</strong> Measures physical property, converts to signal.</li>
+                <li><strong>Actuator/Motor:</strong> Converts electrical signals to mechanical movement.</li>
+                <li><strong>Processor/Microcontroller:</strong> The "brain" running code.</li>
+            </ul>
+        </div>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar">0% Complete</div>
+        </div>
+        <div class="status-message" id="statusMessage">Begin Challenge 1.</div>
+
+        <!-- Challenge 1: Component ID -->
+        <div id="challenge1" class="challenge">
+            <h2 class="challenge-title"><span class="challenge-icon">🧩</span>Challenge 1: Component Sort</h2>
+            <p class="task-description">Drag each component type to its correct definition block.</p>
+            <div id="c1_palette" class="palette">
+                <div id="c1_sensor_item" class="draggable" draggable="true">Sensor</div>
+                <div id="c1_actuator_item" class="draggable" draggable="true">Actuator/Motor</div>
+                <div id="c1_processor_item" class="draggable" draggable="true">Processor</div>
+            </div>
+            <div class="drop-zone-container">
+                <div id="c1_def1_dropzone" class="drop-zone" data-expected="c1_sensor_item">
+                    <span class="label">Measures physical property</span>
+                </div>
+                <div id="c1_def2_dropzone" class="drop-zone" data-expected="c1_actuator_item">
+                    <span class="label">Converts signals to movement</span>
+                </div>
+                <div id="c1_def3_dropzone" class="drop-zone" data-expected="c1_processor_item">
+                    <span class="label">The "brain"</span>
+                </div>
+            </div>
+            <button onclick="checkAnswer(1)">Verify Configuration</button>
+            <button class="reset-button" onclick="resetInteractiveElements(1)">Reset Interaction</button>
+        </div>
+
+        <!-- Challenge 2: Motor Match-up -->
+        <div id="challenge2" class="challenge hidden">
+            <h2 class="challenge-title"><span class="challenge-icon">⚙️</span>Challenge 2: Motor Specialization</h2>
+            <p class="task-description">Drag the correct advantage and a typical AV use-case to each motor type.</p>
+            <div id="c2_palette" class="palette">
+                <div id="c2_servo_adv" class="draggable" draggable="true">Adv: Precise Angle (Closed-Loop)</div>
+                <div id="c2_servo_uc" class="draggable" draggable="true">Use: Steering / Camera Gimbal</div>
+                <div id="c2_stepper_adv" class="draggable" draggable="true">Adv: Precise Steps (Open-Loop)</div>
+                <div id="c2_stepper_uc" class="draggable" draggable="true">Use: Sensor Scanners / Small Wheels</div>
+            </div>
+            <div class="drop-zone-container">
+                <div>
+                    <h4>Servo Motor</h4>
+                    <div id="c2_servo_adv_drop" class="drop-zone" data-expected="c2_servo_adv"><span class="label">Advantage</span></div>
+                    <div id="c2_servo_uc_drop" class="drop-zone" data-expected="c2_servo_uc"><span class="label">Use-Case</span></div>
+                </div>
+                <div>
+                    <h4>Stepper Motor</h4>
+                    <div id="c2_stepper_adv_drop" class="drop-zone" data-expected="c2_stepper_adv"><span class="label">Advantage</span></div>
+                    <div id="c2_stepper_uc_drop" class="drop-zone" data-expected="c2_stepper_uc"><span class="label">Use-Case</span></div>
+                </div>
+            </div>
+            <button onclick="checkAnswer(2)">Verify Configuration</button>
+            <button class="reset-button" onclick="resetInteractiveElements(2)">Reset Interaction</button>
+        </div>
+        
+        <!-- Challenge 3: Sensor Suite Selection -->
+        <div id="challenge3" class="challenge hidden">
+            <h2 class="challenge-title"><span class="challenge-icon">📡</span>Challenge 3: Urban Sensor Array</h2>
+            <p class="task-description">For basic urban navigation (obstacle avoidance, lane presence), drag THREE critical and distinct sensor types to the 'Selected Sensors' bay.</p>
+            <div id="c3_palette" class="palette">
+                <div id="c3_camera" class="draggable" draggable="true" data-type="camera">Camera</div>
+                <div id="c3_lidar" class="draggable" draggable="true" data-type="lidar">LiDAR</div>
+                <div id="c3_radar" class="draggable" draggable="true" data-type="radar">Radar</div>
+                <div id="c3_ultrasonic" class="draggable" draggable="true" data-type="ultrasonic">Ultrasonic</div>
+                <div id="c3_imu" class="draggable" draggable="true" data-type="imu">IMU</div>
+                <div id="c3_gps" class="draggable" draggable="true" data-type="gps">GPS</div>
+            </div>
+            <div class="drop-zone-container">
+                <div id="c3_selected_sensors_drop" class="drop-zone" style="min-width: 300px; min-height: 100px; flex-direction: row; flex-wrap:wrap; justify-content:center; align-items:center;">
+                    <span class="label">Selected Sensors Bay</span>
+                </div>
+            </div>
+            <button onclick="checkAnswer(3)">Verify Configuration</button>
+            <button class="reset-button" onclick="resetInteractiveElements(3)">Reset Interaction</button>
+        </div>
+
+        <!-- Challenge 4: Perception Pipeline Order -->
+        <div id="challenge4" class="challenge hidden">
+            <h2 class="challenge-title"><span class="challenge-icon">🧠</span>Challenge 4: Data to Decision Flow</h2>
+            <p class="task-description">Arrange the core stages of an AV's perception-to-action pipeline in the correct sequence.</p>
+            <div id="c4_palette" class="palette ordered-slots-container">
+                <div id="c4_planning" class="draggable" draggable="true">Planning</div>
+                <div id="c4_sensing" class="draggable" draggable="true">Sensing</div>
+                <div id="c4_control" class="draggable" draggable="true">Control</div>
+                <div id="c4_perception" class="draggable" draggable="true">Perception</div>
+                <div id="c4_localization" class="draggable" draggable="true">Localization</div>
+            </div>
+            <div id="c4_ordered_slots" class="drop-zone-container ordered-slots-container" style="flex-direction: column; align-items: center;">
+                <div id="c4_slot1" class="drop-zone" data-expected-order="c4_sensing"><span class="label">Stage 1</span></div>
+                <div id="c4_slot2" class="drop-zone" data-expected-order="c4_perception"><span class="label">Stage 2</span></div>
+                <div id="c4_slot3" class="drop-zone" data-expected-order="c4_localization"><span class="label">Stage 3</span></div>
+                <div id="c4_slot4" class="drop-zone" data-expected-order="c4_planning"><span class="label">Stage 4</span></div>
+                <div id="c4_slot5" class="drop-zone" data-expected-order="c4_control"><span class="label">Stage 5</span></div>
+            </div>
+            <button onclick="checkAnswer(4)">Verify Configuration</button>
+            <button class="reset-button" onclick="resetInteractiveElements(4)">Reset Interaction</button>
+        </div>
+
+        <!-- Challenge 5: Redundancy Strategy -->
+        <div id="challenge5" class="challenge hidden">
+            <h2 class="challenge-title"><span class="challenge-icon">🛡️</span>Challenge 5: Safety Through Redundancy</h2>
+            <p class="task-description">Scenario: Ensure robust pedestrian detection in varying light and weather conditions. Select one PRIMARY sensor and one complementary REDUNDANT sensor that operates on a different principle.</p>
+            <div class="selection-area">
+                <div class="selection-group">
+                    <h4>Primary Sensor:</h4>
+                    <div id="c5_primary_camera" class="clickable-option" data-type="camera" onclick="selectOption(this, 'c5_primary')">Camera</div>
+                    <div id="c5_primary_lidar" class="clickable-option" data-type="lidar" onclick="selectOption(this, 'c5_primary')">LiDAR</div>
+                    <div id="c5_primary_radar" class="clickable-option" data-type="radar" onclick="selectOption(this, 'c5_primary')">Radar</div>
+                </div>
+                <div class="selection-group">
+                    <h4>Redundant Sensor:</h4>
+                    <div id="c5_redundant_camera" class="clickable-option" data-type="camera" onclick="selectOption(this, 'c5_redundant')">Camera</div>
+                    <div id="c5_redundant_lidar" class="clickable-option" data-type="lidar" onclick="selectOption(this, 'c5_redundant')">LiDAR</div>
+                    <div id="c5_redundant_radar" class="clickable-option" data-type="radar" onclick="selectOption(this, 'c5_redundant')">Radar</div>
+                </div>
+            </div>
+            <button onclick="checkAnswer(5)">Verify Configuration</button>
+            <button class="reset-button" onclick="resetInteractiveElements(5)">Reset Interaction</button>
+        </div>
+
+        <!-- Challenge 6: Critical Action Sequence -->
+        <div id="challenge6" class="challenge hidden">
+            <h2 class="challenge-title"><span class="challenge-icon">🚨</span>Challenge 6: Imminent Collision Response</h2>
+            <p class="task-description">Scenario: Your AV detects an unavoidable forward collision. Drag the THREE most critical and immediate actions into the priority slots, in order.</p>
+            <div id="c6_palette" class="palette ordered-slots-container">
+                <div id="c6_action_brakes" class="draggable" draggable="true">Apply Max Brakes</div>
+                <div id="c6_action_alert" class="draggable" draggable="true">Alert Passengers/Horn</div>
+                <div id="c6_action_hazards" class="draggable" draggable="true">Activate Hazard Lights</div>
+                <div id="c6_action_safetyprep" class="draggable" draggable="true">Prepare Safety Systems (Pre-tensioners)</div>
+                <div id="c6_action_scanescape" class="draggable" draggable="true">Scan for Escape Path</div>
+            </div>
+            <div id="c6_priority_slots" class="drop-zone-container ordered-slots-container" style="flex-direction: column; align-items: center;">
+                <div id="c6_slot1" class="drop-zone" data-expected-order="c6_action_brakes"><span class="label">Priority 1 (Highest)</span></div>
+                <div id="c6_slot2" class="drop-zone" data-expected-order-alt1="c6_action_safetyprep" data-expected-order-alt2="c6_action_alert"><span class="label">Priority 2</span></div>
+                <div id="c6_slot3" class="drop-zone" data-expected-order-alt1="c6_action_alert" data-expected-order-alt2="c6_action_safetyprep"><span class="label">Priority 3</span></div>
+            </div>
+            <button onclick="checkAnswer(6)">Finalize Mission</button>
+            <button class="reset-button" onclick="resetInteractiveElements(6)">Reset Interaction</button>
+        </div>
+
+        <div id="completionMessage" class="completed-message hidden">
+            <h2><span class="challenge-icon">🏆</span>Mission Accomplished!</h2>
+            <p>Outstanding, Specialist! You've mastered the interactive hardware simulation. Your Autonomous Systems Specialist certification is confirmed. Exceptional performance!</p>
+        </div>
+    </div>
+
+<script>
+    const totalChallenges = 6;
+    let currentChallengeNum = 1;
+    const statusMessageEl = document.getElementById('statusMessage');
+    const progressBarEl = document.getElementById('progressBar');
+
+    // Drag and Drop Functionality
+    let draggedItem = null;
+
+    document.addEventListener('dragstart', (event) => {
+        if (event.target.classList.contains('draggable')) {
+            draggedItem = event.target;
+            event.dataTransfer.setData('text/plain', event.target.id);
+            setTimeout(() => { // Make item disappear from source smoothly
+                // event.target.style.display = 'none';
+            }, 0);
+        }
+    });
+
+    document.addEventListener('dragend', (event) => {
+        if (draggedItem) {
+            // event.target.style.display = ''; // Make item reappear if not dropped in valid zone
+            draggedItem = null;
+        }
+    });
+
+    document.addEventListener('dragover', (event) => {
+        event.preventDefault(); // Necessary to allow dropping
+        const targetDropZone = event.target.closest('.drop-zone');
+        if (targetDropZone) {
+            targetDropZone.classList.add('drag-over');
+        }
+    });
+
+    document.addEventListener('dragleave', (event) => {
+        const targetDropZone = event.target.closest('.drop-zone');
+        if (targetDropZone) {
+            targetDropZone.classList.remove('drag-over');
+        }
+    });
+
+    document.addEventListener('drop', (event) => {
+        event.preventDefault();
+        const targetDropZone = event.target.closest('.drop-zone');
+        if (targetDropZone && draggedItem) {
+            // If dropzone is meant for single item, clear it first or handle logic
+            if (!targetDropZone.id.includes('c3_selected_sensors_drop')) { // c3 allows multiple
+                 const existingItem = targetDropZone.querySelector('.draggable');
+                 if(existingItem && existingItem !== draggedItem) {
+                    // Move existing item back to its palette or original container
+                    const paletteId = existingItem.id.split('_')[0] + '_palette';
+                    const palette = document.getElementById(paletteId);
+                    if (palette) palette.appendChild(existingItem);
+                 }
+            }
+            targetDropZone.appendChild(draggedItem);
+            targetDropZone.classList.remove('drag-over');
+        }
+        if (draggedItem) {
+            draggedItem.style.display = ''; // Ensure it's visible after drop
+            draggedItem = null;
+        }
+    });
+
+    // Challenge Logic
+    function checkAnswer(challengeNum) {
+        let isCorrect = false;
+        const challengeEl = document.getElementById(`challenge${challengeNum}`);
+        switch (challengeNum) {
+            case 1:
+                const dz1 = document.getElementById('c1_def1_dropzone');
+                const dz2 = document.getElementById('c1_def2_dropzone');
+                const dz3 = document.getElementById('c1_def3_dropzone');
+                isCorrect = dz1.querySelector('.draggable')?.id === dz1.dataset.expected &&
+                            dz2.querySelector('.draggable')?.id === dz2.dataset.expected &&
+                            dz3.querySelector('.draggable')?.id === dz3.dataset.expected;
+                break;
+            case 2:
+                const servoAdv = document.getElementById('c2_servo_adv_drop');
+                const servoUc = document.getElementById('c2_servo_uc_drop');
+                const stepperAdv = document.getElementById('c2_stepper_adv_drop');
+                const stepperUc = document.getElementById('c2_stepper_uc_drop');
+                isCorrect = servoAdv.querySelector('.draggable')?.id === servoAdv.dataset.expected &&
+                            servoUc.querySelector('.draggable')?.id === servoUc.dataset.expected &&
+                            stepperAdv.querySelector('.draggable')?.id === stepperAdv.dataset.expected &&
+                            stepperUc.querySelector('.draggable')?.id === stepperUc.dataset.expected;
+                break;
+            case 3:
+                const selectedBay = document.getElementById('c3_selected_sensors_drop');
+                const selectedItems = Array.from(selectedBay.querySelectorAll('.draggable'));
+                const selectedTypes = new Set(selectedItems.map(item => item.dataset.type));
+                // Basic: Camera, Ultrasonic, and (LiDAR or Radar for distance/object confirmation)
+                isCorrect = selectedItems.length === 3 &&
+                            selectedTypes.has('camera') &&
+                            selectedTypes.has('ultrasonic') &&
+                            (selectedTypes.has('lidar') || selectedTypes.has('radar'));
+                break;
+            case 4:
+                const slot1 = document.getElementById('c4_slot1');
+                const slot2 = document.getElementById('c4_slot2');
+                const slot3 = document.getElementById('c4_slot3');
+                const slot4 = document.getElementById('c4_slot4');
+                const slot5 = document.getElementById('c4_slot5');
+                isCorrect = slot1.querySelector('.draggable')?.id === slot1.dataset.expectedOrder &&
+                            slot2.querySelector('.draggable')?.id === slot2.dataset.expectedOrder &&
+                            slot3.querySelector('.draggable')?.id === slot3.dataset.expectedOrder &&
+                            slot4.querySelector('.draggable')?.id === slot4.dataset.expectedOrder &&
+                            slot5.querySelector('.draggable')?.id === slot5.dataset.expectedOrder;
+                break;
+            case 5:
+                const primarySelected = document.querySelector('#challenge5 .selection-group:nth-child(1) .clickable-option.selected');
+                const redundantSelected = document.querySelector('#challenge5 .selection-group:nth-child(2) .clickable-option.selected');
+                if (primarySelected && redundantSelected) {
+                    const primaryType = primarySelected.dataset.type;
+                    const redundantType = redundantSelected.dataset.type;
+                    if (primaryType !== redundantType) { // Must be different types
+                        if (primaryType === 'camera' && (redundantType === 'lidar' || redundantType === 'radar')) isCorrect = true;
+                        else if (primaryType === 'lidar' && (redundantType === 'camera' || redundantType === 'radar')) isCorrect = true;
+                        else if (primaryType === 'radar' && (redundantType === 'camera' || redundantType === 'lidar')) isCorrect = true;
+                    }
+                }
+                break;
+            case 6:
+                const p_slot1 = document.getElementById('c6_slot1');
+                const p_slot2 = document.getElementById('c6_slot2');
+                const p_slot3 = document.getElementById('c6_slot3');
+
+                const itemInSlot1 = p_slot1.querySelector('.draggable')?.id;
+                const itemInSlot2 = p_slot2.querySelector('.draggable')?.id;
+                const itemInSlot3 = p_slot3.querySelector('.draggable')?.id;
+
+                const correctSlot1 = itemInSlot1 === p_slot1.dataset.expectedOrder;
+                
+                // Slot 2 and 3 can have safetyprep or alert, but they must be different and present
+                const slot2Valid = itemInSlot2 === p_slot2.dataset.expectedOrderAlt1 || itemInSlot2 === p_slot2.dataset.expectedOrderAlt2;
+                const slot3Valid = itemInSlot3 === p_slot3.dataset.expectedOrderAlt1 || itemInSlot3 === p_slot3.dataset.expectedOrderAlt2;
+                const slots23UniqueAndCorrect = slot2Valid && slot3Valid && itemInSlot2 !== itemInSlot3 && 
+                                                ( (itemInSlot2 === p_slot2.dataset.expectedOrderAlt1 && itemInSlot3 === p_slot3.dataset.expectedOrderAlt1) ||
+                                                  (itemInSlot2 === p_slot2.dataset.expectedOrderAlt2 && itemInSlot3 === p_slot3.dataset.expectedOrderAlt2) ||
+                                                  (itemInSlot2 === p_slot2.dataset.expectedOrderAlt1 && itemInSlot3 === p_slot3.dataset.expectedOrderAlt2) || // Cross check
+                                                  (itemInSlot2 === p_slot2.dataset.expectedOrderAlt2 && itemInSlot3 === p_slot3.dataset.expectedOrderAlt1)
+                                                );
+                // More precise for slot 2 & 3: one must be alt1, the other alt2, regardless of which specific DOM element they target.
+                // The key is that `c6_action_safetyprep` and `c6_action_alert` are both present in slot2 or slot3.
+                const requiredForSlots23 = new Set(['c6_action_safetyprep', 'c6_action_alert']);
+                const presentInSlots23 = new Set([itemInSlot2, itemInSlot3]);
+                const correctSlots23 = requiredForSlots23.size === presentInSlots23.size && 
+                                       [...requiredForSlots23].every(val => presentInSlots23.has(val));
+
+                isCorrect = correctSlot1 && correctSlots23;
+                break;
+        }
+
+        if (isCorrect) {
+            setStatusMessage(`Challenge ${challengeNum} Configuration Verified! Proceeding...`, 'success');
+            challengeEl.style.border = '2px solid #2ecc71'; // Green border for success
+            
+            // Disable buttons for completed challenge
+            challengeEl.querySelectorAll('button').forEach(btn => btn.disabled = true);
+
+            currentChallengeNum++;
+            updateProgressBar();
+            if (currentChallengeNum <= totalChallenges) {
+                showChallenge(currentChallengeNum);
+                setStatusMessage(`Begin Challenge ${currentChallengeNum}.`, 'info');
+            } else {
+                setStatusMessage('All Challenges Completed!', 'success');
+                document.getElementById('completionMessage').classList.remove('hidden');
+            }
+        } else {
+            setStatusMessage(`Challenge ${challengeNum} configuration not optimal. Elements reset. Please re-evaluate.`, 'error');
+            challengeEl.classList.add('shake');
+            setTimeout(() => challengeEl.classList.remove('shake'), 600);
+            resetInteractiveElements(challengeNum); // Reset interactive elements on wrong answer
+        }
+    }
+
+    function resetInteractiveElements(challengeNum) {
+        const palette = document.getElementById(`c${challengeNum}_palette`);
+        const dropZones = document.querySelectorAll(`#challenge${challengeNum} .drop-zone`);
+
+        // Move draggable items from drop zones back to their palette
+        dropZones.forEach(dz => {
+            const items = dz.querySelectorAll('.draggable');
+            items.forEach(item => {
+                if (palette) palette.appendChild(item);
+                else { // If no specific palette, might need a generic "limbo" or just remove. For now, assume palette
+                    console.warn(`No palette found for challenge ${challengeNum} to return ${item.id}`);
+                }
+            });
+        });
+        
+        // Specific resets for non-drag-drop challenges
+        if (challengeNum === 5) {
+            document.querySelectorAll(`#challenge${challengeNum} .clickable-option.selected`).forEach(opt => {
+                opt.classList.remove('selected');
+            });
+        }
+        setStatusMessage(`Challenge ${challengeNum} interaction reset. Try again.`, 'info');
+    }
+    
+    function selectOption(element, groupName) {
+        // Deselect others in the same group
+        document.querySelectorAll(`#challenge5 .clickable-option[onclick*="${groupName}"]`).forEach(opt => {
+            opt.classList.remove('selected');
+        });
+        element.classList.add('selected');
+    }
+
+    function updateProgressBar() {
+        const percentage = ((currentChallengeNum -1) / totalChallenges) * 100;
+        progressBarEl.style.width = percentage + '%';
+        progressBarEl.textContent = Math.round(percentage) + '% Complete';
+    }
+
+    function showChallenge(challengeNum) {
+        document.querySelectorAll('.challenge').forEach(c => c.classList.add('hidden'));
+        const nextChallengeEl = document.getElementById(`challenge${challengeNum}`);
+        if (nextChallengeEl) {
+            nextChallengeEl.classList.remove('hidden');
+            nextChallengeEl.style.opacity = 0; // For fade-in
+            setTimeout(() => nextChallengeEl.style.opacity = 1, 50); // Trigger fade-in
+        }
+    }
+
+    function setStatusMessage(message, type = 'info') {
+        statusMessageEl.textContent = message;
+        statusMessageEl.className = 'status-message'; // Reset classes
+        if (type === 'success') statusMessageEl.classList.add('success');
+        else if (type === 'error') statusMessageEl.classList.add('error');
+    }
+
+    // Initial setup
+    window.onload = () => {
+        showChallenge(currentChallengeNum);
+        updateProgressBar();
+         // Initialize palettes correctly (ensure items are in palettes not dropzones by default in HTML)
+        for (let i = 1; i <= totalChallenges; i++) {
+            resetInteractiveElements(i); 
+        }
+        setStatusMessage('Welcome, Specialist! Begin Challenge 1.', 'info');
+    };
+
+</script>
+</body>
+</html>

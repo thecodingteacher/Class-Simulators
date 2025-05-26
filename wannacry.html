@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive WannaCry Simulation v1.2 (Deductive/Discovery)</title>
+    <style>
+        body {
+            background-color: #1a0000; color: #ffcccc; font-family: 'Courier New', Courier, monospace;
+            margin: 0; padding: 0; display: flex; min-height: 100vh;
+        }
+        #left-panel {
+            width: 280px; /* Increased width for descriptions */
+            background-color: #2a0000;
+            padding: 15px;
+            border-right: 2px solid #ff3333;
+            height: 100vh;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        #left-panel h3 {
+            color: #ff9999;
+            text-align: center;
+            margin-top: 0;
+            border-bottom: 1px solid #cc6666;
+            padding-bottom: 10px;
+            font-size: 1.1em;
+        }
+        #command-reference-list {
+            list-style-type: none;
+            padding: 0;
+            font-size: 0.85em; /* Slightly smaller for more text */
+        }
+        #command-reference-list li {
+            margin-bottom: 10px; /* More spacing */
+            color: #ffdddd;
+        }
+        #command-reference-list li code {
+            display: block; /* Command on its own line */
+            background-color: #440000;
+            color: #ffff99;
+            padding: 3px 5px;
+            border-radius: 3px;
+            margin-bottom: 3px; /* Space between command and desc */
+            font-weight: bold;
+        }
+        #command-reference-list li .cmd-desc {
+            color: #ffbbbb; /* Lighter for description */
+            padding-left: 5px;
+        }
+
+        #simulation-container-wrapper {
+            flex-grow: 1; padding: 20px; display: flex; justify-content: center;
+            align-items: flex-start; overflow-y: auto; height: 100vh; box-sizing: border-box;
+        }
+        #simulation-container {
+            background-color: #330000; border: 2px solid #ff3333; padding: 25px;
+            width: 100%; max-width: 850px;
+            box-shadow: 0 0 25px #ff0000, inset 0 0 15px #660000; border-radius: 5px;
+        }
+        .section { display: none; border-bottom: 1px dashed #cc6666; padding-bottom: 20px; margin-bottom: 20px; }
+        .section:last-child { border-bottom: none; }
+        h1, h2 { color: #ff6666; text-align: center; text-shadow: 0 0 7px #ff0000; margin-top: 0; }
+        h1 { font-size: 2.0em; margin-bottom: 15px; }
+        h2 { font-size: 1.5em; margin-bottom: 20px; border-bottom: 1px solid #ff9999; padding-bottom: 10px; }
+        p, label, pre { color: #ffdddd; line-height: 1.6; font-size: 1.0em; }
+        .narrator-dialogue {
+            background-color: #220000; border-left: 5px solid #ff3333; padding: 15px;
+            margin: 20px 0; font-style: italic; color: #ff9999; border-radius: 3px; box-shadow: 0 0 8px #990000;
+        }
+        .narrator-dialogue strong, .narrator-dialogue code {
+            color: #ffffff; font-style: normal; background-color: #550000; padding: 2px 4px; border-radius: 3px;
+        }
+        .system-log, .file-display, .ransom-note-display {
+            background-color: #110000; border: 1px solid #cc3333; padding: 12px; margin: 12px 0;
+            white-space: pre-wrap; word-wrap: break-word; color: #ff6666; font-size: 0.95em;
+            max-height: 180px; overflow-y: auto; border-radius: 3px;
+        }
+        .file-display .file-item { display: block; margin-bottom: 4px; }
+        .file-display .file-encrypted { color: #ff0000; font-weight: bold; }
+        .file-display .file-encrypted::before { content: "LOCK "; color: #ff0000; }
+        .file-display .decryptor-tool { color: #ffff00; cursor: pointer; text-decoration: underline; }
+        .ransom-note-display {
+            background-color: #000000; color: red; font-weight: bold; font-size: 1.1em;
+            border: 3px solid red; padding: 18px; display: none;
+        }
+        .command-input-area { margin-top: 15px; }
+        .command-input-area label { display: block; margin-bottom: 6px; font-weight: bold; color: #ff9999; font-size: 0.95em;}
+        .command-input-area input[type="text"] {
+            background-color: #440000; border: 1px solid #ff6666; color: #ffdddd;
+            padding: 8px; width: calc(100% - 18px); font-family: 'Courier New', Courier, monospace; font-size: 0.95em;
+        }
+        .command-input-area input[type="text"]:focus { outline: none; border-color: #ff0000; box-shadow: 0 0 8px #ff0000; }
+        button#execute-cli-btn {
+            background-color: #990000; color: #ffffff; border: 1px solid #ff3333;
+            padding: 8px 18px; cursor: pointer; font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em; transition: background-color 0.3s, box-shadow 0.3s, color 0.3s;
+            margin-top: 8px; border-radius: 3px; text-transform: uppercase; letter-spacing: 1px; display: block; width: 100%;
+        }
+        button#execute-cli-btn:hover { background-color: #ff0000; box-shadow: 0 0 12px #ff6666; color: #000000; }
+        .important-term { color: #ffff00; font-weight: bold; }
+        ul { list-style-type: square; padding-left: 18px; font-size: 0.95em; }
+        ul li { margin-bottom: 8px; padding: 4px; color: #ffdddd; }
+        ul li code { color: #ff9900; background-color: #441111; padding: 2px 4px; border-radius: 3px;}
+        .cli-feedback-text { display: block; font-size: 0.85em; color: #ffaa88; margin-top: 5px; min-height: 1.2em;}
+    </style>
+</head>
+<body>
+    <div id="left-panel">
+        <h3>Command Reference</h3>
+        <ul id="command-reference-list"></ul>
+    </div>
+
+    <div id="simulation-container-wrapper">
+        <div id="simulation-container">
+            <h1>Interactive WannaCry Simulation v1.2</h1>
+
+            <div class="command-input-area">
+                <label for="cli-input">COMMAND INPUT:</label>
+                <input type="text" id="cli-input" placeholder="Type your command...">
+                <button id="execute-cli-btn">Execute</button>
+                <p id="cli-feedback" class="cli-feedback-text"></p>
+            </div>
+            <div id="main-log" class="system-log">Welcome Analyst. Simulation reset. Awaiting initial command...</div>
+
+            <div id="intro-section" class="section">
+                <h2>Introduction: The WannaCry Threat</h2>
+                <div class="narrator-dialogue">
+                    <p>"Analyst, your task is to dissect <strong class='important-term'>WannaCry</strong>. This simulation requires deductive reasoning. Consult the Command Reference panel for your available tools. Your first objective is to initialize the simulation environment."</p>
+                </div>
+            </div>
+
+            <div id="vulnerability-section" class="section">
+                <h2>Stage 1: Identifying System Weaknesses</h2>
+                <div class="narrator-dialogue">
+                    <p>"WannaCry exploited flaws in <strong class='important-term'>SMBv1</strong>. Before scanning for specific vulnerabilities, you must first identify potential network segments within the target organization. Corporate networks often use predictable private IP ranges."</p>
+                    <p>"Your objective is to discover these segments. Then, once a primary segment is identified, you will assess it for weaknesses."</p>
+                </div>
+            </div>
+
+            <div id="exploit-section" class="section">
+                <h2>Stage 2: Breaching Defenses</h2>
+                <div class="narrator-dialogue">
+                    <p>"Log indicates a host at <code id="vuln-host-display"></code> is vulnerable via SMBv1. Your next action is to gain unauthorized access to this system by leveraging the identified SMB flaw."</p>
+                </div>
+            </div>
+
+            <div id="payload-section" class="section">
+                <h2>Stage 3: Delivering Malicious Code</h2>
+                <div class="narrator-dialogue">
+                    <p>"Privileged access gained to <code id="compromised-host-display"></code>. Now, transfer and execute the core WannaCry ransomware payload, often disguised as a system file."</p>
+                    <p>"The payload for this simulation is referred to as <code>wannacry_core</code>."</p>
+                </div>
+            </div>
+
+            <div id="encryption-section" class="section">
+                <h2>Stage 4: Data Scrambling</h2>
+                <div class="narrator-dialogue">
+                    <p>"The WannaCry payload is active on <code id="infected-host-display"></code>. It's programmed to encrypt common user file types using <strong class='important-term'>AES-128 encryption</strong>."</p>
+                    <p>"Your objective is to trigger this data encryption process on the infected machine's user directories."</p>
+                </div>
+                <p>User Files on <code id="infected-host-display-files"></code>:</p>
+                <div id="user-files" class="file-display"></div>
+            </div>
+            
+            <div id="ransom-section" class="section">
+                <h2>Stage 5: The Extortion</h2>
+                <div class="narrator-dialogue">
+                    <p>"File encryption is complete. The victim would now typically see a ransom demand. In this simulation, the appearance of <code>@WanaDecryptor@.exe</code> (click it) signifies this point."</p>
+                    <p>"After observing the ransom note, your next task is to simulate the worm's attempt to spread further."</p>
+                </div>
+                <div id="ransom-note" class="ransom-note-display">
+                    <h3 style="color:yellow; text-align:center;">Ooops, your files are encrypted!</h3>
+                    <p>Your documents, photos, videos, databases, etc. are ENCRYPTED.</p>
+                    <p>Pay <strong style="color:yellow;">$300 USD in Bitcoin</strong> to: <code style="color:lime; font-size:0.9em;">1SimulatedBTCAddressxxxxxxxxx</code></p>
+                    <p style="color:yellow;">Pay within 3 days or price doubles. After 7 days, files may be lost.</p>
+                    <p>ID: SIMULATED-WC-<span id="unique-id"></span></p>
+                </div>
+            </div>
+
+            <div id="spread-section" class="section">
+                <h2>Stage 6: Viral Propagation</h2>
+                <div class="narrator-dialogue">
+                    <p>"With the initial victim compromised and files encrypted, WannaCry attempts to self-propagate by scanning for other vulnerable systems on local and external networks."</p>
+                    <p>"Initiate the worm's network scanning and infection module."</p>
+                </div>
+            </div>
+
+            <div id="killswitch-section" class="section">
+                <h2>Stage 7: The "Off Button"</h2>
+                <div class="narrator-dialogue">
+                    <p>"WannaCry included a check for a specific, then-unregistered domain: <code id="killswitch-domain-display"></code>. If this domain resolved (was active), the malware would halt. This flaw became its <strong class='important-term'>kill switch</strong>."</p>
+                    <p>"First, check the current DNS status of this domain. Then, if it's not active, simulate the actions a security researcher took to activate this kill switch."</p>
+                </div>
+            </div>
+            
+            <div id="debrief-section" class="section">
+                <h2>Debrief: WannaCry Analysis</h2>
+                <div class="narrator-dialogue">
+                    <p>"Simulation complete. Your actions have traced the path of WannaCry. This highlights the critical need for robust cybersecurity practices: patching, secure configurations, and network monitoring."</p>
+                </div>
+                <h3>Key Defense Principles:</h3>
+                <ul>
+                    <li><strong>Timely Patching:</strong> Address known vulnerabilities (e.g., <code class='important-term'>MS17-010</code>).</li>
+                    <li><strong>Protocol Security:</strong> Disable outdated protocols like SMBv1.</li>
+                    <li><strong>Network Segmentation:</strong> Contain breaches.</li>
+                    <li><strong>Data Backups:</strong> Ensure recovery capability.</li>
+                </ul>
+                 <div class="narrator-dialogue"><p>"To run the simulation again with potentially new parameters, use the appropriate command from the reference."</p></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sections = {};
+        let currentStage = 'intro';
+        const originalFiles = ["Vacation.jpg", "Report_Q3.docx", "DB_Backup.sql", "Blueprints.pdf", "Family.mp4"];
+        const killSwitchDomainName = "iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea.com";
+        let vulnerableHostIp = ""; 
+        let killSwitchRegistered = false;
+        let discoveredNetworkSegment = "10.0.1.0/24"; // Default segment to be "discovered"
+
+        // DOM Elements
+        let cliInput, executeCliBtn, cliFeedback, mainLog, userFilesDiv, ransomNoteDiv, uniqueIdSpan,
+            commandRefList, vulnHostDisplay, compromisedHostDisplay, infectedHostDisplay, infectedHostDisplayFiles, killswitchDomainDisplay;
+
+        // Comprehensive Command Reference
+        const ALL_COMMANDS_REFERENCE = {
+            'start_sim': 'Initializes the WannaCry attack simulation environment.',
+            'discover_nets': 'Identifies potential corporate network segments for further investigation.',
+            'net_scan <range>': 'Probes a network segment (e.g., 10.0.1.0/24) for SMBv1 vulnerabilities.',
+            'smb_exploit <target_ip>': 'Attempts to breach a host using its identified SMB vulnerability (EternalBlue).',
+            'transfer_exec <payload> <target_ip>': 'Delivers (e.g., `wannacry_core`) and runs a payload on a compromised host.',
+            'encrypt_files --target=user_data': 'Initiates WannaCry\'s data encryption routine on the infected machine.',
+            'launch_worm': 'Activates the WannaCry worm module for network self-propagation.',
+            'dns_query <domain>': 'Checks the DNS resolution status of a specified domain name.',
+            'register_domain <domain>': 'Simulates registering a domain, potentially activating a kill switch.',
+            'reset_sim': 'Restarts the entire simulation, possibly with new randomized parameters.',
+            'help': 'Displays descriptions for all available commands in the simulation.'
+        };
+        
+        function populateStaticCommandReference() {
+            commandRefList.innerHTML = ""; // Clear first
+            for (const cmd in ALL_COMMANDS_REFERENCE) {
+                const li = document.createElement('li');
+                const desc = ALL_COMMANDS_REFERENCE[cmd];
+                li.innerHTML = `<code>${cmd}</code> <span class="cmd-desc">${desc}</span>`;
+                commandRefList.appendChild(li);
+            }
+        }
+
+        window.onload = () => {
+            sections.intro = document.getElementById('intro-section');
+            sections.vulnerability = document.getElementById('vulnerability-section');
+            sections.exploit = document.getElementById('exploit-section');
+            sections.payload = document.getElementById('payload-section');
+            sections.encryption = document.getElementById('encryption-section');
+            sections.ransom = document.getElementById('ransom-section');
+            sections.spread = document.getElementById('spread-section');
+            sections.killswitch = document.getElementById('killswitch-section');
+            sections.debrief = document.getElementById('debrief-section');
+
+            cliInput = document.getElementById('cli-input');
+            executeCliBtn = document.getElementById('execute-cli-btn');
+            cliFeedback = document.getElementById('cli-feedback');
+            mainLog = document.getElementById('main-log');
+            userFilesDiv = document.getElementById('user-files');
+            ransomNoteDiv = document.getElementById('ransom-note');
+            uniqueIdSpan = document.getElementById('unique-id');
+            commandRefList = document.getElementById('command-reference-list');
+            
+            vulnHostDisplay = document.getElementById('vuln-host-display');
+            compromisedHostDisplay = document.getElementById('compromised-host-display');
+            infectedHostDisplay = document.getElementById('infected-host-display');
+            infectedHostDisplayFiles = document.getElementById('infected-host-display-files');
+            killswitchDomainDisplay = document.getElementById('killswitch-domain-display');
+            if(killswitchDomainDisplay) killswitchDomainDisplay.textContent = killSwitchDomainName;
+
+            executeCliBtn.onclick = processCliCommand;
+            cliInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') processCliCommand(); });
+            
+            populateStaticCommandReference(); // Populate the command list once on load
+            restartSimulation();
+        };
+
+        function showSection(sectionKey) {
+            currentStage = sectionKey;
+            killSwitchRegistered = (sectionKey === 'intro') ? false : killSwitchRegistered;
+
+            for (const key in sections) {
+                if (sections[key]) sections[key].style.display = 'none';
+            }
+            if (sections[sectionKey]) {
+                sections[sectionKey].style.display = 'block';
+                if (vulnHostDisplay && (sectionKey === 'exploit' || sectionKey === 'payload')) vulnHostDisplay.textContent = vulnerableHostIp;
+                if (compromisedHostDisplay && sectionKey === 'payload') compromisedHostDisplay.textContent = vulnerableHostIp;
+                if (infectedHostDisplay && (sectionKey === 'encryption' || sectionKey === 'spread')) infectedHostDisplay.textContent = vulnerableHostIp;
+                if (infectedHostDisplayFiles && sectionKey === 'encryption') infectedHostDisplayFiles.textContent = vulnerableHostIp;
+                
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                updateCliFeedback(`Entered stage: ${sectionKey.toUpperCase()}. Consult Command Reference.`);
+                // Command reference is now static, no need to update it per stage
+            } else {
+                updateCliFeedback(`Error: Invalid stage ${sectionKey}.`);
+            }
+        }
+        
+        async function logToMain(message, type = "INFO", delay = 50) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    mainLog.innerHTML += `[${time}] [${type}] ${message}\n`;
+                    mainLog.scrollTop = mainLog.scrollHeight;
+                    resolve();
+                }, delay);
+            });
+        }
+
+        function updateCliFeedback(message) {
+            cliFeedback.textContent = message;
+        }
+
+        function renderUserFiles(filesToRender, isEncrypted = false, showDecryptor = false) {
+            if(!userFilesDiv) return; // Guard if element not found
+            userFilesDiv.innerHTML = "";
+            filesToRender.forEach(file => {
+                const div = document.createElement('div');
+                div.textContent = file;
+                div.className = 'file-item';
+                if (isEncrypted && file.endsWith(".WNCRY")) {
+                    div.classList.add('file-encrypted');
+                }
+                userFilesDiv.appendChild(div);
+            });
+            if (showDecryptor) {
+                const decryptorDiv = document.createElement('div');
+                decryptorDiv.textContent = "@WanaDecryptor@.exe (Click to view ransom details)";
+                decryptorDiv.className = 'file-item decryptor-tool';
+                decryptorDiv.onclick = async () => {
+                    await logToMain("User clicked @WanaDecryptor@.exe.", "ACTION");
+                    uniqueIdSpan.textContent = Math.random().toString(36).substring(2, 10).toUpperCase();
+                    ransomNoteDiv.style.display = 'block';
+                    showSection('ransom');
+                    await logToMain("Ransom note displayed.", "EVENT");
+                    updateCliFeedback("Ransom note displayed. Next objective: simulate worm propagation.");
+                };
+                userFilesDiv.appendChild(decryptorDiv);
+            }
+        }
+        
+        async function processCliCommand() {
+            const fullCommand = cliInput.value.trim().toLowerCase();
+            const [command, ...args] = fullCommand.split(/\s+/);
+            cliInput.value = ""; 
+            updateCliFeedback(""); 
+
+            await logToMain(`CMD INPUT: ${fullCommand}`, "USER");
+
+            if (command === 'help') {
+                await logToMain("Displaying comprehensive command list with descriptions in the left panel.", "HELP");
+                updateCliFeedback("All available commands and descriptions are listed in the Command Reference panel.");
+                return;
+            }
+            
+            if (command === 'reset_sim' && (currentStage === 'debrief' || confirm("Are you sure you want to reset the simulation?"))) {
+                 await logToMain("Resetting simulation environment...", "SYSTEM");
+                 restartSimulation();
+                 return;
+            }
+
+            switch (currentStage) {
+                case 'intro':
+                    if (command === 'start_sim') {
+                        await logToMain("Simulation initialized. Proceeding to vulnerability assessment.", "EVENT");
+                        showSection('vulnerability');
+                    } else { updateCliFeedback("Invalid command. To begin, use 'start_sim'."); }
+                    break;
+                case 'vulnerability':
+                    if (command === 'discover_nets') {
+                        await logToMain("Scanning for active corporate network segments...", "NET_RECON");
+                        await logToMain(`INTELLIGENCE: Primary corporate LAN segment identified: ${discoveredNetworkSegment}.`, "NET_RECON", 800);
+                        await logToMain("Other segments detected (e.g., Guest WiFi) but are out of scope for this targeted attack simulation.", "NET_RECON", 500);
+                        updateCliFeedback(`Primary network segment found: ${discoveredNetworkSegment}. Now scan this segment for vulnerabilities.`);
+                    } else if (command === 'net_scan' && args.length > 0 && args[0] === discoveredNetworkSegment) {
+                        await logToMain(`Initiating vulnerability scan on ${args[0]} for SMBv1 weaknesses...`, "NET_SCAN");
+                        await logToMain("Scanning all hosts in segment...", "NET_SCAN", 800);
+                        await logToMain(`VULNERABILITY DETECTED: Host ${vulnerableHostIp} (on segment ${discoveredNetworkSegment}) is exposed via SMBv1 (MS17-010).`, "VULN_FOUND", 1200);
+                        if(vulnHostDisplay) vulnHostDisplay.textContent = vulnerableHostIp;
+                        showSection('exploit');
+                    } else { updateCliFeedback("Command error. First 'discover_nets', then 'net_scan <discovered_segment>'."); }
+                    break;
+                case 'exploit':
+                    if (command === 'smb_exploit' && args[0] === vulnerableHostIp) {
+                        await logToMain(`Attempting SMB exploit (EternalBlue) against ${vulnerableHostIp}...`, "EXPLOIT");
+                        await logToMain("Sending crafted exploit packets...", "EXPLOIT", 700);
+                        await logToMain("EXPLOIT SUCCESSFUL: Gained SYSTEM level privileges on host.", "SUCCESS", 1500);
+                        if(compromisedHostDisplay) compromisedHostDisplay.textContent = vulnerableHostIp;
+                        showSection('payload');
+                    } else { updateCliFeedback(`Command error or incorrect target. Target should be the vulnerable IP: ${vulnerableHostIp}.`); }
+                    break;
+                case 'payload':
+                    if (command === 'transfer_exec' && args[0] === 'wannacry_core' && args[1] === vulnerableHostIp) {
+                        await logToMain(`Transferring 'wannacry_core' payload to ${vulnerableHostIp} and preparing for execution...`, "PAYLOAD");
+                        await logToMain("Payload (mssecsvc.exe) deployed to C:\\Windows\\.", "PAYLOAD", 1000);
+                        await logToMain("Executing WannaCry payload now...", "PAYLOAD", 600);
+                        await logToMain("WannaCry ransomware initialized on victim machine.", "EVENT", 800);
+                        if(infectedHostDisplay) infectedHostDisplay.textContent = vulnerableHostIp;
+                        if(infectedHostDisplayFiles) infectedHostDisplayFiles.textContent = vulnerableHostIp;
+                        renderUserFiles(originalFiles, false); 
+                        showSection('encryption');
+                    } else { updateCliFeedback("Command error. Example: 'transfer_exec wannacry_core <target_ip>'."); }
+                    break;
+                case 'encryption':
+                    if (command === 'encrypt_files' && args.length > 0 && args[0] === '--target=user_data') {
+                        await logToMain("WannaCry commencing file encryption routine...", "ENCRYPTION");
+                        const encryptedFiles = [];
+                        for (let i = 0; i < originalFiles.length; i++) {
+                            await logToMain(`Encrypting ${originalFiles[i]} with AES-128...`, "ENCRYPTION", 250);
+                            encryptedFiles.push(originalFiles[i] + ".WNCRY");
+                            renderUserFiles(encryptedFiles.concat(originalFiles.slice(i + 1)), true);
+                        }
+                        await logToMain("User data encryption complete. @WanaDecryptor@.exe created.", "ENCRYPTION_DONE", 500);
+                        renderUserFiles(encryptedFiles, true, true); 
+                        updateCliFeedback("Encryption finished. Click '@WanaDecryptor@.exe' (in file list) to view ransom details.");
+                    } else { updateCliFeedback("Incorrect command structure for encryption. Check reference."); }
+                    break;
+                case 'ransom':
+                     if (command === 'launch_worm') {
+                        await logToMain("Worm propagation module activated.", "WORM_INIT");
+                        showSection('spread');
+                        // Spreading logic will be handled when 'spread' section is active
+                    } else { updateCliFeedback("Invalid command for this stage. Awaiting UI interaction or 'launch_worm'.");}
+                    break;
+                case 'spread':
+                     if (command === 'launch_worm') { // This command might be re-issued if they didn't use it in ransom stage
+                        await logToMain("Worm scanning LAN for vulnerable hosts...", "WORM", 500);
+                        await logToMain(`Discovered 10.0.1.92 (vulnerable). Exploiting... Infection successful.`, "WORM_SPREAD", 1000);
+                        await logToMain("Scanning random external IPs for SMBv1...", "WORM", 800);
+                        await logToMain(`Discovered 198.51.100.12 (vulnerable). Exploiting... Infection successful.`, "WORM_SPREAD", 1000);
+                        await logToMain("Propagation cycle complete for this simulation step.", "EVENT");
+                        showSection('killswitch');
+                    } else { updateCliFeedback("Incorrect command. Use 'launch_worm' to simulate spreading."); }
+                    break;
+                case 'killswitch':
+                    if (command === 'dns_query' && args[0] === killSwitchDomainName) {
+                        await logToMain(`Performing DNS lookup for kill switch domain: ${killSwitchDomainName}...`, "DNS_QUERY");
+                        if (killSwitchRegistered) {
+                            await logToMain(`DNS RESOLVED: ${killSwitchDomainName} is active. Kill switch ENGAGED.`, "KILL_SWITCH_ACTIVE", 800);
+                            await logToMain("WannaCry instances checking this domain will now terminate.", "EVENT", 500);
+                        } else {
+                            await logToMain(`DNS NOT RESOLVED: ${killSwitchDomainName} is inactive. Kill switch DISENGAGED.`, "KILL_SWITCH_INACTIVE", 800);
+                            await logToMain("WannaCry will proceed with malicious activities if not otherwise stopped.", "EVENT", 500);
+                        }
+                    } else if (command === 'register_domain' && args[0] === killSwitchDomainName) {
+                        await logToMain(`Simulating registration and sinkholing of domain: ${killSwitchDomainName}...`, "ACTION");
+                        killSwitchRegistered = true;
+                        await logToMain(`SINKHOLE ACTIVE: ${killSwitchDomainName} is now registered. New WannaCry infections attempting to resolve this domain will hit the kill switch.`, "KILL_SWITCH_ARMED", 1000);
+                        showSection('debrief');
+                    } else { updateCliFeedback(`Incorrect command or domain. Domain is ${killSwitchDomainName}.`); }
+                    break;
+                default:
+                    updateCliFeedback("Unknown command or invalid for current stage. Check Command Reference.");
+            }
+        }
+
+        function restartSimulation() {
+            currentStage = 'intro';
+            killSwitchRegistered = false;
+            const thirdOctet = Math.floor(Math.random() * 250) + 2; // Avoid .0, .1, .255 for simplicity
+            const fourthOctet = Math.floor(Math.random() * 250) + 2;
+            vulnerableHostIp = `10.0.${thirdOctet}.${fourthOctet}`;
+            // discoveredNetworkSegment is kept static for this version, but could also be randomized.
+            
+            mainLog.innerHTML = "";
+            logToMain("Welcome Analyst. Simulation Environment Reset. Awaiting initial command...", "SYSTEM");
+            if (userFilesDiv) renderUserFiles(originalFiles, false);
+            if (ransomNoteDiv) ransomNoteDiv.style.display = 'none';
+            if (cliInput) cliInput.value = "";
+            updateCliFeedback("Simulation reset. Begin with 'start_sim'.");
+            showSection('intro');
+        }
+    </script>
+</body>
+</html>

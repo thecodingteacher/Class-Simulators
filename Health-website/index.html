@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthHub Pro - Your Wellness Partner</title>
+    <style>
+        :root {
+            --primary-color: #007bff; /* Professional Blue */
+            --primary-hover-color: #0056b3;
+            --secondary-color: #6c757d; /* Grey */
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --white-color: #ffffff;
+            --border-color: #dee2e6;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .site-header {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            padding: 15px 30px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .site-header h1 {
+            margin: 0;
+            font-size: 1.8em;
+            font-weight: 600;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            background-color: var(--white-color);
+            margin-top: 30px;
+            margin-bottom: 30px;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .page { display: none; animation: fadeIn 0.5s ease-in-out; }
+        .active-page { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        nav a {
+            padding: 8px 15px;
+            text-decoration: none;
+            color: var(--primary-color);
+            font-weight: 500;
+            border-radius: 4px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        nav a:hover, nav a.active {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            text-decoration: none;
+        }
+
+        h2 {
+            color: var(--dark-color);
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.9em;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: var(--primary-color);
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        input[type="text"], input[type="password"], textarea, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input[type="text"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+            outline: none;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            margin-top: 5px;
+        }
+        button:hover { background-color: var(--primary-hover-color); }
+        button.secondary { background-color: var(--secondary-color); }
+        button.secondary:hover { background-color: #5a6268; }
+
+
+        .status-message { padding: 10px; margin-top: 10px; border-radius: 4px; font-weight: 500; }
+        .status-message.error { color: var(--danger-color); background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .status-message.success { color: var(--success-color); background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .status-message.info { color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb;}
+        .status-message.warning { color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba;}
+
+
+        #adminPanelLink { display: none; }
+        #diagnosticsDataContainer { display: none; background-color: #e9ecef; border: 1px solid var(--border-color); padding: 15px; margin-top: 20px; border-radius: 5px;}
+        #diagnosticsDataContainer h3 { margin-top:0; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        #hiddenBonusMessage { display: none; background-color: var(--success-color); color: var(--white-color); border: 1px solid #1e7e34; padding: 20px; margin-top: 20px; border-radius: 5px; text-align: center; font-size: 1.1em; }
+        
+        #healthResultsList li { background-color: var(--light-color); margin-bottom: 10px; padding: 12px; border-radius: 5px; list-style-type: none; border-left: 4px solid var(--primary-color); }
+        #healthResultsList { padding-left: 0;}
+        
+        hr { border: 0; border-top: 1px solid var(--border-color); margin: 30px 0; }
+        
+        .info-box { background-color: #fdfdff; padding: 20px; border-radius: 6px; margin-bottom:20px; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
+        .info-box p { margin-bottom: 0.8em; }
+
+        .profile-details p { margin: 8px 0; font-size: 1.05em; }
+        .profile-details strong { color: var(--primary-color); }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: auto;
+            color: var(--secondary-color);
+            font-size: 0.9em;
+            width: 100%;
+        }
+        #siteVersionDisplay { font-weight: normal; color: var(--secondary-color); }
+        #loginErrorMessage { margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <h1>HealthHub Pro</h1>
+    </header>
+
+    <div class="container">
+        <nav>
+            <a href="#loginPage" onclick="showPage('loginPage'); return false;">Login</a>
+            <a href="#dashboardPage" onclick="showPage('dashboardPage'); return false;">Dashboard</a>
+            <a href="#profilePage" onclick="showPage('profilePage'); return false;">My Records</a>
+            <a href="#healthTestPage" onclick="showPage('healthTestPage'); return false;">Track Metrics</a>
+            <a href="#settingsPage" onclick="showPage('settingsPage'); return false;">Settings</a>
+            <a href="#adminPage" id="adminPanelLink" onclick="showPage('adminPage'); return false;">Admin Portal</a>
+        </nav>
+
+        <!-- Page: Login -->
+        <div id="loginPage" class="page">
+            <h2>Member Login</h2>
+            <input type="text" id="loginUsername" placeholder="Username or User ID">
+            <input type="password" id="loginPassword" placeholder="Password">
+            <button onclick="handleLogin()">Login</button>
+            <div id="loginErrorMessage" class="status-message error" style="display:none;"></div>
+        </div>
+
+        <!-- Page: Dashboard -->
+        <div id="dashboardPage" class="page">
+            <h2>Dashboard</h2>
+            <p style="font-size: 1.3em; margin-bottom: 20px;">Welcome, <strong id="welcomeName" style="color: var(--primary-color);">Guest</strong>!</p>
+            
+            <div class="info-box">
+                <h3>Account Balance</h3>
+                <p>Your Current Credits: <strong id="userCreditsDisplay" style="font-size:1.2em; color: var(--success-color);">0</strong></p>
+            </div>
+
+            <div class="info-box">
+                <h3>Active Promotions</h3>
+                <p id="discountInfo">Check your settings to apply available discount codes.</p>
+            </div>
+
+            <div class="info-box">
+                <h3>Premium Feature Access</h3>
+                <p id="secretFeatureStatus">No premium features currently active.</p>
+                <input type="text" id="featureTokenInput" placeholder="Enter Activation Token">
+                <button onclick="checkFeatureToken()">Activate Feature</button>
+                <div id="featureTokenStatus" class="status-message" style="display:none; margin-top:10px;"></div>
+            </div>
+
+            <div id="hiddenBonusMessage">
+                <strong>System Alert!</strong> You've unlocked a maintenance access point. Code: <strong>SYSACCESS_789</strong>
+            </div>
+        </div>
+
+        <!-- Page: Profile/Records (IDOR) -->
+        <div id="profilePage" class="page">
+            <h2>My Health Records</h2>
+            <div id="userProfileData" class="info-box profile-details">
+                <p><strong>User ID:</strong> <span id="profileUserId">N/A</span></p>
+                <p><strong>Full Name:</strong> <span id="profileName">N/A</span></p>
+                <p><strong>Health Overview:</strong> <span id="profileHealthSummary">N/A</span></p>
+                <p><strong>Last System Access:</strong> <span id="profileLastLogin">N/A</span></p>
+            </div>
+            <p style="font-size:0.9em; color:var(--secondary-color);">Your profile information is displayed above. Ensure your details are up to date via Settings.</p>
+        </div>
+
+        <!-- Page: Health Tests (IndexedDB) -->
+        <div id="healthTestPage" class="page">
+            <h2>Track Your Health Metrics</h2>
+            <input type="text" id="testNameInput" placeholder="Metric Name (e.g., Blood Pressure)">
+            <input type="text" id="testValueInput" placeholder="Metric Value (e.g., 120/80 mmHg)">
+            <button onclick="addHealthTestResult()">Record Metric</button>
+            <h3>Your Recorded Metrics:</h3>
+            <ul id="healthResultsList"><li>No metrics recorded yet.</li></ul>
+        </div>
+
+        <!-- Page: Settings -->
+        <div id="settingsPage" class="page">
+            <h2>Account Settings</h2>
+            <div class="info-box">
+                <h3>Profile Information</h3>
+                <p>Username: <strong id="settingsUsername" style="color:var(--dark-color);">N/A</strong></p>
+                <p>Email Address: <input type="text" id="settingsEmail" placeholder="your.email@example.com"></p>
+                <p>Account Credits: <strong id="settingsCredits" style="color:var(--dark-color);">N/A</strong></p>
+                <button onclick="saveUserSettings()">Save Changes</button>
+                <div id="settingsSaveStatus" class="status-message" style="display:none; margin-top:10px;"></div>
+            </div>
+            <hr>
+            <div class="info-box">
+                <h3>Promotional Codes</h3>
+                <input type="text" id="discountCodeInput" placeholder="Enter Discount Code">
+                <button onclick="applyDiscountCode()">Apply Code</button>
+                <div id="discountApplyStatus" class="status-message" style="display:none; margin-top:10px;"></div>
+            </div>
+            <hr>
+            <div class="info-box">
+                <h3>Advanced Customization</h3>
+                <p>Enter custom script snippets for interface modifications (for advanced users only).</p>
+                <textarea id="customScriptInput" rows="5" placeholder="Example: console.log('User script loaded');"></textarea>
+                <button onclick="runCustomScript()">Apply Customizations</button>
+                <div id="customScriptStatus" class="status-message" style="display:none; margin-top:10px;"></div>
+                <p style="margin-top:15px; font-size:0.9em;">Current Platform Version: <span id="siteVersionDisplay">1.0.0</span></p>
+            </div>
+        </div>
+
+        <!-- Page: Admin Panel -->
+        <div id="adminPage" class="page">
+            <h2>Administrator Portal</h2>
+            <p>Welcome, System Administrator.</p>
+            <div class="info-box">
+                <strong>Internal Memo:</strong> Project Phoenix Phase 2 deployment scheduled for Q4. All regional managers to be briefed by EOD.
+            </div>
+            
+            <div id="diagnosticsDataContainer">
+                <h3>Live System Diagnostics</h3>
+                <pre id="diagnosticsDataContent" style="background-color: #f0f0f0; padding:15px; border-radius:4px; border: 1px dashed #ccc; white-space: pre-wrap; word-wrap: break-word;">
+Server CPU Utilization: 35%
+Active Database Connections: 12/100
+Last Data Integrity Check: 2024-03-12 03:00 UTC (PASS)
+Gateway API Token (Masked): sk_live_...def456
+Active User Sessions: 187
+Error Rate (Last Hour): 0.02%
+                </pre>
+            </div>
+        </div>
+
+    </div> <!-- end .container -->
+
+    <footer class="footer">
+        <p>&copy; 2024 HealthHub Pro. All rights reserved. <br>
+        This platform is for educational and demonstration purposes only.</p>
+    </footer>
+
+    <script src="script1.js"></script>
+    <script src="script2.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliChat AI - Your Smart Companion</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2; /* IntelliChat Blue */
+            --primary-hover-color: #357ABD;
+            --secondary-color: #50E3C2; /* Mint Green Accent */
+            --light-color: #f4f7f6;
+            --dark-color: #333333;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --white-color: #ffffff;
+            --border-color: #d1d9e0;
+            --font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .site-header {
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: var(--white-color);
+            padding: 20px 30px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        }
+
+        .site-header h1 {
+            margin: 0;
+            font-size: 2.2em;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 950px;
+            background-color: var(--white-color);
+            margin-top: 30px;
+            margin-bottom: 30px;
+            padding: 35px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .page { display: none; animation: fadeIn 0.5s ease-in-out; }
+        .active-page { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 30px;
+            padding-bottom: 25px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        nav a {
+            padding: 10px 18px;
+            text-decoration: none;
+            color: var(--primary-color);
+            font-weight: 500;
+            border-radius: 6px;
+            transition: background-color 0.2s, color 0.2s, transform 0.1s;
+        }
+
+        nav a:hover, nav a.active {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+        /* Initially hide all nav links except login */
+        nav a:not([href="#loginPage"]) { display: none; }
+        nav a#adminPanelLink { display: none; } /* This is controlled by JS based on cookie */
+
+
+        h2 {
+            color: var(--dark-color);
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 2em;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 12px;
+        }
+
+        h3 {
+            color: var(--primary-color);
+            margin-top: 30px;
+            margin-bottom: 18px;
+            font-size: 1.6em;
+        }
+
+        input[type="text"], input[type="password"], textarea, select {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1em;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input[type="text"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(74,144,226,.25);
+            outline: none;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            padding: 14px 22px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: background-color 0.2s, transform 0.1s;
+            margin-top: 8px;
+        }
+        button:hover { background-color: var(--primary-hover-color); transform: translateY(-1px); }
+        button.secondary { background-color: var(--secondary-color); color: var(--dark-color); }
+        button.secondary:hover { background-color: #3fcba9; }
+
+
+        .status-message { padding: 12px; margin-top: 12px; border-radius: 5px; font-weight: 500; }
+        .status-message.error { color: var(--danger-color); background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .status-message.success { color: var(--success-color); background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .status-message.info { color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb;}
+        .status-message.warning { color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba;}
+        
+        #aiNotesList li { background-color: var(--light-color); margin-bottom: 12px; padding: 15px; border-radius: 6px; list-style-type: none; border-left: 5px solid var(--primary-color); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        #aiNotesList { padding-left: 0;}
+        
+        hr { border: 0; border-top: 1px solid var(--border-color); margin: 35px 0; }
+        
+        .info-box { background-color: #fdfdff; padding: 25px; border-radius: 8px; margin-bottom:25px; border: 1px solid var(--border-color); box-shadow: 0 3px 8px rgba(0,0,0,0.07);}
+        .info-box p { margin-bottom: 1em; }
+
+        .profile-details p { margin: 10px 0; font-size: 1.1em; }
+        .profile-details strong { color: var(--primary-color); }
+
+        .footer {
+            text-align: center;
+            padding: 25px;
+            margin-top: auto;
+            color: var(--secondary-color);
+            font-size: 0.95em;
+            width: 100%;
+            background-color: var(--dark-color);
+        }
+        #siteVersionDisplay { font-weight: normal; color: var(--light-color); opacity: 0.8; }
+        #loginErrorMessage { margin-top: 18px; }
+
+        #secretAdminHint { display: none; background-color: #fffacd; border: 1px dashed #dda0dd; padding: 15px; margin-top: 20px; border-radius: 5px; }
+        #debugInfoPanel { display: none; background-color: #222; color: #0f0; padding: 10px; margin-top:15px; border-radius:3px; font-family: monospace; font-size: 0.8em; white-space: pre-wrap; word-break: break-all;}
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <h1>IntelliChat AI</h1>
+    </header>
+
+    <div class="container">
+        <nav id="mainNav">
+            <a href="#loginPage" onclick="showPage('loginPage'); return false;">Login</a>
+            <a href="#dashboardPage" onclick="showPage('dashboardPage'); return false;">Dashboard</a>
+            <a href="#profilePage" onclick="showPage('profilePage'); return false;">My Profile</a>
+            <a href="#aiNotesPage" onclick="showPage('aiNotesPage'); return false;">My AI Notes</a>
+            <a href="#premiumPage" onclick="showPage('premiumPage'); return false;">Premium</a>
+            <a href="#settingsPage" onclick="showPage('settingsPage'); return false;">Settings</a>
+            <a href="#adminPage" id="adminPanelLink" onclick="showPage('adminPage'); return false;">Admin Panel</a>
+        </nav>
+
+        <!-- Page: Login -->
+        <div id="loginPage" class="page">
+            <h2>IntelliChat AI Login</h2>
+            <input type="text" id="loginUsername" placeholder="Username or User ID">
+            <input type="password" id="loginPassword" placeholder="Password">
+            <button onclick="handleLogin()">Login</button>
+            <div id="loginErrorMessage" class="status-message error" style="display:none;"></div>
+        </div>
+
+        <!-- Page: Dashboard -->
+        <div id="dashboardPage" class="page">
+            <h2>Dashboard</h2>
+            <p style="font-size: 1.4em; margin-bottom: 25px;">Welcome, <strong id="welcomeName" style="color: var(--primary-color);">User</strong>!</p>
+            
+            <div class="info-box">
+                <h3>Account Tokens</h3>
+                <p>Your Current Tokens: <strong id="userTokensDisplay" style="font-size:1.3em; color: var(--success-color);">0</strong></p>
+            </div>
+
+            <div class="info-box">
+                <h3>Experimental Features</h3>
+                <p id="experimentalFeatureStatus">No experimental features currently active.</p>
+                <input type="text" id="experimentalFeatureKeyInput" placeholder="Enter Experimental Activation Key">
+                <button onclick="activateExperimentalFeature()">Activate Feature</button>
+                <div id="experimentalKeyStatus" class="status-message" style="display:none; margin-top:10px;"></div>
+            </div>
+            <div id="debugInfoPanel">
+                Debug Mode Active. UserData: <span id="debugUserData"></span>
+            </div>
+        </div>
+
+        <!-- Page: Profile (IDOR) -->
+        <div id="profilePage" class="page">
+            <h2>User Profile</h2>
+            <div id="userProfileData" class="info-box profile-details">
+                <p><strong>User ID:</strong> <span id="profileUserId">N/A</span></p>
+                <p><strong>Username:</strong> <span id="profileUsername">N/A</span></p>
+                <p><strong>Email:</strong> <span id="profileEmail">N/A</span></p>
+                <p><strong>Bio/Interaction Style:</strong> <span id="profileBio">N/A</span></p>
+                <p><strong>Account Tokens:</strong> <span id="profileTokens">N/A</span></p>
+                <p><strong>Last System Access:</strong> <span id="profileLastLogin">N/A</span></p>
+            </div>
+        </div>
+
+        <!-- Page: AI Notes (IndexedDB Stored XSS) -->
+        <div id="aiNotesPage" class="page">
+            <h2>My AI Notes</h2>
+            <input type="text" id="noteTitleInput" placeholder="Note Title">
+            <textarea id="noteContentInput" rows="4" placeholder="Note Content"></textarea>
+            <button onclick="addAINote()">Save Note</button>
+            <h3>Your Saved Notes:</h3>
+            <ul id="aiNotesList"><li>No notes saved yet.</li></ul>
+        </div>
+
+        <!-- Page: Premium -->
+        <div id="premiumPage" class="page">
+            <h2>IntelliChat Premium</h2>
+            <div class="info-box">
+                <h3>Unlock Premium Benefits</h3>
+                <p>Access advanced AI models, priority support, and more tokens!</p>
+                <p id="premiumStatus">Current Status: <strong style="color: var(--warning-color);">Standard Account</strong></p>
+                <input type="text" id="premiumCodeInput" placeholder="Enter Premium Activation Code">
+                <button onclick="activatePremium()">Activate Premium</button>
+                <div id="premiumActivationStatus" class="status-message" style="display:none; margin-top:10px;"></div>
+            </div>
+        </div>
+
+        <!-- Page: Settings -->
+        <div id="settingsPage" class="page">
+            <h2>Account Settings</h2>
+            <div class="info-box">
+                <h3>Profile Information</h3>
+                <p>Username: <strong id="settingsUsername" style="color:var(--dark-color);">N/A</strong></p>
+                <p>Email Address: <input type="text" id="settingsEmail" placeholder="your.email@example.com"></p>
+                <p>Tokens: <strong id="settingsTokens" style="color:var(--dark-color);">N/A</strong></p>
+                <button onclick="saveUserSettings()">Save Changes</button>
+                <div id="settingsSaveStatus" class="status-message" style="display:none; margin-top:10px;"></div>
+            </div>
+            <hr>
+            <div class="info-box">
+                <h3>Interface Customization</h3>
+                <p>Enter custom JavaScript for interface modifications.</p>
+                <textarea id="customScriptInput" rows="5" placeholder="Enter JavaScript code here..."></textarea>
+                <button onclick="runCustomScript()">Apply Customizations</button>
+                <div id="customScriptStatus" class="status-message" style="display:none; margin-top:10px;"></div>
+                <p style="margin-top:15px; font-size:0.9em;">Current Platform Version: <span id="siteVersionDisplayInternal">1.0.0</span></p>
+            </div>
+        </div>
+
+        <!-- Page: Admin Panel -->
+        <div id="adminPage" class="page">
+            <h2>Admin Control Panel</h2>
+            <p>Welcome, System Administrator.</p>
+            <div class="info-box">
+                <strong>Internal System Memo:</strong> All AI model updates require sign-off by Project Lead. Ensure compliance. User data access logs are active.
+            </div>
+            <div id="secretAdminHint">
+                <strong>Dev Note:</strong> Emergency admin credentials: user: `admin`, pass: `SuperAdminPass123!`. User ID for direct access: `777`. This message should be removed before production.
+            </div>
+             <div id="adminDiagnosticsContainer" style="display:none; background-color: #e9ecef; border: 1px solid var(--border-color); padding: 15px; margin-top: 20px; border-radius: 5px;">
+                <h3>Live System Diagnostics</h3>
+                <pre id="diagnosticsDataContent" style="background-color: #f0f0f0; padding:15px; border-radius:4px; border: 1px dashed #ccc; white-space: pre-wrap; word-wrap: break-word;">
+Server Load Average: 0.65, 0.55, 0.50
+Active Chat Sessions: 42
+API Token Pool Usage: 68%
+Last Backup: Successful (Today, 03:00 UTC)
+                </pre>
+            </div>
+        </div>
+
+    </div> <!-- end .container -->
+
+    <footer class="footer">
+        <p>© 2024 IntelliChat AI. All rights reserved. <br>
+        This platform is for educational and demonstration purposes only. Version: <span id="siteVersionDisplay">1.0.0</span></p>
+    </footer>
+
+    <script src="code.js" defer></script>
+    <script src="code1.js" defer></script>
+    <script src="code2.js" defer></script>
+    <script>
+        let currentLoggedInUser = null;
+var userAccount = {
+    name: "Default User",
+    tokens: 100,
+    role: "user"
+};
+var siteVersion = "1.0.0";
+
+const MOCK_USER_DB = {
+    "101": { id: "101", username: "user1", password: "password1", email: "user1@intellichat.ai", tokens: 250, bio: "Prefers concise answers. Interested in tech.", lastLogin: "2024-07-10", isAdmin: false },
+    "102": { id: "102", username: "user2", password: "password2", email: "user2@intellichat.ai", tokens: 120, bio: "Enjoys creative writing prompts. Uses mobile.", lastLogin: "2024-07-11", isAdmin: false },
+    "777": { id: "777", username: "admin", password: "SuperAdminPass123!", email: "admin@intellichat.ai", tokens: 99999, bio: "System Administrator Account. Full access.", lastLogin: "2024-07-12", isAdmin: true }
+};
+    </script>
+</body>
+</html>

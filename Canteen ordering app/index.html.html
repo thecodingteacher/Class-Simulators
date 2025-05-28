@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniEats Canteen - Order Your Meal</title>
+    <style>
+        :root {
+            --primary-color: #ff7f50; /* Coral - Canteen Vibe */
+            --primary-hover-color: #ff6347; /* Tomato */
+            --secondary-color: #4682b4; /* Steel Blue */
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --white-color: #ffffff;
+            --border-color: #dee2e6;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .site-header {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            padding: 15px 30px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .site-header h1 {
+            margin: 0;
+            font-size: 1.8em;
+            font-weight: 600;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            background-color: var(--white-color);
+            margin-top: 30px;
+            margin-bottom: 30px;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .page { display: none; animation: fadeIn 0.5s ease-in-out; }
+        .active-page { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        nav a {
+            padding: 8px 15px;
+            text-decoration: none;
+            color: var(--primary-color);
+            font-weight: 500;
+            border-radius: 4px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        nav a:hover, nav a.active {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            text-decoration: none;
+        }
+
+        h2 {
+            color: var(--dark-color);
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.9em;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: var(--primary-hover-color);
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        input[type="text"], input[type="number"], input[type="password"], textarea, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(255,127,80,.25);
+            outline: none;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            margin-top: 5px;
+            margin-right: 5px;
+        }
+        button:hover { background-color: var(--primary-hover-color); }
+        button.secondary { background-color: var(--secondary-color); }
+        button.secondary:hover { background-color: #3a6a96; }
+        button.danger { background-color: var(--danger-color); }
+        button.danger:hover { background-color: #c82333; }
+
+
+        .status-message { padding: 10px; margin-top: 10px; border-radius: 4px; font-weight: 500; }
+        .status-message.error { color: var(--danger-color); background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .status-message.success { color: var(--success-color); background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .status-message.info { color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb;}
+        .status-message.warning { color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba;}
+
+        .info-box { background-color: #fffafa; padding: 20px; border-radius: 6px; margin-bottom:20px; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
+        .info-box p { margin-bottom: 0.8em; }
+
+        .profile-details p, .user-details p { margin: 8px 0; font-size: 1.05em; }
+        .profile-details strong, .user-details strong { color: var(--primary-hover-color); }
+
+        .food-item {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            background-color: var(--white-color);
+        }
+        .food-item h4 { margin-top: 0; color: var(--primary-color); }
+        .food-item .food-description { margin-top: 5px; margin-bottom: 10px; color: var(--dark-color); font-size: 0.95em; }
+
+        #userManagementTable { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        #userManagementTable th, #userManagementTable td { border: 1px solid var(--border-color); padding: 8px; text-align: left; }
+        #userManagementTable th { background-color: var(--primary-color); color: var(--white-color); }
+
+        #adminNavLink { display: none; }
+        #secretDebugInfo { display: none; background-color: #222; color: lime; padding: 10px; margin-top:10px; font-family: monospace;}
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: auto;
+            color: var(--secondary-color);
+            font-size: 0.9em;
+            width: 100%;
+        }
+    </style>
+</head>
+<body id="appBody">
+
+<header class="site-header">
+    <h1>UniEats Canteen</h1>
+</header>
+
+<div class="container">
+    <nav>
+        <a href="#loginPage" onclick="showPage('loginPage'); return false;">Login</a>
+        <a href="#studentDashboardPage" onclick="showPage('studentDashboardPage'); return false;">Dashboard</a>
+        <a href="#menuPage" onclick="showPage('menuPage'); return false;">Order Food</a>
+        <a href="#topUpPage" onclick="showPage('topUpPage'); return false;">Add Money</a>
+        <a href="#myOrdersPage" onclick="showPage('myOrdersPage'); return false;">My Orders</a>
+        <a href="#profilePage" onclick="showPage('profilePage'); return false;">My Profile</a>
+        <a href="#settingsPage" onclick="showPage('settingsPage'); return false;">Settings</a>
+        <a href="#adminPage" id="adminNavLink" onclick="showPage('adminPage'); return false;">Admin Panel</a>
+    </nav>
+
+    <!-- Page: Login -->
+    <div id="loginPage" class="page">
+        <h2>Student & Admin Login</h2>
+        <input type="text" id="loginUsername" placeholder="Username">
+        <input type="password" id="loginPassword" placeholder="Password">
+        <button onclick="handleLogin()">Login</button>
+        <div id="loginErrorMessage" class="status-message error" style="display:none;"></div>
+    </div>
+
+    <!-- Page: Student Dashboard -->
+    <div id="studentDashboardPage" class="page">
+        <h2 id="dashboardGreeting">Welcome, Student!</h2>
+        <div class="info-box">
+            <h3>Account Balance</h3>
+            <p>Your Current Balance: <strong id="dashboardBalance" style="font-size:1.2em; color: var(--success-color);">£0.00</strong></p>
+        </div>
+        <div class="info-box">
+            <h3>Special Feature Activation</h3>
+            <p>Have an activation code for exclusive UniEats perks?</p>
+            <input type="text" id="featureCodeInput" placeholder="Enter Activation Code">
+            <button onclick="activateFeature()">Activate</button>
+            <div id="featureStatusMessage" class="status-message" style="display:none;"></div>
+        </div>
+        <div id="secretDebugInfo">
+            <p>SYSTEM_MSG: User session active. Loyalty_Points_Multiplier: 1.0. Internal_Campaign_ID: UE_SPRING24. Debug_Mode: OFF</p>
+        </div>
+    </div>
+
+    <!-- Page: Menu -->
+    <div id="menuPage" class="page">
+        <h2 id="menuPageTitle">Today's Menu</h2>
+        <div id="foodListContainer">
+            <p>Loading menu...</p>
+        </div>
+        <div id="menuStatusMessage" class="status-message" style="display:none;"></div>
+    </div>
+
+    <!-- Page: Top Up Balance -->
+    <div id="topUpPage" class="page">
+        <h2>Add Money to Your Account</h2>
+        <p>Current Balance: <strong id="topUpCurrentBalance">£0.00</strong></p>
+        <input type="number" id="topUpAmount" placeholder="Amount to Add (e.g., 10)" min="1">
+        <button onclick="addMoney()">Add Funds</button>
+        <div id="topUpStatusMessage" class="status-message" style="display:none;"></div>
+    </div>
+
+    <!-- Page: My Orders -->
+    <div id="myOrdersPage" class="page">
+        <h2>My Order History</h2>
+        <ul id="ordersList">
+            <li>No orders found.</li>
+        </ul>
+        <div id="ordersStatusMessage" class="status-message" style="display:none;"></div>
+    </div>
+    
+    <!-- Page: Profile -->
+    <div id="profilePage" class="page">
+        <h2>My Profile</h2>
+        <div id="userProfileData" class="info-box profile-details">
+            <p><strong>User ID:</strong> <span id="profileUserId">N/A</span></p>
+            <p><strong>Username:</strong> <span id="profileUsername">N/A</span></p>
+            <p><strong>Email:</strong> <span id="profileEmail">N/A</span></p>
+            <p><strong>Account Role:</strong> <span id="profileRole">N/A</span></p>
+            <p><strong>Display Theme:</strong> <span id="profileTheme">Default</span></p>
+        </div>
+    </div>
+
+    <!-- Page: Settings -->
+    <div id="settingsPage" class="page">
+        <h2>Settings</h2>
+        <div class="info-box">
+            <h3>Interface Theme</h3>
+            <select id="themeSelector" onchange="applyTheme()">
+                <option value="default">Default Theme</option>
+                <option value="dark">Dark Theme</option>
+                <option value="ocean">Ocean Breeze Theme</option>
+            </select>
+        </div>
+        <div class="info-box">
+            <h3>Custom Interface Script</h3>
+            <textarea id="customJsInput" rows="4" placeholder="Enter custom JavaScript here..."></textarea>
+            <button onclick="runCustomJs()">Apply Script</button>
+            <div id="customJsStatus" class="status-message" style="display:none;"></div>
+        </div>
+        <p>UniEats Platform Version: <span id="platformVersion">1.0.0-beta</span></p>
+    </div>
+
+    <!-- Page: Admin Panel -->
+    <div id="adminPage" class="page">
+        <h2>Administrator Panel</h2>
+        <nav>
+            <a href="#" onclick="showAdminSubPage('adminFoodManagement'); return false;">Manage Food</a>
+            <a href="#" onclick="showAdminSubPage('adminUserManagement'); return false;">Manage Users</a>
+        </nav>
+
+        <div id="adminFoodManagement" class="admin-sub-page">
+            <h3>Manage Food Items</h3>
+            <input type="text" id="foodName" placeholder="Food Name">
+            <input type="number" id="foodPrice" placeholder="Price (£)">
+            <textarea id="foodDescription" placeholder="Description (supports basic formatting)"></textarea>
+            <button onclick="addFoodItem()">Add Food Item</button>
+            <div id="adminFoodStatus" class="status-message" style="display:none;"></div>
+            <h4>Current Menu Items:</h4>
+            <div id="adminFoodList"></div>
+        </div>
+
+        <div id="adminUserManagement" class="admin-sub-page" style="display:none;">
+            <h3>Manage Users</h3>
+            <table id="userManagementTable">
+                <thead><tr><th>ID</th><th>Username</th><th>Role</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="userManagementTableBody"></tbody>
+            </table>
+            <div id="adminUserStatus" class="status-message" style="display:none;"></div>
+        </div>
+    </div>
+
+</div> <!-- end .container -->
+
+<footer class="footer">
+    <p>© 2024 UniEats Canteen Services. For demonstration purposes only.</p>
+</footer>
+
+<script src="script1.js"></script>
+<script src="script2.js"></script>
+<script src="script3.js"></script>
+</body>
+</html>

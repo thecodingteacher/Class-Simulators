@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpottyVibes CE - Advanced Edition</title>
+    <style>
+        :root {
+            --primary-color: #1DB954; /* Spotify Green */
+            --primary-hover-color: #1ED760;
+            --background-color: #121212; /* Dark Background */
+            --surface-color: #181818;   /* Slightly Lighter Surface */
+            --card-color: #282828;      /* Cards, Items */
+            --text-color: #FFFFFF;
+            --text-muted-color: #B3B3B3;
+            --border-color: #404040;
+            --danger-color: #E53E3E;
+            --premium-color: gold; /* For V11 */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex; flex-direction: column; min-height: 100vh;
+        }
+
+        .app-container {
+            display: flex; flex-grow: 1;
+            padding-top: 65px; padding-bottom: 75px;
+        }
+
+        header {
+            background-color: var(--surface-color); color: var(--text-color);
+            padding: 0.8em 1.5em; position: fixed; top: 0; left: 0;
+            width: 100%; z-index: 1000; border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        header h1 { margin: 0; font-size: 1.7em; color: var(--primary-color); font-weight: 700; }
+        #authSection button { margin-left: 10px; }
+        #currentUserDisplay { color: var(--text-muted-color); font-size: 0.9em; }
+
+        .sidebar {
+            width: 230px; background-color: var(--background-color);
+            padding: 1em; border-right: 1px solid var(--border-color);
+            display: flex; flex-direction: column; flex-shrink: 0;
+        }
+        .sidebar nav ul { list-style-type: none; padding: 0; margin: 0; }
+        .sidebar nav li button {
+            display: flex; align-items: center; width: 100%; text-align: left;
+            background: none; border: none; color: var(--text-muted-color);
+            padding: 0.9em 1em; margin-bottom: 0.5em; border-radius: 6px;
+            cursor: pointer; font-size: 0.95em; transition: background-color 0.2s, color 0.2s;
+        }
+        .sidebar nav li button:hover, .sidebar nav li button.active {
+            background-color: var(--card-color); color: var(--text-color);
+        }
+        .sidebar nav li button svg { margin-right: 10px; width: 18px; height: 18px; fill: currentColor; }
+        .admin-nav-item { display: none; }  /* VULN 1 */
+
+        .main-content { flex-grow: 1; padding: 1.5em 2em; overflow-y: auto; }
+        .page { display: none; }
+        .page.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2, h3 {
+            color: var(--text-color); border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.4em; margin-top: 0; margin-bottom: 0.8em;
+        }
+        h2 { font-size: 1.8em; } h3 { font-size: 1.4em; }
+
+        input[type="text"], input[type="password"], input[type="number"], textarea, select {
+            padding: 0.9em; margin-bottom: 1em; border: 1px solid var(--border-color);
+            background-color: var(--surface-color); color: var(--text-color);
+            border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 0.95em;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.3);
+        }
+
+        button, .button-style {
+            background-color: var(--primary-color); color: var(--text-color);
+            padding: 0.8em 1.8em; border: none; border-radius: 50px; /* Pill shape */
+            cursor: pointer; font-weight: 600; font-size: 0.95em;
+            transition: background-color 0.2s, transform 0.1s;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        button:hover, .button-style:hover { background-color: var(--primary-hover-color); transform: translateY(-1px); }
+        button:active { transform: translateY(0px); }
+        button.secondary { background-color: var(--card-color); color: var(--text-muted-color); border: 1px solid var(--border-color); }
+        button.secondary:hover { background-color: #3a3a3a; color: var(--text-color); }
+        button.danger { background-color: var(--danger-color); }
+        button.danger:hover { background-color: #C53030; }
+
+        .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.2em; }
+        .song-item, .playlist-item {
+            background-color: var(--card-color); padding: 1em; border-radius: 8px;
+            transition: background-color 0.2s ease-out; cursor: default;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .song-item:hover, .playlist-item:hover { background-color: #3a3a3a; }
+        .song-item h4, .playlist-item h4 { margin-top: 0; margin-bottom: 0.3em; font-size: 1.1em; }
+        .song-item p, .playlist-item p { font-size: 0.85em; color: var(--text-muted-color); margin-bottom: 0.8em; }
+
+        #nowPlayingBar {
+            background-color: var(--surface-color); padding: 0.8em 1.5em; text-align: center;
+            border-top: 1px solid var(--border-color); position: fixed; bottom: 0;
+            width: 100%; z-index: 1000; font-size: 0.9em;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+        }
+        #nowPlayingBar span { color: var(--primary-color); font-weight: 600; }
+
+        .modal { /* Standard modal styles from before */
+            display: none; position: fixed; z-index: 1001; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);
+            animation: modalFadeIn 0.3s;
+        }
+        @keyframes modalFadeIn { from { background-color: rgba(0,0,0,0); } to { background-color: rgba(0,0,0,0.7); } }
+        .modal-content {
+            background-color: var(--surface-color); margin: 10% auto; padding: 25px 30px;
+            border: 1px solid var(--border-color); width: 90%; max-width: 450px;
+            border-radius: 10px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            animation: modalContentSlideIn 0.3s;
+        }
+        @keyframes modalContentSlideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .close-modal {
+            color: var(--text-muted-color); float: right; font-size: 28px;
+            font-weight: bold; cursor: pointer; line-height: 1;
+        }
+        .close-modal:hover, .close-modal:focus { color: var(--text-color); }
+        .modal h2 { margin-bottom: 1em; text-align: center;}
+
+        .beta-feature-badge { /* V3 */
+            background-color: gold; color: black; padding: 4px 10px; border-radius: 12px;
+            font-size: 0.75em; font-weight: bold; margin-left: 8px; display: inline-block;
+        }
+        #betaFeatureContent { border: 2px dashed gold; padding: 15px; margin: 20px 0; background-color: rgba(255, 215, 0, 0.1); border-radius: 8px; }
+
+        #searchResults { margin-top: 1.5em; padding: 1em; border: 1px dashed var(--border-color); border-radius: 8px; min-height: 60px; }
+        #searchResults .song-item { margin-bottom: 0.8em; }
+
+        .profile-details p { font-size: 1.1em; margin: 0.9em 0; }
+        .profile-details strong { color: var(--primary-color); }
+        .settings-section, .advanced-settings-section { margin-top: 2em; }
+
+        #customGreetingArea { /* V9 */
+            padding: 15px; margin: 15px 0; background-color: var(--surface-color);
+            border-left: 4px solid var(--primary-color); border-radius: 4px; font-style: italic;
+        }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+        th, td { text-align: left; padding: 0.8em; border-bottom: 1px solid var(--border-color); }
+        th { background-color: var(--card-color); font-weight: 600; }
+        td button { font-size: 0.8em !important; padding: 0.5em 1em !important; }
+
+        /* V11: Premium Feature Styling */
+        .premium-feature { border: 2px solid var(--premium-color); background-color: rgba(255,215,0,0.1); padding:10px; border-radius:5px; margin-top:15px; }
+        .premium-feature strong { color: var(--premium-color); }
+
+        /* V12: PostMessage Status Area */
+        #profileStatusMessage { margin-top:10px; padding:10px; background-color:var(--card-color); border-left:3px solid var(--primary-color); }
+        
+        /* V15: Custom Status display */
+        #customUserStatusDisplay { margin-top:10px; padding:10px; background-color:var(--surface-color); border:1px dashed var(--border-color); }
+
+        .utility-section { margin-top: 20px; padding:15px; background-color: var(--card-color); border-radius: 5px;}
+        .utility-section h4 { margin-top: 0; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>SpottyVibes AE</h1>
+        <div id="authSection">
+            <span id="currentUserDisplay"></span>
+            <button id="loginLogoutButton" onclick="app.ui.handleAuthButton()">Login</button>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <nav>
+                <ul>
+                    <li><button id="nav-home" onclick="app.ui.navigateTo('home')"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</button></li>
+                    <li><button id="nav-songs" onclick="app.ui.navigateTo('songs')"><svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55c-2.21 0-4 1.79-4 4s1.79 4 4 4s4-1.79 4-4V7h4V3h-6z"/></svg>All Songs</button></li>
+                    <li><button id="nav-playlists" onclick="app.ui.navigateTo('playlists')"><svg viewBox="0 0 24 24"><path d="M2 16h8v-2H2v2zm0-5h12V9H2v2zm0-5h12V4H2v2zm10 10v-6l5 3-5 3z"/></svg>My Playlists</button></li>
+                    <li><button id="nav-profile" onclick="app.ui.navigateTo('profile')"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>My Profile</button></li>
+                    <li class="admin-nav-item"><button id="nav-admin" onclick="app.ui.navigateTo('admin')"><svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61.22l2 3.46c.13.22.07.49.12.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5s3.5 1.57 3.5 3.5s-1.57 3.5-3.5 3.5z"/></svg>Admin Panel</button></li>
+                    <li><button id="nav-utilities" onclick="app.ui.navigateTo('utilities')"><svg viewBox="0 0 24 24"><path d="M12 6a3.5 3.5 0 1 0 0 7 3.5 3.5 0 1 0 0-7zm0 10c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>Utilities</button></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <!-- Home Page -->
+            <div id="homePage" class="page">
+                <h2>Welcome to SpottyVibes AE!</h2>
+                <p>The Advanced Edition for client-side security exploration.</p>
+                <div id="customGreetingArea">Your personalized dashboard will appear here.</div> {/* V9 */}
+                <input type="text" id="searchInput" placeholder="Search for songs, artists...">
+                <button onclick="app.search()" class="mt-1">Search</button>
+                <div id="searchResults"></div>
+                <div id="betaFeatureContent" style="display:none;"> {/* V3 */}
+                    <h3><span class="beta-feature-badge">BETA</span> Experimental Feature Zone!</h3>
+                    <p>You've unlocked "Mood Matrix Soundscapes" (simulated).</p>
+                </div>
+                <!-- V11: Premium Feature Display -->
+                <div id="premiumContentArea" class="premium-feature" style="display:none;">
+                    <strong>PREMIUM FEATURE:</strong> Access to exclusive lossless audio streams! (Simulated)
+                </div>
+            </div>
+
+            <!-- Songs Page -->
+            <div id="songsPage" class="page"><h2>All Songs</h2><div id="songList" class="item-grid"></div></div>
+            
+            <!-- My Playlists Page -->
+            <div id="playlistsPage" class="page">
+                <h2>My Playlists</h2>
+                <input type="text" id="newPlaylistName" placeholder="Enter new playlist name">
+                <button onclick="app.createPlaylist()" class="mt-1">Create Playlist</button>
+                <div id="myPlaylistsContainer" class="mt-1 item-grid"></div>
+                <p style="font-size:0.8em; margin-top:20px;">Quick Delete First Playlist (V13 CSRF Demo): <a id="quickDeleteLink" href="#playlists?action=delete&playlistIndex=0" onclick="app.handleQuickDelete(event, 0)">Delete My First Playlist</a></p>
+            </div>
+
+            <!-- Profile Page -->
+            <div id="profilePage" class="page">
+                <h2>My Profile</h2>
+                <div id="profileDetails" class="profile-details"></div>
+                <!-- V12: PostMessage Status Area -->
+                <div class="profile-details">
+                    <p>Live Status: <span id="profileStatusMessage">No status set.</span></p>
+                </div>
+                <!-- V15: Custom Status Input & Display -->
+                <div class="advanced-settings-section">
+                    <h3>Custom Public Status (V15 Template Injection)</h3>
+                    <textarea id="customUserStatusInput" rows="2" placeholder="Set your status (e.g., Listening to {{songTitle}})"></textarea>
+                    <button onclick="app.settings.setCustomUserStatus()">Set Status</button>
+                    <h4>Your Rendered Status:</h4>
+                    <div id="customUserStatusDisplay">[Your status will appear here]</div>
+                </div>
+                <div class="settings-section">
+                    <h3>Settings</h3>
+                    <label for="themeSelector">Site Theme (V2 LocalStorage):</label>
+                    <select id="themeSelector" onchange="app.settings.setTheme(this.value)">
+                        <option value="dark">Dark Mode</option><option value="light">Light Mode</option><option value="deepblue">Deep Blue</option>
+                    </select>
+                </div>
+                <div class="advanced-settings-section">
+                    <h3>Advanced Preferences (V11 Prototype Pollution)</h3>
+                    <label for="prefColor">Preferred Accent Color (e.g., #FF0000):</label>
+                    <input type="text" id="prefColor" placeholder="#1DB954">
+                    <label for="prefLayout">Layout (<code>compact</code> or <code>spacious</code>):</label>
+                    <input type="text" id="prefLayout" placeholder="compact">
+                    <button onclick="app.settings.updateAdvancedPreferences()">Update Adv. Preferences</button>
+                </div>
+            </div>
+
+            <!-- User Details Page (for IDOR V5) -->
+            <div id="userDetailsPage" class="page"><h2>User Details</h2><div id="userDetailsContent" class="profile-details"></div><button onclick="app.ui.navigateTo('admin')" class="secondary mt-1">Back to Admin</button></div>
+
+            <!-- Admin Panel Page -->
+            <div id="adminPage" class="page"><h2>Admin Panel</h2><p>Manage users and app state.</p><div id="adminUserList"></div></div>
+
+            <!-- Utilities Page (for V14 Web Worker Demo) -->
+            <div id="utilitiesPage" class="page">
+                <h2>Utilities & Tools</h2>
+                <div class="utility-section">
+                    <h4>Song Recommender (V14 Web Worker)</h4>
+                    <p>Get song recommendations based on a User ID (simulated).</p>
+                    <label for="recoUserId">User ID for Recommendations:</label>
+                    <input type="number" id="recoUserId" placeholder="Enter User ID (e.g., 1, 2, or current user's ID)">
+                    <button onclick="app.utilities.getRecommendations()">Get Recommendations</button>
+                    <div id="recommendationResults" style="margin-top:10px; padding:10px; background-color:var(--surface-color);">Results will appear here.</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="nowPlayingBar">Now Playing: <span id="currentSongDisplay">Nothing...</span></div>
+
+    <!-- Login/Register Modals (Standard) -->
+    <div id="loginModal" class="modal"><div class="modal-content"><span class="close-modal" onclick="app.ui.closeModal('loginModal')">&times;</span><h2>Login</h2><input type="text" id="loginUsername" placeholder="Username"><input type="password" id="loginPassword" placeholder="Password"><button onclick="app.auth.login()" class="mt-1">Login</button><p class="text-center mt-1" style="font-size:0.9em;">No account? <a href="#" onclick="app.ui.openModal('registerModal'); app.ui.closeModal('loginModal');">Register</a></p><p class="text-center" style="font-size:0.8em; color: var(--text-muted-color);">Demo: user1/pass1 or admin/adminpass</p></div></div>
+    <div id="registerModal" class="modal"><div class="modal-content"><span class="close-modal" onclick="app.ui.closeModal('registerModal')">&times;</span><h2>Register</h2><input type="text" id="registerUsername" placeholder="Username"><input type="password" id="registerPassword" placeholder="Password"><button onclick="app.auth.register()" class="mt-1">Register</button><p class="text-center mt-1" style="font-size:0.9em;">Account? <a href="#" onclick="app.ui.openModal('loginModal'); app.ui.closeModal('registerModal');">Login</a></p></div></div>
+
+    <!-- Inline Web Worker Script (for V14) -->
+    <script id="recoWorkerScript" type="javascript/worker">
+        // V14: Flawed Web Worker Logic
+        const allSongs = [ // Simplified song list for worker
+            { id: 101, title: "Worker's Anthem", artist: "CPU Cycles" }, { id: 102, title: "Background Beat", artist: "Threads" },
+            { id: 103, title: "Async Groove", artist: "Callbacks" }, { id: 104, title: "Parallel Polka", artist: "MultiCore" },
+            { id: 201, title: "Secret Song A (User 2 Only)", artist: "Exclusive" }, { id: 202, title: "Data Dive (User 2 Only)", artist: "Leaker" },
+            { id: 301, title: "Admin's Choice", artist: "System" }
+        ];
+
+        self.onmessage = function(e) {
+            const userId = parseInt(e.data.userId);
+            let recommendations = [];
+            
+            console.log(`Worker received request for userId: ${userId}`);
+
+            // Flawed logic: Doesn't truly personalize or secure based on actual current user,
+            // just filters based on the *provided* userId.
+            // An attacker can provide any userId to get "their" recommendations.
+            if (userId === 1) {
+                recommendations = [allSongs[0], allSongs[1]];
+            } else if (userId === 2) { // User 2 has "special" recommendations
+                recommendations = [allSongs[0], allSongs[4], allSongs[5]];
+            } else if (userId === 3) { // Admin
+                recommendations = [allSongs[0], allSongs[1], allSongs[2], allSongs[3], allSongs[6]];
+            } else if (userId) { // Generic for other valid IDs
+                 recommendations = [allSongs[2], allSongs[3]];
+            } else {
+                recommendations = [{id:0, title:"Invalid User ID for Reco", artist:"Error"}];
+            }
+            
+            // Simulate some processing delay
+            // let count = 0; for(let i=0; i < 100000000; i++) { count++; } // Heavy loop
+
+            self.postMessage({ userIdRequested: userId, songs: recommendations });
+        };
+    </script>
+
+    <script>
+        // V10: Sensitive Data in JS Comments
+        // DEV_NOTE: Emergency SuperAdmin: ultra_admin / P@$$wOrdULTRA123! (REMOVE BEFORE FLIGHT!)
+        // API_KEY_TEST_ONLY = "dummy_api_key_for_client_side_tests_12345abcdef";
+
+        const app = {
+            currentUser: null, users: [], songs: [
+                { id: 1, title: "Client Beat", artist: "Localhost", album: "File Hits" }, { id: 2, title: "DOM Melody", artist: "Injectors", album: "Web Rhythms" },
+                { id: 3, title: "Cookie Blues", artist: "Session Bandits", album: "Stateful Exploits AE" }, { id: 4, title: "Storage Tango", artist: "Manipulators", album: "Browser Hacking AE" },
+                { id: 5, title: "IDOR Inferno", artist: "Access Breakers", album: "Auth Bypasses Vol. 4" }, { id: 6, title: "XSS Symphony", artist: "Script Masters", album: "Cross-Site Classics AE" }
+            ], db: null, recoWorker: null,
+
+            init() {
+                console.log("SpottyVibes AE: Initializing...");
+                this.data.loadUsers();
+                this.settings.loadTheme(); // V2
+                this.auth.checkSession();
+                this.data.initDB(); // V7 target
+                
+                // V3: Cookie
+                console.log("V3 Cookie: document.cookie before:", document.cookie);
+                if (!this.util.getCookie('showBetaFeatures')) {
+                    const cookieStr = "showBetaFeatures=false;path=/;SameSite=Lax";
+                    document.cookie = cookieStr;
+                    console.log("V3 Cookie: Set attempt:", cookieStr, " | After:", document.cookie);
+                }
+                this.ui.checkBetaFeature();
+                this.ui.checkPremiumFeature(); // V11 check
+
+                // V12: PostMessage Listener
+                window.addEventListener('message', this.handlePostMessage.bind(this));
+                console.log("V12 PostMessage: Listener added for 'message' events.");
+
+                // V14: Web Worker Init
+                try {
+                    const workerScriptContent = document.getElementById('recoWorkerScript').textContent;
+                    const blob = new Blob([workerScriptContent], { type: 'application/javascript' });
+                    this.recoWorker = new Worker(URL.createObjectURL(blob));
+                    this.recoWorker.onmessage = this.utilities.handleRecommendationResponse;
+                    this.recoWorker.onerror = (err) => console.error("Web Worker Error:", err.message, err);
+                    console.log("V14 Web Worker: Initialized successfully.");
+                } catch (e) {
+                    console.error("V14 Web Worker: Failed to initialize.", e);
+                    document.getElementById('utilitiesPage') ? document.getElementById('utilitiesPage').innerHTML += "<p style='color:red'>Recommendation Worker failed to load.</p>" : '';
+                }
+                
+                this.ui.router();
+                this.render.songs();
+                console.log("SpottyVibes AE: Init complete.");
+            },
+
+            data: { /* Standard data handling from before */
+                loadUsers() {
+                    const stored = localStorage.getItem('spotty_users_ae');
+                    app.users = stored ? JSON.parse(stored) : [
+                        { id: 1, username: "user1", password: "pass1", balance: 125.50, isAdmin: false, preferences: { theme: "dark", customStatus: "Enjoying music!" } },
+                        { id: 2, username: "user2", password: "pass2", balance: 70.25, isAdmin: false, preferences: { theme: "light", customStatus: "Vibing..." } },
+                        { id: 3, username: "admin", password: "adminpass", balance: 9999.00, isAdmin: true, preferences: { theme: "deepblue", customStatus: "Overseeing the vibes." } }
+                    ];
+                    if (!stored) this.saveUsers();
+                },
+                saveUsers() { localStorage.setItem('spotty_users_ae', JSON.stringify(app.users)); },
+                initDB() { /* Standard IndexedDB init for playlists */
+                    const req = indexedDB.open("SpottyVibesAE_DB", 4);
+                    req.onerror = (e) => console.error("IDB err:", e.target.errorCode);
+                    req.onsuccess = (e) => { app.db = e.target.result; if (app.ui.getCurrentPageId() === 'playlists') app.render.playlists();};
+                    req.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains('playlists')) {
+                            db.createObjectStore("playlists", { keyPath: "id", autoIncrement: true }).createIndex("username", "username", { unique: false });
+                        }
+                    };
+                }
+            },
+
+            auth: { /* Standard auth from before */
+                checkSession() {
+                    const u = sessionStorage.getItem('spotty_currentUser_ae');
+                    if (u) app.currentUser = JSON.parse(u);
+                    app.ui.updateLoginButton(); app.ui.updateAdminAccess();
+                },
+                login() {
+                    const un = document.getElementById('loginUsername').value;
+                    const pw = document.getElementById('loginPassword').value;
+                    const user = app.users.find(u => u.username === un && u.password === pw); // V4 target
+                    if (user) {
+                        app.currentUser = {...user};
+                        sessionStorage.setItem('spotty_currentUser_ae', JSON.stringify(app.currentUser));
+                        app.ui.updateLoginButton(); app.ui.updateAdminAccess(); app.ui.closeModal('loginModal');
+                        alert(`Login successful! Welcome, ${user.username}.`);
+                        app.ui.checkPremiumFeature(); // V11: Re-check premium on login
+
+                        const redirectUrl = new URLSearchParams(window.location.search).get('redirect_to'); // V8
+                        if (redirectUrl) {
+                            console.warn("V8 OpenRedirect: redirect_to found:", redirectUrl);
+                            alert(`Redirecting (V8 Demo): ${redirectUrl}`);
+                            window.location.href = redirectUrl;
+                        } else { app.ui.navigateTo('home'); }
+                    } else { alert('Invalid credentials.'); }
+                },
+                register() { /* Standard register */
+                    const un = document.getElementById('registerUsername').value;
+                    const pw = document.getElementById('registerPassword').value;
+                    if (!un.trim() || !pw.trim()) { alert("Username/password empty."); return; }
+                    if (app.users.find(u => u.username === un)) { alert('Username exists.'); return; }
+                    const nid = app.users.length > 0 ? Math.max(...app.users.map(u => u.id)) + 1 : 1;
+                    app.users.push({ id: nid, username: un, password: pw, balance: 20.00, isAdmin: false, preferences: {theme:"dark", customStatus: "New User!"} });
+                    app.data.saveUsers(); alert('Registration successful! Login.');
+                    app.ui.closeModal('registerModal'); app.ui.openModal('loginModal');
+                },
+                logout() { /* Standard logout */
+                    app.currentUser = null; sessionStorage.removeItem('spotty_currentUser_ae');
+                    app.ui.updateLoginButton(); app.ui.updateAdminAccess();
+                    alert('Logged out.'); app.ui.navigateTo('home');
+                    app.ui.checkPremiumFeature(); // V11: Re-check premium
+                }
+            },
+
+            ui: { /* UI handling, router, V1, V3, V9, V11, V12, V13 */
+                currentPath: '',
+                navigateTo(pageId, params = {}) { /* Standard router logic */
+                    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                    const targetPage = document.getElementById(pageId + 'Page');
+                    if (targetPage) targetPage.classList.add('active');
+                    else { document.getElementById('homePage').classList.add('active'); pageId = 'home';}
+
+                    document.querySelectorAll('.sidebar nav li button').forEach(btn => btn.classList.remove('active'));
+                    const navBtn = document.getElementById(`nav-${pageId}`); if (navBtn) navBtn.classList.add('active');
+                    
+                    let newHash = `#${pageId}`;
+                    const qParams = new URLSearchParams();
+                    for (const k in params) qParams.set(k, params[k]);
+                    const qStr = qParams.toString(); if (qStr) newHash += `?${qStr}`;
+                    
+                    const baseHashNew = newHash.split('?')[0].split('#greet=')[0];
+                    const baseHashOld = window.location.hash.split('?')[0].split('#greet=')[0];
+                    if (baseHashOld !== baseHashNew || !window.location.hash.startsWith(baseHashNew)) {
+                        if (window.location.hash !== newHash) history.pushState({ pageId, params }, '', newHash);
+                    }
+                    app.ui.currentPath = window.location.pathname + window.location.search + window.location.hash;
+
+                    if (pageId === 'profile' && app.currentUser) app.render.profile();
+                    if (pageId === 'admin') { if (app.currentUser && app.currentUser.isAdmin) app.render.adminPanel(); else this.handleAdminAccessDenied(); }
+                    if (pageId === 'userDetailsPage' && params.userId) app.render.userDetails(params.userId); // V5
+                    if (pageId === 'playlists') app.render.playlists(); // V7 display
+                    if (pageId === 'home') { this.renderCustomGreeting(); this.checkPremiumFeature(); } // V9, V11
+                    if (pageId === 'playlists' && params.action === 'delete' && params.playlistIndex !== undefined) app.handleQuickDelete(null, parseInt(params.playlistIndex), true); // V13
+                },
+                router() { /* Standard router parse */
+                    const fullHash = window.location.hash.substring(1); let pageId = 'home'; let params = {};
+                    if (fullHash) {
+                        const [path, query] = fullHash.split('?'); pageId = path || 'home';
+                        if (query) new URLSearchParams(query).forEach((v, k) => params[k] = v);
+                    }
+                    if (pageId.startsWith('greet=')) { params.greet = pageId.substring(6); pageId = 'home'; } // V9
+                    else if (fullHash.includes('greet=')) { const m = fullHash.match(/greet=([^&?#]*)/); if (m && m[1]) params.greet = m[1]; }
+                    app.ui.currentPath = window.location.pathname + window.location.search + window.location.hash;
+                    this.navigateTo(pageId, params);
+                },
+                renderCustomGreeting() { /* V9 DOM XSS */
+                    const greetDiv = document.getElementById('customGreetingArea'); let msg = "Personalized dashboard.";
+                    const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || ''); let greetP = hashParams.get('greet');
+                    if (!greetP && window.location.hash.includes('#greet=')) { const p = window.location.hash.split('#greet='); if (p.length > 1) greetP = p[1].split('&')[0].split('?')[0]; }
+                    if (greetP) { const decGreet = decodeURIComponent(greetP); console.warn("V9 DOM XSS: Greeting:", decGreet); msg = `Msg for you: ${decGreet}`; }
+                    greetDiv.innerHTML = msg; // Vulnerable .innerHTML
+                },
+                getCurrentPageId() { const ap = document.querySelector('.page.active'); return ap ? ap.id.replace('Page', '') : 'home'; },
+                handleAdminAccessDenied() { if(this.getCurrentPageId()==='admin') {alert("ACCESS DENIED!"); this.navigateTo('home');}},
+                updateLoginButton() { /* Standard */
+                    const btn=document.getElementById('loginLogoutButton'), disp=document.getElementById('currentUserDisplay');
+                    if(app.currentUser){btn.textContent='Logout';disp.textContent=`User: ${app.currentUser.username}`}
+                    else{btn.textContent='Login/Reg';disp.textContent='Not logged in'}
+                },
+                updateAdminAccess() { /* V1 Hidden Element */ document.querySelector('.admin-nav-item').style.display = (app.currentUser && app.currentUser.isAdmin) ? 'list-item' : 'none'; },
+                handleAuthButton() { if (app.currentUser) app.auth.logout(); else this.openModal('loginModal'); },
+                openModal(id) { document.getElementById(id).style.display = 'block'; },
+                closeModal(id) { document.getElementById(id).style.display = 'none'; },
+                checkBetaFeature() { /* V3 Cookie */ document.getElementById('betaFeatureContent').style.display = (app.util.getCookie('showBetaFeatures') === 'true') ? 'block' : 'none'; },
+                checkPremiumFeature() { /* V11 Prototype Pollution check */
+                    let isPremium = false;
+                    // The check that might be affected by prototype pollution
+                    const testObj = {}; // A new, empty object
+                    if (testObj.isPremiumUser === true) { // This will be true if Object.prototype.isPremiumUser was set to true
+                        console.warn("V11 Prototype Pollution: testObj.isPremiumUser is true! Possible pollution.");
+                        isPremium = true;
+                    } else if (app.currentUser && app.currentUser.isPremiumUser === true) { // Legitimate check
+                        isPremium = true;
+                    }
+                    document.getElementById('premiumContentArea').style.display = isPremium ? 'block' : 'none';
+                    console.log("V11 Premium Check: User isPremium status:", isPremium);
+                },
+                updateProfileStatusMessage(htmlMessage) { /* V12 target */
+                    const statusEl = document.getElementById('profileStatusMessage');
+                    if(statusEl) statusEl.innerHTML = htmlMessage; // Vulnerable .innerHTML
+                    console.warn("V12 PostMessage: Profile status updated with HTML:", htmlMessage);
+                },
+                handleQuickDelete(event, playlistIndex, fromRouter = false) { // V13 CSRF
+                    if (event && !fromRouter) event.preventDefault(); // Prevent default navigation if clicked directly
+                    if (!app.currentUser) { alert("Please login to delete playlists."); return; }
+                    if (!app.db) { alert("Database not ready."); return; }
+
+                    console.warn(`V13 CSRF Demo: Attempting to delete playlist at index ${playlistIndex}`);
+                    const transaction = app.db.transaction(["playlists"], "readwrite");
+                    const store = transaction.objectStore("playlists");
+                    const getReq = store.index("username").getAll(app.currentUser.username);
+
+                    getReq.onsuccess = () => {
+                        const userPlaylists = getReq.result;
+                        if (userPlaylists && userPlaylists.length > playlistIndex) {
+                            const playlistToDelete = userPlaylists[playlistIndex];
+                            const deleteReq = store.delete(playlistToDelete.id);
+                            deleteReq.onsuccess = () => {
+                                alert(`Playlist "${playlistToDelete.name}" (index ${playlistIndex}) deleted successfully! (V13 CSRF Demo)`);
+                                app.render.playlists();
+                            };
+                            deleteReq.onerror = () => alert("Error deleting playlist.");
+                        } else {
+                            alert(`Playlist at index ${playlistIndex} not found.`);
+                        }
+                    };
+                    getReq.onerror = () => alert("Error fetching playlists for deletion.");
+                    if(!fromRouter) app.ui.navigateTo('playlists'); // Go to playlist page if clicked directly
+                }
+            },
+
+            render: { /* Rendering content to pages, V4, V5, V7 */
+                songs() { /* Standard */
+                    const div = document.getElementById('songList'); if(!div)return; div.innerHTML='';
+                    app.songs.forEach(s => {
+                        const sdiv = document.createElement('div'); sdiv.className = 'song-item';
+                        sdiv.innerHTML = `<h4>${s.title}</h4><p>${s.artist} - ${s.album}</p><button onclick="app.player.playSong(${s.id})" class="secondary" style="font-size:0.8em;padding:0.4em 0.8em;">Play</button>`;
+                        div.appendChild(sdiv);
+                    });
+                },
+                profile() { /* V4, V15 */
+                    const div = document.getElementById('profileDetails'); if (!app.currentUser) { div.innerHTML = "<p>Login for profile.</p>"; return; }
+                    const liveUser = app.users.find(u => u.id === app.currentUser.id); // V4
+                    if (liveUser) { app.currentUser = {...liveUser}; sessionStorage.setItem('spotty_currentUser_ae', JSON.stringify(app.currentUser));}
+                    else { div.innerHTML = "<p>Profile data error.</p>"; app.auth.logout(); return; }
+
+                    div.innerHTML = `<p>Username: <strong>${app.currentUser.username}</strong></p><p>User ID: <strong>${app.currentUser.id}</strong></p><p>Balance: <strong>$${Number(app.currentUser.balance).toFixed(2)}</strong></p><p>Admin: <strong>${app.currentUser.isAdmin ? 'Yes' : 'No'}</strong></p>`;
+                    document.getElementById('themeSelector').value = app.currentUser.preferences.theme || 'dark';
+                    
+                    // V15 Render Custom Status
+                    const customStatusInput = document.getElementById('customUserStatusInput');
+                    if(customStatusInput) customStatusInput.value = app.currentUser.preferences.customStatus || '';
+                    app.render.customUserStatus();
+                    app.ui.checkPremiumFeature(); // V11
+                },
+                customUserStatus() { // V15
+                    const displayDiv = document.getElementById('customUserStatusDisplay');
+                    if (displayDiv && app.currentUser && app.currentUser.preferences.customStatus) {
+                        const status = app.currentUser.preferences.customStatus;
+                        console.warn("V15 Template Injection: Raw status:", status);
+                        // Extremely simplified and vulnerable template rendering
+                        let renderedStatus = status.replace(/\{\{currentUser\.username\}\}/gi, app.currentUser.username);
+                        renderedStatus = renderedStatus.replace(/\{\{songTitle\}\}/gi, "Generic Song"); // Example
+                        // The vulnerability is that if 'status' contains HTML/JS, it's rendered.
+                        displayDiv.innerHTML = `Your current status: ${renderedStatus}`; // Vulnerable innerHTML
+                        console.warn("V15 Template Injection: Rendered status HTML:", renderedStatus);
+                    } else if (displayDiv) {
+                        displayDiv.innerHTML = "No custom status set.";
+                    }
+                },
+                adminPanel() { /* V4 target display */
+                    const div = document.getElementById('adminUserList'); if (!div || !app.currentUser || !app.currentUser.isAdmin) return;
+                    div.innerHTML = '<h3>User Management</h3>'; const table = document.createElement('table');
+                    table.innerHTML = `<thead><tr><th>ID</th><th>Username</th><th>Balance</th><th>Admin</th><th>Actions</th></tr></thead><tbody></tbody>`;
+                    const tbody = table.querySelector('tbody');
+                    app.users.forEach(u => {
+                        const row = tbody.insertRow();
+                        row.innerHTML = `<td>${u.id}</td><td>${u.username}</td><td>$${Number(u.balance).toFixed(2)}</td><td>${u.isAdmin?'Y':'N'}</td><td><button onclick="app.ui.navigateTo('userDetailsPage', {userId: ${u.id}})">Details</button></td>`; // V5 link
+                    });
+                    div.appendChild(table);
+                },
+                userDetails(userIdParam) { /* V5 IDOR target */
+                    const div = document.getElementById('userDetailsContent'); const id = parseInt(userIdParam);
+                    console.warn("V5 IDOR: Rendering details for ID:", id); const user = app.users.find(u => u.id === id);
+                    if(user) div.innerHTML = `<p>User ID:<strong>${user.id}</strong></p><p>Username:<strong>${user.username}</strong></p><p>Balance:<strong>$${Number(user.balance).toFixed(2)}</strong></p><p>Is Admin:<strong>${user.isAdmin?'Y':'N'}</strong></p>${(app.currentUser&&app.currentUser.isAdmin)?`<div><h4>Admin Actions:</h4><input type="number" id="newBalance_${user.id}" value="${user.balance.toFixed(2)}"><button onclick="app.adminActions.updateBalance(${user.id})">Set Bal</button><br><label>Set Admin:<input type="checkbox" id="isAdmin_${user.id}" ${user.isAdmin?'checked':''}></label><button onclick="app.adminActions.toggleAdmin(${user.id})">Set Admin</button></div>`:''}`;
+                    else div.innerHTML = `<p>User ID <strong>${id}</strong> not found.</p>`;
+                },
+                playlists() { /* V7 Stored XSS display */
+                    const cont = document.getElementById('myPlaylistsContainer'); if (!app.currentUser) { cont.innerHTML = '<p>Login for playlists.</p>'; return; }
+                    if (!app.db) { cont.innerHTML = '<p>DB pending.</p>'; return; }
+                    cont.innerHTML = ''; const tx = app.db.transaction(["playlists"],"readonly"); const store = tx.objectStore("playlists");
+                    const req = store.index("username").getAll(app.currentUser.username);
+                    req.onsuccess = () => {
+                        const pls = req.result; if (pls.length === 0) { cont.innerHTML = "<p>No playlists.</p>"; return; }
+                        pls.forEach(pl => {
+                            const item = document.createElement('div'); item.className = 'playlist-item';
+                            console.warn("V7 Stored XSS: Rendering playlist name:", pl.name);
+                            item.innerHTML = `<h4>${pl.name}</h4> <p>${pl.songs ? pl.songs.length : 0} songs.</p>`; // Vulnerable .innerHTML
+                            cont.appendChild(item);
+                        });
+                    };
+                    req.onerror = (e) => { console.error("Err fetch playlists:", e); cont.innerHTML = "<p>Error loading.</p>";};
+                }
+            },
+
+            player: { playSong(id) { /* Standard */ const s = app.songs.find(x=>x.id===id); if(s){document.getElementById('currentSongDisplay').textContent=`${s.title} - ${s.artist}`; localStorage.setItem('spotty_lastPlayedSongId_ae',s.id); alert(`Playing: ${s.title}`);}}},
+            
+            search() { /* V6 Reflected XSS */
+                const term = document.getElementById('searchInput').value; const div = document.getElementById('searchResults');
+                console.warn("V6 Reflected XSS: Search term:", term);
+                div.innerHTML = `<h3 class="mb-1">Results for: "${term}"</h3>`; // Vulnerable .innerHTML
+                if(!term.trim()){div.innerHTML+="<p>Enter search term.</p>";return;} const found=app.songs.filter(s=>s.title.toLowerCase().includes(term.toLowerCase())||s.artist.toLowerCase().includes(term.toLowerCase()));
+                if(found.length>0){const grid=document.createElement('div');grid.className='item-grid';found.forEach(s=>{const item=document.createElement('div');item.className='song-item';item.innerHTML=`<h4></h4><p></p><button class="secondary" style="font-size:0.8em;padding:0.4em 0.8em;">Play</button>`;item.querySelector('h4').textContent=s.title;item.querySelector('p').textContent=`${s.artist} - ${s.album}`;item.querySelector('button').onclick=()=>app.player.playSong(s.id);grid.appendChild(item);});div.appendChild(grid);}else{div.innerHTML+="<p>No songs found.</p>";}
+            },
+
+            createPlaylist() { /* V7 Stored XSS store */
+                if(!app.currentUser){alert("Login first.");return;} if(!app.db){alert("DB not ready.");return;}
+                const nameInput = document.getElementById('newPlaylistName'); const name = nameInput.value;
+                if(!name.trim()){alert("Name empty.");return;} console.warn("V7 Stored XSS: Playlist name to store:", name);
+                const tx = app.db.transaction(["playlists"],"readwrite").objectStore("playlists");
+                const req = tx.add({username:app.currentUser.username, name:name, songs:[], createdAt:new Date().toISOString()});
+                req.onsuccess=()=>{alert(`Playlist "${name.replace(/</g,"&lt;")}" created!`);nameInput.value='';app.render.playlists();};
+                req.onerror=(e)=>{console.error("Err create playlist:",e);alert("Error creating.");};
+            },
+
+            settings: { /* V2, V11, V15 */
+                setTheme(val) { /* V2 LocalStorage */
+                    localStorage.setItem('spotty_theme_ae', val);
+                    if(app.currentUser){ app.currentUser.preferences.theme=val; const idx=app.users.findIndex(u=>u.id===app.currentUser.id); if(idx>-1)app.users[idx].preferences.theme=val; app.data.saveUsers();}
+                    this.applyTheme(val);
+                },
+                loadTheme() { let theme = localStorage.getItem('spotty_theme_ae')||'dark'; if(app.currentUser&&app.currentUser.preferences.theme)theme=app.currentUser.preferences.theme; document.getElementById('themeSelector').value=theme; this.applyTheme(theme);},
+                applyTheme(val) { const r=document.documentElement.style; if(val==='light'){r.setProperty('--background-color','#F0F0F0');r.setProperty('--surface-color','#FFFFFF');r.setProperty('--card-color','#EAEAEA');r.setProperty('--text-color','#121212');r.setProperty('--text-muted-color','#555555');r.setProperty('--border-color','#D0D0D0');}else if(val==='deepblue'){r.setProperty('--background-color','#0A192F');r.setProperty('--surface-color','#172A45');r.setProperty('--card-color','#0E2038');r.setProperty('--text-color','#CCD6F6');r.setProperty('--text-muted-color','#8892B0');r.setProperty('--border-color','#233554');r.setProperty('--primary-color','#64FFDA');r.setProperty('--primary-hover-color','#79FFEE');}else{r.setProperty('--background-color','#121212');r.setProperty('--surface-color','#181818');r.setProperty('--card-color','#282828');r.setProperty('--text-color','#FFFFFF');r.setProperty('--text-muted-color','#B3B3B3');r.setProperty('--border-color','#404040');r.setProperty('--primary-color','#1DB954');r.setProperty('--primary-hover-color','#1ED760');}},
+                
+                // V11 Prototype Pollution Vulnerability
+                _unsafeMerge(target, source) { // Vulnerable merge function
+                    for (const key in source) {
+                        // No check for __proto__ or hasOwnProperty!
+                        if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
+                            if (!target[key] || typeof target[key] !== 'object') {
+                                target[key] = {};
+                            }
+                            this._unsafeMerge(target[key], source[key]);
+                        } else {
+                            target[key] = source[key]; // Direct assignment
+                        }
+                    }
+                    return target;
+                },
+                updateAdvancedPreferences() {
+                    if (!app.currentUser) { alert("Login to update preferences."); return; }
+                    const userPref = app.currentUser.preferences || {};
+                    const updates = {};
+                    const color = document.getElementById('prefColor').value;
+                    const layout = document.getElementById('prefLayout').value;
+
+                    if (color) updates.accentColor = color;
+                    if (layout) updates.layoutMode = layout;
+                    
+                    console.warn("V11 Prototype Pollution: Attempting to merge with updates:", updates);
+                    // Using the vulnerable merge function
+                    app.currentUser.preferences = this._unsafeMerge(userPref, updates);
+
+                    // Save updated preferences
+                    const userIndex = app.users.findIndex(u => u.id === app.currentUser.id);
+                    if (userIndex > -1) {
+                        app.users[userIndex].preferences = app.currentUser.preferences;
+                        app.data.saveUsers();
+                    }
+                    alert("Advanced preferences updated (or attempted!). Check console for V11 details.");
+                    app.ui.checkPremiumFeature(); // Re-check after potential pollution
+                },
+                setCustomUserStatus() { // V15 Template Injection
+                    if (!app.currentUser) { alert("Login to set status."); return; }
+                    const status = document.getElementById('customUserStatusInput').value;
+                    app.currentUser.preferences.customStatus = status;
+                    const userIndex = app.users.findIndex(u => u.id === app.currentUser.id);
+                    if (userIndex > -1) {
+                        app.users[userIndex].preferences.customStatus = status;
+                        app.data.saveUsers();
+                    }
+                    alert("Custom status updated!");
+                    app.render.customUserStatus();
+                }
+            },
+            
+            adminActions: { /* V4 exploitation target */
+                updateBalance(id){if(!app.currentUser||!app.currentUser.isAdmin){alert("Admin only.");return;}const balIn=document.getElementById(`newBalance_${id}`);const bal=parseFloat(balIn.value);if(isNaN(bal)||bal<0){alert("Invalid balance.");return;}const idx=app.users.findIndex(u=>u.id===id);if(idx>-1){app.users[idx].balance=bal;app.data.saveUsers();alert(`User ${app.users[idx].username} bal updated.`);app.render.userDetails(id);if(app.ui.getCurrentPageId()==='admin')app.render.adminPanel();}else{alert("User not found.");}},
+                toggleAdmin(id){if(!app.currentUser||!app.currentUser.isAdmin){alert("Admin only.");return;}const cb=document.getElementById(`isAdmin_${id}`);const stat=cb.checked;const idx=app.users.findIndex(u=>u.id===id);if(idx>-1){if(app.users[idx].id===app.currentUser.id&&!stat){alert("Cannot remove own admin status.");cb.checked=true;return;}app.users[idx].isAdmin=stat;app.data.saveUsers();alert(`User ${app.users[idx].username} admin status set.`);app.render.userDetails(id);if(app.ui.getCurrentPageId()==='admin')app.render.adminPanel();}else{alert("User not found.");}}
+            },
+
+            handlePostMessage(event) { // V12 Insecure PostMessage Handling
+                // NO ORIGIN CHECK! This is the main vulnerability.
+                // console.log("V12 PostMessage: Received message. Origin:", event.origin, "Data:", event.data);
+
+                if (event.data && typeof event.data === 'object' && event.data.type === 'UPDATE_STATUS') {
+                    // No sanitization of event.data.payload!
+                    const payload = event.data.payload || "<i>No payload received</i>";
+                    app.ui.updateProfileStatusMessage(`Status from external: ${payload}`);
+                    if (app.ui.getCurrentPageId() === 'profile') {
+                        // If on profile page, it will re-render, otherwise it's just stored in memory
+                    }
+                } else if (event.data && typeof event.data === 'string') { // Simpler string based XSS
+                     app.ui.updateProfileStatusMessage(`Raw string message: ${event.data}`);
+                }
+            },
+
+            utilities: { // V14 Web Worker
+                getRecommendations() {
+                    if (!app.recoWorker) {
+                        alert("Recommendation engine not available.");
+                        document.getElementById('recommendationResults').innerHTML = "<span style='color:red'>Worker not loaded.</span>";
+                        return;
+                    }
+                    const userIdInput = document.getElementById('recoUserId').value;
+                    const userId = userIdInput ? parseInt(userIdInput) : (app.currentUser ? app.currentUser.id : 0);
+                    
+                    if (!userId) {
+                        alert("Please enter a User ID or login.");
+                        document.getElementById('recommendationResults').textContent = "Invalid User ID provided.";
+                        return;
+                    }
+                    console.warn("V14 Web Worker: Requesting recommendations for userId:", userId);
+                    document.getElementById('recommendationResults').textContent = `Fetching recommendations for User ID: ${userId}...`;
+                    app.recoWorker.postMessage({ userId: userId });
+                },
+                handleRecommendationResponse(event) {
+                    const resultsDiv = document.getElementById('recommendationResults');
+                    const data = event.data;
+                    console.log("V14 Web Worker: Received response:", data);
+                    let html = `<h4>Recommendations for User ID ${data.userIdRequested}:</h4>`;
+                    if (data.songs && data.songs.length > 0) {
+                        html += "<ul>";
+                        data.songs.forEach(song => {
+                            html += `<li>${song.title} by ${song.artist} (ID: ${song.id})</li>`;
+                        });
+                        html += "</ul>";
+                    } else {
+                        html += "<p>No specific recommendations found or error.</p>";
+                    }
+                    resultsDiv.innerHTML = html;
+                }
+            },
+
+            util: { getCookie(name) { /* V3 */ const nEQ=name+"=";const ca=document.cookie.split(';');for(let i=0;i<ca.length;i++){let c=ca[i];while(c.charAt(0)===' ')c=c.substring(1,c.length);if(c.indexOf(nEQ)===0)return c.substring(nEQ.length,c.length);}return null;}}
+        };
+
+        window.onload = () => app.init();
+        window.onpopstate = (e) => app.ui.router();
+        window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (document.getElementById('loginModal').style.display === 'block') app.ui.closeModal('loginModal'); if (document.getElementById('registerModal').style.display === 'block') app.ui.closeModal('registerModal');}});
+    </script>
+</body>
+</html>

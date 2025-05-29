@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpottyVibes AE - Advanced Tutorial</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.6; margin:0; padding:0; background-color: #f0f2f5; color: #333; }
+        .container { width: 85%; max-width: 960px; margin: 20px auto; padding: 25px; background-color: #fff; box-shadow: 0 2px 15px rgba(0,0,0,0.1); border-radius: 10px; }
+        header { background-color: #1DB954; color: #fff; padding: 1.2em; text-align: center; border-radius: 10px 10px 0 0; }
+        header h1 { margin: 0; font-size: 2.2em; }
+        .introduction { background-color: #e7f3fe; border-left: 6px solid #1e88e5; padding: 20px; margin-bottom: 25px; border-radius: 5px; }
+        .vulnerability-module { background-color: #fff; border: 1px solid #e0e0e0; padding: 25px; margin-bottom: 25px; border-radius: 8px; transition: box-shadow 0.3s; }
+        .vulnerability-module h3 { margin-top: 0; color: #1DB954; border-bottom: 2px solid #1DB954; padding-bottom: 8px; font-size: 1.6em; }
+        .vulnerability-module .difficulty { font-style: italic; color: #666; font-size: 0.9em; margin-bottom: 12px; }
+        .vulnerability-module .difficulty .level-easy {color: green;} .vulnerability-module .difficulty .level-medium {color: orange;} .vulnerability-module .difficulty .level-hard {color: red;} .vulnerability-module .difficulty .level-very-hard {color: darkred;}
+        .vulnerability-module strong { color: #222; } .vulnerability-module ol, .vulnerability-module ul { padding-left: 25px; } .vulnerability-module li { margin-bottom: 10px; }
+        .hint-section { margin-top: 15px; padding: 12px; background-color: #fffde7; border: 1px dashed #ffc107; border-radius: 5px; display: none; }
+        .hint-section p { margin: 0; }
+        .learning-point { margin-top: 18px; padding: 15px; background-color: #e8f5e9; border-left: 5px solid #4caf50; border-radius: 5px; }
+        .learning-point strong { color: #1b5e20; }
+        button.hint-button { background-color: #ffb300; color: #212121; border: none; padding: 9px 14px; border-radius: 5px; cursor: pointer; font-size: 0.9em; margin-top: 8px; transition: background-color 0.2s; }
+        button.hint-button:hover { background-color: #ffa000; }
+        .completion-status { margin-top: 18px; font-weight: bold; } .completion-status input[type="checkbox"] { margin-right: 10px; transform: scale(1.3); vertical-align: middle; }
+        .completed-module { border-left: 6px solid #4CAF50; background-color: #f1f8e9; } .completed-module h3 { color: #4CAF50; border-bottom-color: #4CAF50; }
+        .tools-needed { font-size: 0.95em; color: #444; margin-bottom: 15px; padding: 10px; background-color: #f5f5f5; border-radius: 5px; border: 1px solid #e0e0e0;}
+        .tools-needed strong { color: #000; }
+        code { background-color: #eeeeee; padding: 3px 6px; border-radius: 4px; font-family: 'Consolas', 'Courier New', monospace; color: #c2185b; }
+        pre code { display: block; padding: 10px; white-space: pre-wrap; word-break: break-all; }
+        .nav-buttons { text-align: center; margin-top: 25px; }
+        .nav-buttons button { background-color: #0277bd; color: white; padding: 12px 22px; border: none; border-radius: 5px; margin: 0 12px; cursor: pointer; font-size: 1em; transition: background-color 0.2s; }
+        .nav-buttons button:hover { background-color: #01579b; } .nav-buttons button:disabled { background-color: #9e9e9e; cursor: not-allowed; }
+        .current-module { box-shadow: 0 0 18px rgba(29, 185, 84, 0.6); border: 2px solid #1DB954; }
+        #completionMessage { text-align:center; padding:25px; background-color:#dcedc8; border-radius:8px; display:none; border: 1px solid #7cb342;}
+        #completionMessage h2 { color: #33691e; }
+        #completionMessage button { background-color: #d32f2f; color:white; margin-top:15px; }
+        #completionMessage button:hover { background-color: #c62828; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header><h1>SpottyVibes AE - Advanced Vulnerability Tutorial</h1></header>
+
+        <div class="introduction">
+            <p>Welcome! This tutorial guides you through <strong>15 vulnerabilities</strong> in <strong>SpottyVibes AE</strong> (Advanced Edition).</p>
+            <p><strong>Instructions:</strong>
+                <ol>
+                    <li>Have <code>SpottyVibesAE.html</code> open in another browser tab/window.</li>
+                    <li>Follow steps for each vulnerability. Use Developer Tools (F12) extensively.</li>
+                    <li>Mark vulnerabilities as "Completed". Progress saves automatically.</li>
+                </ol>
+            </p>
+            <p><strong>Disclaimer:</strong> Educational use only. Do not test on unauthorized sites.</p>
+        </div>
+
+        <div class="nav-buttons">
+            <button onclick="tutorial.prevModule()">Previous</button>
+            <span id="moduleCounter">Module 1 / 15</span>
+            <button onclick="tutorial.nextModule()">Next</button>
+        </div>
+
+        <div id="tutorial-modules">
+            <!-- V1-V10: Standard modules from before, updated for AE if needed, and difficulty rating -->
+            <div class="vulnerability-module" id="vuln-1" data-vuln-id="1">
+                <h3>V1: Hidden Admin Link</h3>
+                <p class="difficulty"><span class="level-easy">Difficulty: Easy</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> Dev Tools (Elements/Inspector)</div>
+                <p><strong>Objective:</strong> Find and reveal the hidden "Admin Panel" link.</p>
+                <ol>
+                    <li>In SpottyVibes AE, inspect the sidebar navigation HTML.</li>
+                    <li>Locate the list item with class <code>admin-nav-item</code>.</li>
+                    <li>Modify its CSS <code>display</code> property from <code>none</code> to <code>list-item</code> or <code>block</code>.</li>
+                    <li>Try clicking it. (Access is still checked, this only makes it visible).</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-1')">Hint</button><div class="hint-section" id="hint-1"><p>The element is an <code>&lt;li&gt;</code> with class <code>admin-nav-item</code>.</p></div>
+                <div class="learning-point"><strong>Learning:</strong> Hiding UI elements is not a security measure. Proper authorization is needed.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('1', this.checked)"> Completed</label></div>
+            </div>
+
+            <div class="vulnerability-module" id="vuln-2" data-vuln-id="2">
+                <h3>V2: LocalStorage Tampering - Theme</h3>
+                <p class="difficulty"><span class="level-easy">Difficulty: Easy</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> Dev Tools (Application/Storage > Local Storage)</div>
+                <p><strong>Objective:</strong> Change the site theme by editing LocalStorage.</p>
+                <ol>
+                    <li>Go to "My Profile" in SpottyVibes AE.</li>
+                    <li>In Dev Tools, find Local Storage and the key <code>spotty_theme_ae</code>.</li>
+                    <li>Change its value (e.g., to <code>light</code>, <code>dark</code>, <code>deepblue</code>). Refresh.</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-2')">Hint</button><div class="hint-section" id="hint-2"><p>Key: <code>spotty_theme_ae</code>. Values: "dark", "light", "deepblue".</p></div>
+                <div class="learning-point"><strong>Learning:</strong> LocalStorage is client-controlled. Don't trust it for critical settings.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('2', this.checked)"> Completed</label></div>
+            </div>
+
+            <div class="vulnerability-module" id="vuln-3" data-vuln-id="3">
+                <h3>V3: Cookie Tampering - Beta Feature</h3>
+                <p class="difficulty"><span class="level-medium">Difficulty: Medium</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> Dev Tools (Application/Storage > Cookies)</div>
+                <p><strong>Objective:</strong> Enable a beta feature by modifying a cookie.</p>
+                <ol>
+                    <li>In SpottyVibes AE, go to Home.</li>
+                    <li>In Dev Tools, find Cookies and the cookie <code>showBetaFeatures</code>.</li>
+                    <li>Change its value from <code>false</code> to <code>true</code>. Refresh the Home page.</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-3')">Hint</button><div class="hint-section" id="hint-3"><p>Cookie name: <code>showBetaFeatures</code>. New value: <code>true</code>.</p></div>
+                <div class="learning-point"><strong>Learning:</strong> Cookies are client-modifiable. Don't use them alone for access control.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('3', this.checked)"> Completed</label></div>
+            </div>
+
+            <div class="vulnerability-module" id="vuln-4" data-vuln-id="4">
+                <h3>V4: LocalStorage - Balance & Admin Status</h3>
+                <p class="difficulty"><span class="level-medium">Difficulty: Medium</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> Dev Tools (Application > Local Storage, Console)</div>
+                <p><strong>Objective:</strong> Modify your balance and admin status via LocalStorage.</p>
+                <ol>
+                    <li>Log in as <code>user1</code> / <code>pass1</code>. Note balance/admin status.</li>
+                    <li>In Local Storage, find <code>spotty_users_ae</code> (JSON string).</li>
+                    <li>Copy JSON. In Console: <code>let users = PASTE_JSON;</code>.</li>
+                    <li>Modify your user object in the <code>users</code> array (e.g., <code>users[0].balance = 5000; users[0].isAdmin = true;</code>).</li>
+                    <li>Get new JSON: <code>JSON.stringify(users)</code>. Copy it.</li>
+                    <li>Paste new JSON back into <code>spotty_users_ae</code> in Local Storage.</li>
+                    <li>Logout & login. Check profile and admin link.</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-4')">Hint</button><div class="hint-section" id="hint-4"><p>Ensure valid JSON. For <code>user1</code> (ID 1), use <code>users.find(u => u.id === 1)</code> to target.</p></div>
+                <div class="learning-point"><strong>Learning:</strong> Storing critical user data like balance or roles in client-editable storage is insecure.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('4', this.checked)"> Completed</label></div>
+            </div>
+
+            <div class="vulnerability-module" id="vuln-5" data-vuln-id="5">
+                <h3>V5: IDOR - View Other User Details</h3>
+                <p class="difficulty"><span class="level-hard">Difficulty: Hard</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> Browser URL Bar</div>
+                <p><strong>Objective:</strong> View other users' details by changing the <code>userId</code> in the URL hash.</p>
+                <ol>
+                    <li>Log in as <code>user1</code> or be logged out.</li>
+                    <li>In SpottyVibes AE, manually change URL to <code>SpottyVibesAE.html#userDetailsPage?userId=2</code> (for user2) or <code>userId=3</code> (for admin).</li>
+                    <li>You should see their details.</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-5')">Hint</button><div class="hint-section" id="hint-5"><p>The URL parameter is <code>userId</code> in the hash: <code>#userDetailsPage?userId=X</code>.</p></div>
+                <div class="learning-point"><strong>Learning:</strong> IDOR happens when object access isn't authorized. Always check permissions.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('5', this.checked)"> Completed</label></div>
+            </div>
+
+            <div class="vulnerability-module" id="vuln-6" data-vuln-id="6">
+                <h3>V6: Reflected XSS - Search</h3>
+                <p class="difficulty"><span class="level-hard">Difficulty: Hard</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> SpottyVibes AE Search Bar</div>
+                <p><strong>Objective:</strong> Execute JavaScript via the search bar.</p>
+                <ol>
+                    <li>Go to Home page in SpottyVibes AE.</li>
+                    <li>Search for: <code>&lt;img src=x onerror=alert('XSS_Search!')&gt;</code></li>
+                    <li>An alert box should appear.</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-6')">Hint</button><div class="hint-section" id="hint-6"><p>The <code>onerror</code> event of an invalid image is a common XSS vector.</p></div>
+                <div class="learning-point"><strong>Learning:</strong> User input reflected in HTML must be sanitized to prevent XSS.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('6', this.checked)"> Completed</label></div>
+            </div>
+
+            <div class="vulnerability-module" id="vuln-7" data-vuln-id="7">
+                <h3>V7: Stored XSS - Playlist Name</h3>
+                <p class="difficulty"><span class="level-hard">Difficulty: Hard</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> SpottyVibes AE Playlist Creation</div>
+                <p><strong>Objective:</strong> Create a playlist with a malicious name to execute stored JavaScript.</p>
+                <ol>
+                    <li>Log in. Go to "My Playlists".</li>
+                    <li>Create playlist with name: <code>Evil Playlist &lt;script&gt;alert('Stored_XSS_Playlist!')&lt;/script&gt;</code></li>
+                    <li>The script should execute when the playlist list is rendered.</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-7')">Hint</button><div class="hint-section" id="hint-7"><p>Full <code>&lt;script&gt;</code> tags are needed. The alert confirms execution.</p></div>
+                <div class="learning-point"><strong>Learning:</strong> Stored XSS is persistent. Data stored from users must be sanitized before display.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('7', this.checked)"> Completed</label></div>
+            </div>
+
+            <div class="vulnerability-module" id="vuln-8" data-vuln-id="8">
+                <h3>V8: Open Redirect - Login</h3>
+                <p class="difficulty"><span class="level-medium">Difficulty: Medium</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> Browser URL Bar</div>
+                <p><strong>Objective:</strong> Force a redirect to an external site after login via a URL parameter.</p>
+                <ol>
+                    <li>Log out of SpottyVibes AE.</li>
+                    <li>Open URL: <code>SpottyVibesAE.html?redirect_to=https://example.com</code></li>
+                    <li>Log in. You should be redirected to example.com.</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-8')">Hint</button><div class="hint-section" id="hint-8"><p>Parameter is <code>redirect_to</code> in the main URL query string (before <code>#</code>).</p></div>
+                <div class="learning-point"><strong>Learning:</strong> Unvalidated redirects can lead to phishing. Whitelist redirect targets.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('8', this.checked)"> Completed</label></div>
+            </div>
+
+            <div class="vulnerability-module" id="vuln-9" data-vuln-id="9">
+                <h3>V9: DOM-based XSS - Greeting</h3>
+                <p class="difficulty"><span class="level-hard">Difficulty: Hard</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> Browser URL Bar (Hash/Fragment)</div>
+                <p><strong>Objective:</strong> Inject script into the Home page greeting via the URL hash.</p>
+                <ol>
+                    <li>Go to Home page in SpottyVibes AE.</li>
+                    <li>Modify URL hash to: <code>#greet=&lt;img src=x onerror=alert('DOM_XSS_Greeting!')&gt;</code></li>
+                    <li>(e.g. <code>SpottyVibesAE.html#greet=&lt;img src=x onerror=alert('DOM_XSS_Greeting!')&gt;</code>)</li>
+                    <li>Press Enter. An alert should appear.</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-9')">Hint</button><div class="hint-section" id="hint-9"><p>The <code>greet=</code> parameter in the URL hash is read by client-side JS and inserted into the DOM unsafely.</p></div>
+                <div class="learning-point"><strong>Learning:</strong> DOM XSS occurs client-side. Data from URL fragments used to modify DOM must be sanitized.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('9', this.checked)"> Completed</label></div>
+            </div>
+
+            <div class="vulnerability-module" id="vuln-10" data-vuln-id="10">
+                <h3>V10: Sensitive Data Exposure - JS Comments</h3>
+                <p class="difficulty"><span class="level-medium">Difficulty: Medium</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> Dev Tools (View Source / Elements)</div>
+                <p><strong>Objective:</strong> Find hardcoded credentials in JavaScript comments.</p>
+                <ol>
+                    <li>In SpottyVibes AE, view the page source or inspect the main <code>&lt;script&gt;</code> tag.</li>
+                    <li>Look for comments revealing "emergency" credentials or test API keys.</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-10')">Hint</button><div class="hint-section" id="hint-10"><p>Search for "DEV_NOTE" or "API_KEY_TEST_ONLY" in the script block.</p></div>
+                <div class="learning-point"><strong>Learning:</strong> Never leave sensitive data in client-side code or comments.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('10', this.checked)"> Completed</label></div>
+            </div>
+
+            <!-- Advanced Vulnerabilities Start Here -->
+            <div class="vulnerability-module" id="vuln-11" data-vuln-id="11">
+                <h3>V11: Prototype Pollution to Logic Bypass</h3>
+                <p class="difficulty"><span class="level-hard">Difficulty: Hard</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> SpottyVibes AE Profile Page, Dev Tools (Console)</div>
+                <p><strong>Objective:</strong> Gain "Premium Feature" access by polluting <code>Object.prototype</code>.</p>
+                <ol>
+                    <li>Log in to SpottyVibes AE (e.g., as <code>user1</code>). Go to "My Profile".</li>
+                    <li>Note that the "Premium Feature" on the Home page is not visible.</li>
+                    <li>On the Profile page, find "Advanced Preferences". We'll use this form, but the actual pollution will be done via the console for clarity.</li>
+                    <li>Open Developer Tools Console. Type and execute the following JavaScript to simulate a malicious preference update that pollutes the prototype:
+                        <pre><code>
+let maliciousPrefs = JSON.parse('{"__proto__": {"isPremiumUser": true}}');
+app.settings._unsafeMerge({}, maliciousPrefs); // Call the vulnerable merge function
+                        </code></pre>
+                    </li>
+                    <li>After running the code, call <code>app.ui.checkPremiumFeature();</code> in the console, or navigate to the Home page in SpottyVibes AE.</li>
+                    <li>The "Premium Feature" (lossless audio) should now be visible, even though your actual user object doesn't have <code>isPremiumUser: true</code>.</li>
+                    <li>To verify, type <code>({}).isPremiumUser</code> in the console. It should return <code>true</code>.</li>
+                    <li><strong>To clean up after this exercise for other tests:</strong> <code>delete Object.prototype.isPremiumUser;</code> in the console, then refresh SpottyVibes.</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-11')">Hint</button><div class="hint-section" id="hint-11"><p>The key is the <code>_unsafeMerge</code> function in <code>app.settings</code>. By crafting an object with <code>__proto__</code> as a key, you can write to <code>Object.prototype</code>. The premium check (<code>testObj.isPremiumUser</code>) then picks this up.</p></div>
+                <div class="learning-point"><strong>Learning:</strong> Prototype pollution can have far-reaching consequences, altering object behaviors globally. Object merging and cloning functions must carefully handle keys like `__proto__`, `constructor`, and `prototype`.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('11', this.checked)"> Completed</label></div>
+            </div>
+
+            <div class="vulnerability-module" id="vuln-12" data-vuln-id="12">
+                <h3>V12: Insecure <code>postMessage</code> Handling (XSS)</h3>
+                <p class="difficulty"><span class="level-very-hard">Difficulty: Very Hard</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> Dev Tools (Console) or a separate HTML attacker page.</div>
+                <p><strong>Objective:</strong> Send a crafted <code>postMessage</code> from a different origin (simulated via console) to SpottyVibes AE to inject HTML/JavaScript into the profile status message.</p>
+                <ol>
+                    <li>Open SpottyVibes AE and log in. Navigate to the "My Profile" page.</li>
+                    <li>Open Developer Tools Console. Ensure the console's context is SpottyVibes AE's window.</li>
+                    <li>Execute the following JavaScript in the console to send a malicious message. This simulates a message from another window/iframe:
+                        <pre><code>
+// Target is SpottyVibes AE's window itself for this demo
+// In a real attack, this would come from an attacker's iframe/window
+window.postMessage({ 
+    type: 'UPDATE_STATUS', 
+    payload: 'Status Update! &lt;img src=x onerror=alert("XSS_via_postMessage")&gt;' 
+}, '*'); // '*' means any origin, for demo. Real attack might target specific origin.
+                        </code></pre>
+                    </li>
+                    <li>Observe the "Live Status" message on the Profile page. The HTML should be rendered, and an alert box should appear due to the XSS payload.</li>
+                    <li><strong>Alternative (using a string payload):</strong>
+                        <pre><code>
+window.postMessage("String payload &lt;b&gt;bold&lt;/b&gt; &lt;script&gt;alert('XSS from string postMessage');&lt;/script&gt;", '*');
+                        </code></pre>
+                    </li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-12')">Hint</button><div class="hint-section" id="hint-12"><p>The <code>app.handlePostMessage</code> function in SpottyVibes AE does not check <code>event.origin</code> and directly uses <code>event.data.payload</code> (or <code>event.data</code> if string) in <code>innerHTML</code>. The target for <code>postMessage</code> is <code>window</code> (the SpottyVibes AE window object itself). Using <code>'*'</code> for targetOrigin is bad practice in real code but simplifies the demo here.</p></div>
+                <div class="learning-point"><strong>Learning:</strong> When using <code>postMessage</code>, always validate <code>event.origin</code> to ensure messages come from trusted sources. Also, treat any data received via <code>postMessage</code> as untrusted and sanitize it before using it in the DOM or in sensitive operations.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('12', this.checked)"> Completed</label></div>
+            </div>
+
+            <div class="vulnerability-module" id="vuln-13" data-vuln-id="13">
+                <h3>V13: Client-Side CSRF on Playlist Delete</h3>
+                <p class="difficulty"><span class="level-medium">Difficulty: Medium</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> Browser URL Bar (or crafting a link)</div>
+                <p><strong>Objective:</strong> Delete a user's first playlist by tricking them into navigating to a specially crafted URL, without them intending to perform the delete action from the UI.</p>
+                <ol>
+                    <li>Log in to SpottyVibes AE and ensure you have at least one playlist. Note its name.</li>
+                    <li>Option A (Direct URL manipulation):
+                        <ul>
+                            <li>Navigate to any page in SpottyVibes AE (e.g., Home).</li>
+                            <li>Manually change the URL in the address bar to:
+                            <br><code>SpottyVibesAE.html#playlists?action=delete&playlistIndex=0</code></li>
+                            <li>Press Enter. Your first playlist should be deleted, and an alert should confirm.</li>
+                        </ul>
+                    </li>
+                    <li>Option B (Simulating a malicious link from another page):
+                        <ul>
+                            <li>Imagine an attacker convinces you to click a link (e.g., in an email or on another website). This link would point to the URL above.</li>
+                            <li>You can simulate this by creating a simple temporary HTML file (e.g., <code>attacker.html</code>) with this content:
+                            <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;&lt;body&gt;
+&lt;h1&gt;Click for a surprise!&lt;/h1&gt;
+&lt;a href="SpottyVibesAE.html#playlists?action=delete&playlistIndex=0" target="_blank"&gt;Click Me!&lt;/a&gt;
+&lt;/body&gt;&lt;/html&gt;</code></pre>
+                            </li>
+                            <li>Open <code>attacker.html</code> in your browser and click the "Click Me!" link (ensure SpottyVibesAE.html is in the same directory or update path).</li>
+                        </ul>
+                    </li>
+                    <li>Your first playlist should be deleted.</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-13')">Hint</button><div class="hint-section" id="hint-13"><p>The <code>app.ui.handleQuickDelete</code> function is triggered by the router when the URL hash matches <code>#playlists?action=delete&playlistIndex=...</code>. Since this is a GET-like request (just changing the hash) and the app uses client-side session (localStorage), no anti-CSRF token is checked.</p></div>
+                <div class="learning-point"><strong>Learning:</strong> Even in client-side applications, actions that change state (especially destructive ones) should not be triggerable by simple URL navigation alone. Use POST-like mechanisms (even if simulated client-side), require specific user interaction (like a confirmation dialog for the action itself), or implement client-side anti-CSRF tokens if dealing with sensitive operations based on client-side sessions.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('13', this.checked)"> Completed</label></div>
+            </div>
+
+            <div class="vulnerability-module" id="vuln-14" data-vuln-id="14">
+                <h3>V14: Web Worker Logic Flaw - Info Disclosure</h3>
+                <p class="difficulty"><span class="level-hard">Difficulty: Hard</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> SpottyVibes AE Utilities Page, Dev Tools (Console)</div>
+                <p><strong>Objective:</strong> Use the "Song Recommender" utility to get song recommendations intended for a different user by providing their User ID, exploiting a logic flaw in the Web Worker.</p>
+                <ol>
+                    <li>Log in to SpottyVibes AE (e.g., as <code>user1</code>, ID 1).</li>
+                    <li>Navigate to the "Utilities" page.</li>
+                    <li>In the "Song Recommender" section, enter a different User ID for whom you want to see "exclusive" recommendations. For example, enter <code>2</code> (for user2, who has some different songs in the worker's logic).</li>
+                    <li>Click "Get Recommendations".</li>
+                    <li>Observe the results. You should see song recommendations that might include songs specifically listed for User ID 2 in the Web Worker's internal (simplified) song list (e.g., "Secret Song A").</li>
+                    <li>Try with User ID <code>3</code> (admin) to see their list.</li>
+                    <li>You can also call this from the console for more direct interaction if needed: <code>app.recoWorker.postMessage({ userId: 2 });</code> (and observe console logs from the worker and `handleRecommendationResponse`).</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-14')">Hint</button><div class="hint-section" id="hint-14"><p>The Web Worker (<code>recoWorkerScript</code>) takes a <code>userId</code> in its <code>onmessage</code> handler. Its internal logic directly uses this provided <code>userId</code> to filter its song list, without verifying if the request legitimately came from that user or if the current application user is authorized to request data for that ID. The main thread also doesn't restrict which ID can be sent.</p></div>
+                <div class="learning-point"><strong>Learning:</strong> Web Workers operate in a separate thread but can still be subject to logic flaws. If a worker processes sensitive data or performs actions based on input from the main thread, that input must be validated. The worker itself should also have proper authorization logic if it accesses shared resources or user-specific data, rather than blindly trusting the parameters it receives.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('14', this.checked)"> Completed</label></div>
+            </div>
+
+            <div class="vulnerability-module" id="vuln-15" data-vuln-id="15">
+                <h3>V15: Unsafe Client-Side Template Injection</h3>
+                <p class="difficulty"><span class="level-hard">Difficulty: Hard</span></p>
+                <div class="tools-needed"><strong>Tools:</strong> SpottyVibes AE Profile Page (Custom Status)</div>
+                <p><strong>Objective:</strong> Inject HTML/JavaScript into your rendered custom status message by exploiting a simple, unsafe client-side templating mechanism.</p>
+                <ol>
+                    <li>Log in to SpottyVibes AE and navigate to "My Profile".</li>
+                    <li>Find the "Custom Public Status" section.</li>
+                    <li>In the textarea, enter a payload that attempts to inject HTML. For example:
+                        <br><code>My status is: &lt;b&gt;AWESOME&lt;/b&gt; and {{currentUser.username}} is great!</code>
+                    </li>
+                    <li>Click "Set Status". Observe the rendered status. The <code>&lt;b&gt;</code> tag should make "AWESOME" bold.</li>
+                    <li>Now try to inject a script. A simple template might not allow direct <code>&lt;script&gt;</code> tags if it's only doing basic replacement. However, event handlers on other tags often work. Try:
+                        <br><code>Status: {{currentUser.username}} &lt;img src=x onerror=alert('XSS_from_Status_Template!')&gt;</code>
+                    </li>
+                    <li>Click "Set Status". The rendered status should now execute the JavaScript, showing an alert.</li>
+                    <li>You could also try to break out of a hypothetical template syntax if it were more complex, e.g., <code>Valid text {{ attackerControlled }} more valid text</code> where <code>attackerControlled</code> could be something like <code>foo }}; alert('XSS'); // {{ bar</code>. (This app's template is too simple for this specific breakout, but the concept is similar).</li>
+                </ol>
+                <button class="hint-button" onclick="tutorial.toggleHint('hint-15')">Hint</button><div class="hint-section" id="hint-15"><p>The <code>app.render.customUserStatus</code> function uses a very basic string replacement (<code>replace(/\{\{currentUser\.username\}\}/gi, ...)</code>) and then sets <code>innerHTML</code>. Because it doesn't sanitize the *rest* of the user's status string before or after the replacement, any HTML in the original status string (like the <code>&lt;img onerror...&gt;</code>) gets rendered directly.</p></div>
+                <div class="learning-point"><strong>Learning:</strong> Client-side templating, even if very simple, can lead to XSS if user-supplied data is incorporated into the template output without proper contextual escaping or sanitization before being rendered into the DOM (especially via <code>innerHTML</code>). Always treat data used in templates as untrusted.</div>
+                <div class="completion-status"><label><input type="checkbox" onchange="tutorial.markCompleted('15', this.checked)"> Completed</label></div>
+            </div>
+
+        </div> <!-- End #tutorial-modules -->
+
+        <div class="nav-buttons" style="margin-bottom: 30px;">
+            <button onclick="tutorial.prevModule()">Previous</button>
+            <span id="moduleCounterBottom">Module 1 / 15</span>
+            <button onclick="tutorial.nextModule()">Next</button>
+        </div>
+        <div id="completionMessage">
+            <h2>Congratulations! You've explored all 15 vulnerabilities!</h2>
+            <p>This advanced tutorial aimed to deepen your understanding of client-side web security. Keep practicing and learning!</p>
+            <button onclick="tutorial.resetProgress()">Reset All Progress</button>
+        </div>
+    </div>
+
+    <script>
+        const tutorial = {
+            totalModules: 15, // Updated total
+            currentModule: 1,
+            completedVulns: {},
+
+            init() {
+                this.loadProgress();
+                document.querySelectorAll('.vulnerability-module').forEach(module => module.style.display = 'none');
+                this.showModule(this.currentModule);
+                this.updateNavButtons();
+                this.updateCompletionMessage();
+            },
+            toggleHint(hintId) {
+                const el = document.getElementById(hintId);
+                if (el) el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+            },
+            markCompleted(vulnId, isChecked) {
+                const modEl = document.getElementById(`vuln-${vulnId}`);
+                if (isChecked) { this.completedVulns[vulnId] = true; if(modEl) modEl.classList.add('completed-module'); }
+                else { delete this.completedVulns[vulnId]; if(modEl) modEl.classList.remove('completed-module'); }
+                this.saveProgress(); this.updateCompletionMessage();
+            },
+            saveProgress() { localStorage.setItem('spottyTutorialProgressAE', JSON.stringify({ completed: this.completedVulns, current: this.currentModule })); },
+            loadProgress() {
+                const saved = localStorage.getItem('spottyTutorialProgressAE');
+                if (saved) {
+                    const progress = JSON.parse(saved);
+                    this.completedVulns = progress.completed || {}; this.currentModule = progress.current || 1;
+                    for (const vulnId in this.completedVulns) {
+                        if (this.completedVulns[vulnId]) {
+                            const cb = document.querySelector(`#vuln-${vulnId} input[type="checkbox"]`); if (cb) cb.checked = true;
+                            const modEl = document.getElementById(`vuln-${vulnId}`); if(modEl) modEl.classList.add('completed-module');
+                        }
+                    }
+                }
+            },
+            resetProgress() {
+                if(confirm("Reset all tutorial progress?")) {
+                    localStorage.removeItem('spottyTutorialProgressAE'); this.completedVulns = {}; this.currentModule = 1;
+                    document.querySelectorAll('.vulnerability-module input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    document.querySelectorAll('.vulnerability-module').forEach(m => { m.classList.remove('completed-module'); m.style.display = 'none'; });
+                    this.showModule(1); this.updateCompletionMessage(); this.updateNavButtons();
+                }
+            },
+            showModule(num) {
+                document.querySelectorAll('.vulnerability-module').forEach(m => { m.style.display = 'none'; m.classList.remove('current-module'); });
+                const activeMod = document.getElementById(`vuln-${num}`);
+                if (activeMod) { activeMod.style.display = 'block'; activeMod.classList.add('current-module'); activeMod.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+                this.currentModule = num; this.updateModuleCounter(); this.saveProgress();
+            },
+            nextModule() { if (this.currentModule < this.totalModules) this.showModule(this.currentModule + 1); this.updateNavButtons(); },
+            prevModule() { if (this.currentModule > 1) this.showModule(this.currentModule - 1); this.updateNavButtons(); },
+            updateNavButtons(){
+                const prevBtns = document.querySelectorAll('button[onclick="tutorial.prevModule()"]');
+                const nextBtns = document.querySelectorAll('button[onclick="tutorial.nextModule()"]');
+                prevBtns.forEach(btn => btn.disabled = (this.currentModule === 1));
+                nextBtns.forEach(btn => btn.disabled = (this.currentModule === this.totalModules));
+            },
+            updateModuleCounter() {
+                document.getElementById('moduleCounter').textContent = `Module ${this.currentModule} / ${this.totalModules}`;
+                document.getElementById('moduleCounterBottom').textContent = `Module ${this.currentModule} / ${this.totalModules}`;
+            },
+            updateCompletionMessage() {
+                const count = Object.keys(this.completedVulns).length;
+                document.getElementById('completionMessage').style.display = (count === this.totalModules) ? 'block' : 'none';
+            }
+        };
+        window.onload = () => tutorial.init();
+    </script>
+</body>
+</html>

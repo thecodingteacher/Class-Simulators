@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HP Studios - Project: Overwatch (Robust Grid D&D)</title>
+    <style>
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #0a0a0a;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background-color: #1a1a1a;
+            border: 1px solid #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px #00ff0033;
+            width: 90%;
+            max-width: 900px;
+            margin-bottom: 20px;
+        }
+
+        h1, h2, h3 {
+            color: #00ccff;
+            text-shadow: 0 0 5px #00ccff;
+            border-bottom: 1px dashed #00ff00;
+            padding-bottom: 10px;
+        }
+        #level-title { border-bottom: none; }
+        .header-accent { color: #ff00ff; }
+        p, label { line-height: 1.6; }
+
+        button {
+            background-color: #00ff00;
+            color: #0a0a0a;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            border-radius: 4px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        button:hover { background-color: #00cc00; box-shadow: 0 0 10px #00ff00; }
+        button:disabled { background-color: #555; color: #999; cursor: not-allowed; }
+
+        .script-output {
+            background-color: #000;
+            border: 1px solid #003300;
+            padding: 10px;
+            margin-top: 10px;
+            height: 100px;
+            overflow-y: auto;
+            font-size: 0.9em;
+        }
+        .script-output .success { color: #00ff00; }
+        .script-output .error { color: #ff3333; }
+        .script-output .info { color: #ffff00; }
+
+        #successful-scripts-tray {
+            background-color: #0c0c0c;
+            border: 1px dashed #00aa00;
+            padding: 10px;
+            margin-top: 15px;
+            min-height: 60px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: flex-start;
+            border-radius: 4px;
+            transition: background-color 0.15s ease-in-out;
+        }
+        #successful-scripts-tray.drag-over {
+            background-color: #00ff0022;
+            border-color: #00ff00;
+            border-style: solid;
+        }
+
+        .draggable-script {
+            background-color: #006600;
+            color: #ddffdd;
+            padding: 8px 10px;
+            border: 1px solid #00cc00;
+            border-radius: 3px;
+            cursor: grab;
+            font-size: 0.85em;
+            text-align: center;
+            min-width: 80px;
+            box-sizing: border-box;
+            user-select: none;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .draggable-script:active { cursor: grabbing; }
+        .draggable-script.dragging {
+            opacity: 0.5;
+            border-style: dashed;
+            border-color: #ff00ff;
+            box-shadow: 0 0 10px #ff00ff55;
+        }
+
+        .risk-matrix-container { margin-top: 20px; display: flex; flex-direction: column; align-items: center; }
+        .risk-matrix { border-collapse: collapse; margin-top: 10px; }
+        .risk-matrix th, .risk-matrix td {
+            border: 1px solid #00ff00;
+            width: 80px;
+            height: 80px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 0.8em;
+            position: relative;
+            transition: all 0.15s ease-in-out;
+            box-sizing: border-box;
+        }
+        .risk-matrix th { background-color: #222; font-weight: normal; cursor: default; }
+        .risk-matrix td.matrix-cell { 
+            background-color: #111; 
+            cursor: pointer;
+        }
+        .risk-matrix td.matrix-cell.drag-over {
+            background-color: #00ff0055 !important;
+            border: 2px solid #00ff00 !important;
+            box-shadow: inset 0 0 10px #00ff0033;
+        }
+        .risk-matrix td.matrix-cell.plotted {
+            background-color: #007700;
+            color: #ccffcc;
+            font-weight: bold;
+            font-size: 0.85em;
+            padding: 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-word;
+            cursor: grab;
+        }
+        .risk-matrix td.matrix-cell.plotted:hover {
+            background-color: #009900;
+        }
+
+        .axis-label { writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; padding-right: 10px; }
+        .impact-labels th { font-size: 0.7em; padding: 5px; }
+
+        .message { padding: 15px; margin-top: 20px; border-radius: 5px; font-weight: bold; }
+        .message.success { background-color: #00ff0033; border: 1px solid #00ff00; color: #00ff00; }
+        .message.error { background-color: #ff000033; border: 1px solid #ff0000; color: #ff3333; }
+        .message.info { background-color: #ffff0033; border: 1px solid #ffff00; color: #cccc00; }
+        .script-info { font-size: 0.9em; color: #aaa; margin-bottom: 10px; }
+        #next-level-button { background-color: #00ccff; color: #0a0a0a; }
+        #next-level-button:hover { background-color: #00aaff; box-shadow: 0 0 10px #00ccff; }
+
+        /* Ensure draggable scripts in matrix cells are also draggable */
+        .plotted-script {
+            cursor: grab;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="level-info-container">
+        <h1 id="level-title"></h1>
+        <p id="level-intro"></p>
+    </div>
+
+    <div class="container">
+        <h2>Phase 1: Attack Simulation</h2>
+        <p>Run the following scripts. Monitor their output closely. Successful scripts will appear in the 'Successful Attacks Tray' below for risk plotting.</p>
+        <div id="scripts-container"></div>
+        <div id="script-output-log" class="script-output">
+            [SYSTEM_LOG] Awaiting command...<br>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Phase 2: Success Triage & Risk Plotting</h2>
+        <p>Drag successful attacks from the tray below and drop them onto the 5x5 risk matrix to plot their perceived Likelihood and Impact.</p>
+        
+        <label for="successful-scripts-tray">Successful Attacks Tray (Drag from here, or drop here to un-plot):</label>
+        <div id="successful-scripts-tray">
+            <!-- Draggable successful scripts will appear here -->
+        </div>
+
+        <div class="risk-matrix-container">
+            <table class="risk-matrix">
+                <tr>
+                    <td rowspan="6" class="axis-label">Likelihood</td>
+                    <td></td><th colspan="5">Impact</th>
+                </tr>
+                <tr class="impact-labels">
+                     <td></td>
+                    <th>Very Low (1)</th><th>Low (2)</th><th>Medium (3)</th><th>High (4)</th><th>Very High (5)</th>
+                </tr>
+                <tr><th>Very High (5)</th><td class="matrix-cell" data-likelihood="5" data-impact="1"></td><td class="matrix-cell" data-likelihood="5" data-impact="2"></td><td class="matrix-cell" data-likelihood="5" data-impact="3"></td><td class="matrix-cell" data-likelihood="5" data-impact="4"></td><td class="matrix-cell" data-likelihood="5" data-impact="5"></td></tr>
+                <tr><th>High (4)</th><td class="matrix-cell" data-likelihood="4" data-impact="1"></td><td class="matrix-cell" data-likelihood="4" data-impact="2"></td><td class="matrix-cell" data-likelihood="4" data-impact="3"></td><td class="matrix-cell" data-likelihood="4" data-impact="4"></td><td class="matrix-cell" data-likelihood="4" data-impact="5"></td></tr>
+                <tr><th>Medium (3)</th><td class="matrix-cell" data-likelihood="3" data-impact="1"></td><td class="matrix-cell" data-likelihood="3" data-impact="2"></td><td class="matrix-cell" data-likelihood="3" data-impact="3"></td><td class="matrix-cell" data-likelihood="3" data-impact="4"></td><td class="matrix-cell" data-likelihood="3" data-impact="5"></td></tr>
+                <tr><th>Low (2)</th><td class="matrix-cell" data-likelihood="2" data-impact="1"></td><td class="matrix-cell" data-likelihood="2" data-impact="2"></td><td class="matrix-cell" data-likelihood="2" data-impact="3"></td><td class="matrix-cell" data-likelihood="2" data-impact="4"></td><td class="matrix-cell" data-likelihood="2" data-impact="5"></td></tr>
+                <tr><th>Very Low (1)</th><td class="matrix-cell" data-likelihood="1" data-impact="1"></td><td class="matrix-cell" data-likelihood="1" data-impact="2"></td><td class="matrix-cell" data-likelihood="1" data-impact="3"></td><td class="matrix-cell" data-likelihood="1" data-impact="4"></td><td class="matrix-cell" data-likelihood="1" data-impact="5"></td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Phase 3: Assessment Validation</h2>
+        <p>Once you've plotted all successful attacks, submit your risk matrix for validation.</p>
+        <button id="test-matrix-button">Validate Risk Assessment</button>
+        <button id="next-level-button" style="display:none;">Proceed to Next Level</button>
+        <div id="result-message" class="message" style="display:none;"></div>
+    </div>
+
+    <script>
+        // Game data
+        const allLevelsData = [
+            { 
+                levelNum: 1,
+                title: "<span class='header-accent'>HP Studios //</span> Project: Overwatch <span class='header-accent'>// Level 1: FSOCIETY_CLEANUP</span>",
+                intro: "Greetings, operative. This is <span class='header-accent'>\"The Wolf\"</span>. Drag successful attacks to the matrix to assess their risk.",
+                scripts: [
+                    { id: 'l1_phishing_v1', name: 'phishing_campaign_alpha.py', shortName: 'Phish_A', description: 'Simulates a targeted spear-phishing email campaign.', correctLikelihood: 4, correctImpact: 3, successRate: 0.7 },
+                    { id: 'l1_malware_injector', name: 'zero_day_exploit_kit.sh', shortName: 'ZeroDay', description: 'Attempts to inject polymorphic malware via unpatched vulnerability.', correctLikelihood: 3, correctImpact: 5, successRate: 0.4 },
+                    { id: 'l1_ddos_bot', name: 'distributed_denial.js', shortName: 'DDoS', description: 'Launches a DDoS attack against key infrastructure.', correctLikelihood: 3, correctImpact: 4, successRate: 0.6 },
+                    { id: 'l1_insider_data_exfil', name: 'internal_recon_exfiltrate.pl', shortName: 'Insider', description: 'Simulates an insider threat exfiltrating sensitive data.', correctLikelihood: 1, correctImpact: 5, successRate: 0.2 },
+                    { id: 'l1_cred_harvester', name: 'login_bruteforce_daemon.rb', shortName: 'BruteForce', description: 'Attempts to harvest credentials using common password lists.', correctLikelihood: 4, correctImpact: 4, successRate: 0.5 },
+                    { id: 'l1_vulnerability_scan', name: 'passive_network_probe.py', shortName: 'ScanNet', description: 'Scans for open ports and known vulnerabilities (information gathering).', correctLikelihood: 5, correctImpact: 2, successRate: 0.9 }
+                ],
+                successfulScripts: {}, 
+                userPlacements: {}    
+            },
+            {
+                levelNum: 2,
+                title: "<span class='header-accent'>HP Studios //</span> Project: Overwatch <span class='header-accent'>// Level 2: SILENT_ECHO</span>",
+                intro: "<span class='header-accent'>\"The Wolf\"</span> again. 'SILENT_ECHO' is on our radar. Assess their advanced TTPs.",
+                scripts: [
+                    { id: 'l2_rootkit_implant', name: 'kernel_stealth_loader.bin', shortName: 'Rootkit', description: 'Attempts to implant a persistent rootkit at the kernel level.', correctLikelihood: 2, correctImpact: 5, successRate: 0.3 },
+                    { id: 'l2_supply_chain_compromise', name: 'vendor_update_trojan.pkg', shortName: 'SupplyChain', description: 'Simulates a supply chain attack via a compromised software update.', correctLikelihood: 1, correctImpact: 5, successRate: 0.15 },
+                    { id: 'l2_ai_phishing', name: 'adaptive_spearphish_engine.ai', shortName: 'AI_Phish', description: 'Uses AI to generate highly convincing, personalized phishing emails.', correctLikelihood: 4, correctImpact: 4, successRate: 0.8 },
+                    { id: 'l2_dns_tunneling', name: 'covert_exfil_dns.py', shortName: 'DNS_Exfil', description: 'Exfiltrates data via DNS queries to avoid detection.', correctLikelihood: 3, correctImpact: 3, successRate: 0.5 },
+                    { id: 'l2_cloud_misconfig', name: 'cloud_storage_exploit.sh', shortName: 'CloudLeak', description: 'Exploits common cloud storage misconfigurations for data access.', correctLikelihood: 4, correctImpact: 4, successRate: 0.65 },
+                    { id: 'l2_lateral_movement', name: 'domain_admin_pwn.ps1', shortName: 'LateralMove', description: 'Attempts lateral movement and domain admin credential theft.', correctLikelihood: 2, correctImpact: 5, successRate: 0.25 }
+                ],
+                successfulScripts: {},
+                userPlacements: {}
+            }
+        ];
+        
+        let currentLevelIndex = 0;
+        let draggedScriptId = null;
+        let draggedFromCell = false;
+
+        // DOM elements
+        const levelTitleEl = document.getElementById('level-title');
+        const levelIntroEl = document.getElementById('level-intro');
+        const scriptOutputLog = document.getElementById('script-output-log');
+        const scriptsContainer = document.getElementById('scripts-container');
+        const successfulScriptsTray = document.getElementById('successful-scripts-tray');
+        const riskMatrixCells = document.querySelectorAll('.matrix-cell');
+        const testMatrixButton = document.getElementById('test-matrix-button');
+        const nextLevelButton = document.getElementById('next-level-button');
+        const resultMessage = document.getElementById('result-message');
+
+        // Helper functions
+        function getCurrentLevelData() { 
+            return allLevelsData[currentLevelIndex]; 
+        }
+        
+        function getScriptDataById(scriptId) {
+            const level = getCurrentLevelData();
+            return level.scripts.find(s => s.id === scriptId);
+        }
+        
+        function logToScreen(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            entry.className = type;
+            scriptOutputLog.appendChild(entry);
+            scriptOutputLog.scrollTop = scriptOutputLog.scrollHeight;
+        }
+
+        function runScript(script) {
+            logToScreen(`Executing ${script.name}...`);
+            const button = document.getElementById(`btn-${script.id}`);
+            if (button) button.disabled = true;
+
+            setTimeout(() => {
+                const success = Math.random() < script.successRate;
+                const currentLevel = getCurrentLevelData();
+                if (success) {
+                    logToScreen(`${script.name} execution: SUCCESSFUL. Available for plotting.`, 'success');
+                    currentLevel.successfulScripts[script.id] = true;
+                    renderUI(); 
+                } else {
+                    logToScreen(`${script.name} execution: FAILED. Defenses held.`, 'error');
+                }
+            }, 1000 + Math.random() * 1500);
+        }
+        
+        function initializeScriptsForCurrentLevel() {
+            scriptsContainer.innerHTML = ''; 
+            const currentLevel = getCurrentLevelData();
+            currentLevel.scripts.forEach(script => {
+                const scriptDiv = document.createElement('div');
+                scriptDiv.style.marginBottom = '15px';
+                
+                const nameHeader = document.createElement('h3');
+                nameHeader.textContent = script.name;
+                nameHeader.style.fontSize = '1.1em'; 
+                nameHeader.style.marginBottom = '5px'; 
+                nameHeader.style.borderBottom = 'none';
+                
+                const descriptionP = document.createElement('p');
+                descriptionP.classList.add('script-info');
+                descriptionP.textContent = script.description;
+                
+                const runBtn = document.createElement('button');
+                runBtn.id = `btn-${script.id}`;
+                runBtn.textContent = `Run ${script.name}`;
+                runBtn.onclick = () => runScript(script);
+                
+                scriptDiv.appendChild(nameHeader);
+                scriptDiv.appendChild(descriptionP);
+                scriptDiv.appendChild(runBtn);
+                scriptsContainer.appendChild(scriptDiv);
+            });
+        }
+
+        function createDraggableScript(script) {
+            const div = document.createElement('div');
+            div.className = 'draggable-script';
+            div.draggable = true;
+            div.textContent = script.shortName || script.name;
+            div.dataset.scriptId = script.id;
+            
+            // Add drag event listeners
+            div.addEventListener('dragstart', handleDragStart);
+            div.addEventListener('dragend', handleDragEnd);
+            
+            return div;
+        }
+
+        function renderUI() {
+            const currentLevel = getCurrentLevelData();
+
+            // Render Successful Scripts Tray
+            successfulScriptsTray.innerHTML = ''; 
+            currentLevel.scripts.forEach(script => {
+                if (currentLevel.successfulScripts[script.id] && !currentLevel.userPlacements[script.id]) {
+                    successfulScriptsTray.appendChild(createDraggableScript(script));
+                }
+            });
+
+            // Render Risk Matrix Cells
+            riskMatrixCells.forEach(cell => {
+                cell.innerHTML = ''; 
+                cell.classList.remove('plotted');
+                
+                const cellL = parseInt(cell.dataset.likelihood);
+                const cellI = parseInt(cell.dataset.impact);
+                
+                // Check if any script is placed in this cell
+                for (const scriptId in currentLevel.userPlacements) {
+                    const placement = currentLevel.userPlacements[scriptId];
+                    if (placement.likelihood === cellL && placement.impact === cellI) {
+                        const scriptData = getScriptDataById(scriptId);
+                        cell.classList.add('plotted');
+                        
+                        // Create draggable element for the plotted script
+                        const scriptDiv = document.createElement('div');
+                        scriptDiv.className = 'plotted-script';
+                        scriptDiv.draggable = true;
+                        scriptDiv.textContent = scriptData.shortName || scriptData.name;
+                        scriptDiv.dataset.scriptId = scriptId;
+                        
+                        // Add drag event listeners
+                        scriptDiv.addEventListener('dragstart', handleDragStart);
+                        scriptDiv.addEventListener('dragend', handleDragEnd);
+                        
+                        cell.appendChild(scriptDiv);
+                        break;
+                    }
+                }
+            });
+        }
+
+        // Drag and Drop Event Handlers
+        function handleDragStart(e) {
+            draggedScriptId = e.target.dataset.scriptId;
+            draggedFromCell = e.target.classList.contains('plotted-script');
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedScriptId);
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            
+            // Clear all drag-over states
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+            
+            draggedScriptId = null;
+            draggedFromCell = false;
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            if (e.target.classList.contains('matrix-cell') || e.target.id === 'successful-scripts-tray') {
+                e.target.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            if (e.target.classList.contains('matrix-cell') || e.target.id === 'successful-scripts-tray') {
+                e.target.classList.remove('drag-over');
+            }
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            e.preventDefault();
+            
+            const targetElement = e.target.closest('.matrix-cell') || (e.target.id === 'successful-scripts-tray' ? e.target : e.target.closest('#successful-scripts-tray'));
+            
+            if (!targetElement || !draggedScriptId) return;
+            
+            targetElement.classList.remove('drag-over');
+            
+            if (targetElement.classList.contains('matrix-cell')) {
+                handleDropOnCell(targetElement);
+            } else if (targetElement.id === 'successful-scripts-tray') {
+                handleDropOnTray();
+            }
+            
+            return false;
+        }
+
+        function handleDropOnCell(cellElement) {
+            const targetLikelihood = parseInt(cellElement.dataset.likelihood);
+            const targetImpact = parseInt(cellElement.dataset.impact);
+            const currentLevel = getCurrentLevelData();
+            const scriptData = getScriptDataById(draggedScriptId);
+            
+            // Check if cell is already occupied by a different script
+            let existingScriptInCell = null;
+            for (const scriptId in currentLevel.userPlacements) {
+                const placement = currentLevel.userPlacements[scriptId];
+                if (placement.likelihood === targetLikelihood && placement.impact === targetImpact) {
+                    existingScriptInCell = scriptId;
+                    break;
+                }
+            }
+            
+            // If cell is occupied by a different script, remove it
+            if (existingScriptInCell && existingScriptInCell !== draggedScriptId) {
+                delete currentLevel.userPlacements[existingScriptInCell];
+                logToScreen(`${getScriptDataById(existingScriptInCell).name} removed from matrix.`, 'info');
+            }
+            
+            // Place the dragged script
+            currentLevel.userPlacements[draggedScriptId] = {
+                likelihood: targetLikelihood,
+                impact: targetImpact
+            };
+            
+            logToScreen(`${scriptData.name} plotted at L:${targetLikelihood}, I:${targetImpact}.`, 'info');
+            renderUI();
+        }
+
+        function handleDropOnTray() {
+            const currentLevel = getCurrentLevelData();
+            const scriptData = getScriptDataById(draggedScriptId);
+            
+            if (currentLevel.userPlacements[draggedScriptId]) {
+                delete currentLevel.userPlacements[draggedScriptId];
+                logToScreen(`${scriptData.name} returned to tray.`, 'info');
+                renderUI();
+            }
+        }
+
+        // Add event listeners to matrix cells
+        riskMatrixCells.forEach(cell => {
+            cell.addEventListener('dragover', handleDragOver);
+            cell.addEventListener('dragenter', handleDragEnter);
+            cell.addEventListener('dragleave', handleDragLeave);
+            cell.addEventListener('drop', handleDrop);
+        });
+
+        // Add event listeners to tray
+        successfulScriptsTray.addEventListener('dragover', handleDragOver);
+        successfulScriptsTray.addEventListener('dragenter', handleDragEnter);
+        successfulScriptsTray.addEventListener('dragleave', handleDragLeave);
+        successfulScriptsTray.addEventListener('drop', handleDrop);
+
+        // Validation function
+        testMatrixButton.onclick = () => {
+            const currentLevel = getCurrentLevelData();
+            let correctlyAssessedCount = 0;
+            let totalPlottedAndSuccessful = 0;
+            let misjudgedScriptsDetails = [];
+            const successfulScriptIds = Object.keys(currentLevel.successfulScripts);
+
+            if (successfulScriptIds.length === 0) {
+                resultMessage.innerHTML = "No scripts were successful, or you haven't run any. Nothing to assess.";
+                resultMessage.className = 'message info';
+                resultMessage.style.display = 'block';
+                return;
+            }
+            
+            let allSuccessfulArePlotted = true;
+            let unplottedSuccessful = [];
+            for (const scriptId of successfulScriptIds) {
+                if (!currentLevel.userPlacements[scriptId]) {
+                    allSuccessfulArePlotted = false;
+                    unplottedSuccessful.push(getScriptDataById(scriptId).name);
+                }
+            }
+            
+            if (!allSuccessfulArePlotted) {
+                resultMessage.innerHTML = `INCOMPLETE ASSESSMENT: You didn't plot all successful attacks. <br>Missing: ${unplottedSuccessful.join(', ')}. <br>Drag all successful scripts to the matrix.`;
+                resultMessage.className = 'message error';
+                resultMessage.style.display = 'block';
+                return;
+            }
+            
+            for (const scriptId in currentLevel.userPlacements) {
+                if (currentLevel.successfulScripts[scriptId]) {
+                    totalPlottedAndSuccessful++;
+                    const scriptData = getScriptDataById(scriptId);
+                    const userL = currentLevel.userPlacements[scriptId].likelihood;
+                    const userI = currentLevel.userPlacements[scriptId].impact;
+                    const lDiff = Math.abs(userL - scriptData.correctLikelihood);
+                    const iDiff = Math.abs(userI - scriptData.correctImpact);
+                    
+                    if (lDiff <= 1 && iDiff <= 1) {
+                        correctlyAssessedCount++;
+                    } else {
+                        misjudgedScriptsDetails.push(`${scriptData.name} (Your L:${userL}/I:${userI} vs Actual L:${scriptData.correctLikelihood}/I:${scriptData.correctImpact})`);
+                    }
+                }
+            }
+            
+            resultMessage.style.display = 'block';
+            if (totalPlottedAndSuccessful === 0 && successfulScriptIds.length > 0) {
+                resultMessage.innerHTML = "You ran scripts that succeeded but didn't plot any. Analysis required!";
+                resultMessage.className = 'message error';
+            } else if (correctlyAssessedCount === totalPlottedAndSuccessful && totalPlottedAndSuccessful > 0) {
+                let successMsg = `SYSTEM REPORT (LEVEL ${currentLevel.levelNum}): EXCELLENT RISK ASSESSMENT.`;
+                if (currentLevelIndex < allLevelsData.length - 1) {
+                    successMsg += ` Threat neutralized. Prepare for the next phase.`;
+                    nextLevelButton.style.display = 'inline-block';
+                    testMatrixButton.disabled = true;
+                } else {
+                    successMsg += ` All threats neutralized. Mission Accomplished!`;
+                    testMatrixButton.disabled = true;
+                }
+                resultMessage.innerHTML = successMsg;
+                resultMessage.className = 'message success';
+            } else {
+                let finalMessage = `SYSTEM ALERT (LEVEL ${currentLevel.levelNum}): Your risk matrix was used... HACKED! <br>`;
+                finalMessage += `Correctly assessed ${correctlyAssessedCount} of ${totalPlottedAndSuccessful}. <br>`;
+                if (misjudgedScriptsDetails.length > 0) {
+                    finalMessage += `Misjudgements: <ul><li>${misjudgedScriptsDetails.join('</li><li>')}</li></ul>`;
+                }
+                finalMessage += `Re-evaluate your threat model.`;
+                resultMessage.innerHTML = finalMessage;
+                resultMessage.className = 'message error';
+            }
+        };
+
+        nextLevelButton.onclick = () => {
+            if (currentLevelIndex < allLevelsData.length - 1) {
+                currentLevelIndex++;
+                loadLevel(currentLevelIndex);
+                nextLevelButton.style.display = 'none';
+                testMatrixButton.disabled = false;
+            }
+        };
+
+        function loadLevel(levelIdx) {
+            currentLevelIndex = levelIdx;
+            const levelData = getCurrentLevelData();
+            levelTitleEl.innerHTML = levelData.title;
+            levelIntroEl.innerHTML = levelData.intro;
+            levelData.successfulScripts = {};
+            levelData.userPlacements = {};
+            scriptOutputLog.innerHTML = `[SYSTEM_LOG] Initializing Level ${levelData.levelNum}...<br>`;
+            
+            initializeScriptsForCurrentLevel();
+            renderUI();
+            
+            resultMessage.style.display = 'none';
+            resultMessage.textContent = '';
+            testMatrixButton.disabled = false;
+            nextLevelButton.style.display = 'none';
+            logToScreen(`Level ${levelData.levelNum} loaded. Awaiting input.`);
+        }
+
+        // Initialize First Level
+        loadLevel(0);
+    </script>
+</body>
+</html>

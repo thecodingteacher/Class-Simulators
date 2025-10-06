@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sora 2 API Frontend (Browser‑Only)</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a36;
+      --accent: #7aa2ff;
+      --accent-2: #9ef0ff;
+      --text: #e7ecff;
+      --muted: #aab3d6;
+      --danger: #ff6b6b;
+      --ok: #51d08b;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text); background: radial-gradient(1200px 800px at 20% -10%, #182451 0%, var(--bg) 60%);
+    }
+    .wrap { max-width: 1100px; margin: 36px auto; padding: 0 16px 64px; }
+    h1 { font-size: 28px; letter-spacing: .3px; margin: 0 0 10px; }
+    .sub { color: var(--muted); margin-bottom: 22px; }
+    .grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
+    @media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
+
+    .card { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00)); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 16px; backdrop-filter: blur(6px); }
+    .card h2 { margin: 0 0 12px; font-size: 18px; letter-spacing: .2px; }
+    .row { display: grid; grid-template-columns: 180px 1fr; gap: 12px; align-items: center; margin: 10px 0; }
+    .row .label { color: var(--muted); font-size: 14px; }
+
+    input[type="text"], input[type="password"], input[type="number"], textarea, select { width: 100%; box-sizing: border-box; background: #0f1733; color: var(--text); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 12px; outline: none; }
+    textarea { min-height: 92px; resize: vertical; }
+
+    .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+    .btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+    button { background: linear-gradient(180deg, var(--accent), #4a71ff); border: none; color: #fff; padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; letter-spacing: .3px; }
+    button.secondary { background: #1a244b; color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+    button.ghost { background: transparent; border: 1px dashed rgba(255,255,255,0.25); color: var(--text); }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+
+    .rangewrap { display: grid; grid-template-columns: 1fr 62px; gap: 8px; align-items: center; }
+    input[type="range"] { width: 100%; }
+
+    .toggle { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
+
+    .log { background: #0c132a; border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; white-space: pre-wrap; color: #d8e0ff; max-height: 320px; overflow: auto; }
+
+    .video { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); }
+
+    .badge { display:inline-flex; align-items:center; gap:6px; padding: 6px 10px; border-radius: 999px; font-size: 12px; border:1px solid rgba(255,255,255,.18); background: rgba(122,162,255,.1); color: var(--accent-2); }
+    .inline { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+    .danger { color: var(--danger); }
+    .ok { color: var(--ok); }
+
+    .foot { margin-top: 18px; color: var(--muted); font-size: 12px; }
+    .kbd { padding: 1px 6px; border: 1px solid rgba(255,255,255,.2); border-bottom-width: 2px; border-radius: 6px; font-family: ui-monospace, monospace; background: #0f1733; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="inline">
+      <h1>Sora 2 API Frontend</h1>
+      <span class="badge" title="Single‑file, browser‑only playground">No server • Demo UI</span>
+    </div>
+    <div class="sub">Paste your API key, write a prompt, choose a duration (default <b>5s</b>, up to <b>30s</b>), and generate. This is a thin client—you can also copy a ready‑to‑run <code class="kbd">curl</code> from the Advanced panel.</div>
+
+    <div class="grid">
+      <!-- LEFT: Controls -->
+      <div class="card">
+        <h2>Request</h2>
+
+        <div class="row">
+          <div class="label">API Base URL</div>
+          <input id="apiBase" type="text" placeholder="https://api.openai.com/v1" value="https://api.openai.com/v1" />
+        </div>
+
+        <div class="row">
+          <div class="label">Endpoint path</div>
+          <input id="endpointPath" type="text" placeholder="/video/generations" value="/video/generations" />
+        </div>
+
+        <div class="row">
+          <div class="label">API Key</div>
+          <div style="display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center;">
+            <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" />
+            <button id="showKey" class="secondary" title="Show / Hide key" type="button">Show</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="label">Model</div>
+          <input id="model" type="text" value="sora-2" />
+        </div>
+
+        <div class="row">
+          <div class="label">Prompt</div>
+          <textarea id="prompt" placeholder="e.g., a curious red fox dashing through a snow‑dusted forest at sunrise, cinematic lighting"></textarea>
+        </div>
+
+        <div class="row">
+          <div class="label">Duration</div>
+          <div class="rangewrap">
+            <input id="durationRange" type="range" min="1" max="30" value="5" />
+            <input id="durationNumber" type="number" min="1" max="30" value="5" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="label">Duration key</div>
+          <select id="durationKey">
+            <option value="duration" selected>duration</option>
+            <option value="duration_seconds">duration_seconds</option>
+            <option value="max_duration">max_duration</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <div class="label">Extras (optional)</div>
+          <input id="extras" type="text" placeholder='JSON fragment, e.g. {"aspect_ratio":"16:9"}' />
+        </div>
+
+        <div class="btns">
+          <button id="generate">Generate</button>
+          <button id="cancel" class="ghost" disabled>Cancel</button>
+          <button id="showAdvanced" class="secondary" type="button">Advanced</button>
+        </div>
+
+        <div class="hint">
+          ⚠️ <span class="danger">Security note:</span> Using API keys directly in the browser is risky (view‑source and extensions can read them). Prefer a small proxy server in production.
+          <br/>If you hit a CORS error, open <b>Advanced → Copy curl</b> and run from your terminal instead.
+        </div>
+      </div>
+
+      <!-- RIGHT: Output -->
+      <div class="card">
+        <h2>Output</h2>
+        <video id="player" class="video" controls playsinline></video>
+        <div id="json" class="log" style="margin-top:12px;">{ /* Response will appear here */ }</div>
+        <div id="status" class="hint" style="margin-top:8px;"></div>
+        <div class="btns"><button id="download" class="secondary" disabled>Download video</button></div>
+      </div>
+    </div>
+
+    <!-- Advanced Panel -->
+    <div id="advanced" class="card" style="margin-top:18px; display:none;">
+      <h2>Advanced</h2>
+      <div class="row">
+        <div class="label">HTTP Method</div>
+        <select id="httpMethod">
+          <option value="POST" selected>POST</option>
+          <option value="GET">GET</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <div class="label">Custom Headers (JSON)</div>
+        <input id="headersJson" type="text" placeholder='{"OpenAI-Beta":"video/*"}' />
+      </div>
+
+      <div class="row">
+        <div class="label">Raw Payload (read‑only)</div>
+        <textarea id="payloadPreview" readonly></textarea>
+      </div>
+
+      <div class="btns">
+        <button id="copyCurl" class="secondary" type="button">Copy curl</button>
+        <button id="saveLocal" class="ghost" type="button">Save settings (no key)</button>
+        <label class="toggle"><input id="rememberKey" type="checkbox" /> Remember API key for this tab (sessionStorage)</label>
+      </div>
+      <div class="foot">This panel is here because different providers sometimes use slightly different JSON field names. If the official Sora 2 API uses a specific key (e.g. <code>duration_seconds</code>), select it above or add extras.</div>
+    </div>
+
+    <div class="foot">Tip: Press <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> (or <span class="kbd">Cmd</span>+<span class="kbd">Enter</span>) to submit.</div>
+  </div>
+
+  <script>
+    const el = id => document.getElementById(id);
+
+    const apiBase = el('apiBase');
+    const endpointPath = el('endpointPath');
+    const apiKey = el('apiKey');
+    const showKey = el('showKey');
+    const model = el('model');
+    const promptEl = el('prompt');
+    const durationRange = el('durationRange');
+    const durationNumber = el('durationNumber');
+    const durationKey = el('durationKey');
+    const extras = el('extras');
+
+    const player = el('player');
+    const jsonLog = el('json');
+    const status = el('status');
+    const downloadBtn = el('download');
+
+    const generateBtn = el('generate');
+    const cancelBtn = el('cancel');
+    const showAdvancedBtn = el('showAdvanced');
+
+    const advanced = el('advanced');
+    const httpMethod = el('httpMethod');
+    const headersJson = el('headersJson');
+    const payloadPreview = el('payloadPreview');
+    const copyCurl = el('copyCurl');
+    const saveLocal = el('saveLocal');
+    const rememberKey = el('rememberKey');
+
+    let aborter = null;
+
+    // UI wiring
+    showKey.addEventListener('click', () => {
+      apiKey.type = apiKey.type === 'password' ? 'text' : 'password';
+      showKey.textContent = apiKey.type === 'password' ? 'Show' : 'Hide';
+    });
+
+    // Keep range & number in sync
+    const syncDur = (from, to) => {
+      to.value = Math.max(1, Math.min(30, parseInt(from.value || 5, 10)));
+      refreshPayloadPreview();
+    };
+    durationRange.addEventListener('input', () => syncDur(durationRange, durationNumber));
+    durationNumber.addEventListener('input', () => syncDur(durationNumber, durationRange));
+
+    showAdvancedBtn.addEventListener('click', () => {
+      advanced.style.display = advanced.style.display === 'none' ? 'block' : 'none';
+    });
+
+    function parseExtras() {
+      const t = extras.value.trim();
+      if (!t) return {};
+      try { return JSON.parse(t); } catch (e) { return { _extras_error: String(e) }; }
+    }
+
+    function buildPayload() {
+      const dur = Math.max(1, Math.min(30, parseInt(durationNumber.value || 5, 10)));
+      const payload = { model: model.value.trim(), prompt: promptEl.value.trim() };
+      payload[durationKey.value] = dur; // set selected duration key
+      const ex = parseExtras();
+      if (ex._extras_error) {
+        status.innerHTML = `⛔ Extras JSON error: <span class="danger">${ex._extras_error}</span>`;
+      } else {
+        Object.assign(payload, ex);
+      }
+      return payload;
+    }
+
+    function refreshPayloadPreview() {
+      const pretty = JSON.stringify(buildPayload(), null, 2);
+      payloadPreview.value = pretty;
+    }
+    [model, promptEl, durationKey, extras].forEach(n => n.addEventListener('input', refreshPayloadPreview));
+    refreshPayloadPreview();
+
+    // Persist non-secret settings
+    (function restore() {
+      try {
+        const s = JSON.parse(localStorage.getItem('sora2_ui_settings') || '{}');
+        if (s.apiBase) apiBase.value = s.apiBase;
+        if (s.endpointPath) endpointPath.value = s.endpointPath;
+        if (s.model) model.value = s.model;
+        if (typeof s.duration === 'number') { durationNumber.value = s.duration; durationRange.value = s.duration; }
+        if (s.durationKey) durationKey.value = s.durationKey;
+        if (s.extras) extras.value = s.extras;
+        if (s.headersJson) headersJson.value = s.headersJson;
+        refreshPayloadPreview();
+      } catch {}
+
+      // Restore key if user opted for session storage
+      const remembered = sessionStorage.getItem('sora2_api_key');
+      if (remembered) { apiKey.value = remembered; rememberKey.checked = true; }
+
+      // Initialize download state
+      setTimeout(updateDownloadState, 0);
+    })();
+
+    saveLocal.addEventListener('click', () => {
+      const cfg = {
+        apiBase: apiBase.value.trim(),
+        endpointPath: endpointPath.value.trim(),
+        model: model.value.trim(),
+        duration: parseInt(durationNumber.value, 10) || 5,
+        durationKey: durationKey.value,
+        extras: extras.value,
+        headersJson: headersJson.value
+      };
+      localStorage.setItem('sora2_ui_settings', JSON.stringify(cfg));
+      status.innerHTML = `💾 Saved UI settings locally (no API key).`;
+    });
+
+    rememberKey.addEventListener('change', () => {
+      if (rememberKey.checked) {
+        sessionStorage.setItem('sora2_api_key', apiKey.value);
+      } else {
+        sessionStorage.removeItem('sora2_api_key');
+      }
+    });
+
+    // Download helpers
+    function updateDownloadState() {
+      const src = player.currentSrc || player.src || '';
+      downloadBtn.disabled = !src;
+    }
+    player.addEventListener('loadedmetadata', updateDownloadState);
+    player.addEventListener('emptied', updateDownloadState);
+
+    downloadBtn.addEventListener('click', async () => {
+      const src = player.currentSrc || player.src;
+      if (!src) { status.innerHTML = '⛔ No video to download yet.'; return; }
+      downloadBtn.disabled = true;
+      status.innerHTML = '⬇️ Preparing download…';
+      try {
+        let blob;
+        if (/^data:video\//.test(src)) {
+          const resp = await fetch(src);
+          blob = await resp.blob();
+        } else {
+          const resp = await fetch(src, { mode: 'cors' });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          blob = await resp.blob();
+        }
+        const ext = blob.type.includes('webm') ? 'webm' : ((blob.type.includes('quicktime') || blob.type.includes('mov')) ? 'mov' : 'mp4');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sora_${Date.now()}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        status.innerHTML = '✅ Download started.';
+      } catch (e) {
+        status.innerHTML = '⚠️ Couldn\'t fetch video blob (likely CORS). Opening the video URL in a new tab; use your browser\'s save option.';
+        try { window.open(src, '_blank'); } catch(_) {}
+      } finally {
+        downloadBtn.disabled = false;
+      }
+    });
+
+    // Main request
+    async function makeRequest() {
+      const base = apiBase.value.replace(/\/$/, '');
+      const path = endpointPath.value.startsWith('/') ? endpointPath.value : '/' + endpointPath.value;
+      const url = base + path;
+
+      const method = httpMethod.value || 'POST';
+      let headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey.value.trim()}` };
+      const h = headersJson.value.trim();
+      if (h) {
+        try { headers = Object.assign(headers, JSON.parse(h)); }
+        catch (e) { status.innerHTML = `⛔ Headers JSON error: <span class="danger">${String(e)}</span>`; }
+      }
+
+      const body = method === 'GET' ? undefined : JSON.stringify(buildPayload());
+
+      aborter = new AbortController();
+      generateBtn.disabled = true;
+      cancelBtn.disabled = false;
+      status.innerHTML = '⏳ Sending request…';
+      jsonLog.textContent = '';
+
+      try {
+        const res = await fetch(url, { method, headers, body, signal: aborter.signal });
+        const text = await res.text();
+        let data = null;
+        try { data = JSON.parse(text); } catch { /* leave as text */ }
+
+        if (!res.ok) {
+          jsonLog.textContent = text || `HTTP ${res.status}`;
+          status.innerHTML = `⛔ Error: HTTP ${res.status}`;
+          return;
+        }
+
+        jsonLog.textContent = data ? JSON.stringify(data, null, 2) : text;
+        status.innerHTML = '✅ Request complete.';
+
+        // Try to find a video URL in common shapes
+        let urlCandidates = [];
+        const dig = (obj) => {
+          if (!obj || typeof obj !== 'object') return;
+          for (const k of Object.keys(obj)) {
+            const v = obj[k];
+            if (typeof v === 'string' && /^https?:\/\/.+\.(mp4|webm|mov)(\?.*)?$/i.test(v)) urlCandidates.push(v);
+            if (typeof v === 'object') dig(v);
+          }
+        };
+        try { if (data) dig(data); } catch {}
+
+        if (urlCandidates.length) {
+          const first = urlCandidates[0];
+          player.src = first;
+          player.play().catch(()=>{});
+          updateDownloadState();
+        } else {
+          // Try base64 inline
+          const b64 = (data && (data.video || (data.output && data.output.video))) || null;
+          if (b64 && typeof b64 === 'string' && /^data:video\//.test(b64)) {
+            player.src = b64;
+            player.play().catch(()=>{});
+            updateDownloadState();
+          } else {
+            player.removeAttribute('src');
+            player.load();
+            updateDownloadState();
+          }
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          status.innerHTML = '⚠️ Request cancelled.';
+        } else {
+          jsonLog.textContent = String(err);
+          const isCors = /TypeError: Failed to fetch|CORS|NetworkError/i.test(String(err));
+          status.innerHTML = (isCors ? '🛡️ Likely CORS blocked by the API. Use Advanced → Copy curl and run it from your terminal.' : '⛔ Request failed.');
+        }
+      } finally {
+        generateBtn.disabled = false;
+        cancelBtn.disabled = true;
+        aborter = null;
+      }
+    }
+
+    generateBtn.addEventListener('click', () => {
+      if (!apiKey.value.trim()) { status.innerHTML = '⛔ Please paste your API key.'; return; }
+      if (!promptEl.value.trim()) { status.innerHTML = '⛔ Please enter a prompt.'; return; }
+      if (rememberKey.checked) sessionStorage.setItem('sora2_api_key', apiKey.value);
+      makeRequest();
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      if (aborter) aborter.abort();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); generateBtn.click(); }
+    });
+
+    // curl builder
+    copyCurl.addEventListener('click', async () => {
+      const base = apiBase.value.replace(/\/$/, '');
+      const path = endpointPath.value.startsWith('/') ? endpointPath.value : '/' + endpointPath.value;
+      const url = base + path;
+      const payload = payloadPreview.value || JSON.stringify(buildPayload());
+      const hdrs = headersJson.value.trim() ? JSON.parse(headersJson.value) : {};
+
+      const curlParts = [
+        'curl',
+        '-X', httpMethod.value,
+        `'${url.replace(/'/g, "'\\''")}'`,
+        '-H', `'Authorization: Bearer ${apiKey.value.replace(/'/g, "'\\''")}'`,
+        '-H', `'Content-Type: application/json'`,
+      ];
+      for (const [k,v] of Object.entries(hdrs)) {
+        curlParts.push('-H', `'${k}: ${String(v).replace(/'/g, "'\\''")}'`);
+      }
+      if (httpMethod.value !== 'GET') {
+        curlParts.push('--data-raw', `'${payload.replace(/'/g, "'\\''")}'`);
+      }
+      const cmd = curlParts.join(' ');
+      try { await navigator.clipboard.writeText(cmd); status.innerHTML = '📋 Copied curl to clipboard.'; }
+      catch { status.innerHTML = '📋 curl ready below (clipboard blocked):'; }
+      if (status.innerHTML.includes('blocked')) {
+        jsonLog.textContent = cmd;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Flowchart Architect Studio - Grade 10 STEM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            touch-action: pan-y pinch-zoom;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+        }
+
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* HUD Header */
+        #hud {
+            background: rgba(255,255,255,0.95);
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            flex-wrap: wrap;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        #levelInfo {
+            font-size: 14px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        #progressBar {
+            flex: 1;
+            min-width: 150px;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #progressFill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        #actionButtons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        #testBtn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        #clearBtn {
+            background: #ff9800;
+            color: white;
+        }
+
+        #submitBtn {
+            background: #2196F3;
+            color: white;
+        }
+
+        #helpBtn {
+            background: #9c27b0;
+            color: white;
+        }
+
+        #symbolGuideBtn {
+            background: #00bcd4;
+            color: white;
+        }
+
+        /* Main Game Area */
+        #mainArea {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Problem Statement */
+        #problemCard {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            max-width: 90%;
+            z-index: 50;
+            text-align: center;
+        }
+
+        #problemTitle {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        #problemText {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        /* Canvas Area */
+        #canvasArea {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: auto;
+            position: relative;
+        }
+
+        #canvas {
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            position: relative;
+            min-height: 400px;
+            width: 90%;
+            max-width: 700px;
+            padding: 20px;
+        }
+
+        /* Symbol Palette */
+        #symbolPalette {
+            width: 200px;
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            overflow-y: auto;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #paletteTitle {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .symbol-item {
+            cursor: move;
+            touch-action: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            background: #f5f5f5;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+            min-height: 80px;
+            justify-content: center;
+        }
+
+        .symbol-item:active {
+            transform: scale(1.05);
+        }
+
+        .symbol-item.dimmed {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .symbol-visual {
+            margin-bottom: 5px;
+        }
+
+        .symbol-label {
+            font-size: 11px;
+            color: #555;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .symbol-type {
+            font-size: 9px;
+            color: #999;
+            margin-top: 2px;
+            font-style: italic;
+        }
+
+        .symbol-count {
+            font-size: 10px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        /* Flowchart Symbols */
+        .flowchart-symbol {
+            position: absolute;
+            cursor: move;
+            touch-action: none;
+            transition: transform 0.2s ease;
+            user-select: none;
+        }
+
+        .flowchart-symbol.selected {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.8));
+        }
+
+        .flowchart-symbol.placed {
+            animation: placeSymbol 0.3s ease;
+        }
+
+        @keyframes placeSymbol {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .oval {
+            width: 100px;
+            height: 50px;
+            background: #4CAF50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            border: 3px solid #2e7d32;
+        }
+
+        .rectangle {
+            width: 120px;
+            height: 60px;
+            background: #2196F3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 11px;
+            border: 3px solid #1565c0;
+            border-radius: 4px;
+            padding: 5px;
+            text-align: center;
+            word-wrap: break-word;
+        }
+
+        .diamond {
+            width: 100px;
+            height: 100px;
+            background: #FFC107;
+            transform: rotate(45deg);
+            position: relative;
+            border: 3px solid #f57f17;
+        }
+
+        .diamond-content {
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            color: #333;
+            font-weight: 600;
+            font-size: 10px;
+            text-align: center;
+            padding: 10px;
+            word-wrap: break-word;
+        }
+
+        .parallelogram {
+            width: 120px;
+            height: 50px;
+            background: #9C27B0;
+            transform: skew(-20deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid #6a1b9a;
+        }
+
+        .parallelogram-content {
+            transform: skew(20deg);
+            color: white;
+            font-weight: 600;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        /* Arrows */
+        .arrow {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .arrow-line {
+            stroke: #333;
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowhead);
+        }
+
+        .arrow-line.loop-back {
+            stroke: #e91e63;
+            stroke-width: 3;
+            stroke-dasharray: 5,5;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .modal-text {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 25px;
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        .modal-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            background: #667eea;
+            color: white;
+            margin: 5px;
+        }
+
+        .symbol-guide {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .guide-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .guide-visual {
+            flex-shrink: 0;
+        }
+
+        .guide-text {
+            flex: 1;
+        }
+
+        .guide-name {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 14px;
+        }
+
+        .guide-desc {
+            font-size: 12px;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        /* Test Runner */
+        .test-marker {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ff5722;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            z-index: 100;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        /* Feedback */
+        .feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 40px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            z-index: 999;
+            display: none;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .feedback.correct {
+            background: #4CAF50;
+            display: block;
+            animation: feedbackPop 0.5s ease;
+        }
+
+        .feedback.incorrect {
+            background: #f44336;
+            display: block;
+            animation: feedbackPop 0.5s ease;
+        }
+
+        @keyframes feedbackPop {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* Responsive Mobile */
+        @media (max-width: 768px) {
+            #mainArea {
+                flex-direction: column;
+            }
+
+            #symbolPalette {
+                width: 100%;
+                max-height: 150px;
+                flex-direction: row;
+                overflow-x: auto;
+                overflow-y: hidden;
+                order: 2;
+                padding: 10px;
+            }
+
+            .symbol-item {
+                min-width: 90px;
+                flex-shrink: 0;
+            }
+
+            #canvasArea {
+                order: 1;
+                padding: 10px;
+            }
+
+            #canvas {
+                width: 95%;
+                min-height: 300px;
+                padding: 10px;
+            }
+
+            #problemCard {
+                position: relative;
+                top: 0;
+                left: 0;
+                transform: none;
+                margin: 10px;
+                max-width: calc(100% - 20px);
+            }
+
+            #hud {
+                padding: 8px 10px;
+                font-size: 12px;
+            }
+
+            .btn {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+
+            #levelInfo {
+                font-size: 12px;
+                width: 100%;
+            }
+
+            .oval {
+                width: 80px;
+                height: 40px;
+                font-size: 10px;
+            }
+
+            .rectangle {
+                width: 100px;
+                height: 50px;
+                font-size: 10px;
+            }
+
+            .diamond {
+                width: 80px;
+                height: 80px;
+            }
+
+            .parallelogram {
+                width: 100px;
+                height: 40px;
+            }
+        }
+
+        /* Delete Button */
+        .delete-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 24px;
+            height: 24px;
+            background: #f44336;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10;
+            border: 2px solid white;
+        }
+
+        .flowchart-symbol.selected .delete-btn {
+            display: flex;
+        }
+
+        /* Connection Mode */
+        .connection-line {
+            position: absolute;
+            pointer-events: none;
+            stroke: #667eea;
+            stroke-width: 3;
+            stroke-dasharray: 5,5;
+            fill: none;
+        }
+
+        #connectionMode {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: none;
+            z-index: 200;
+        }
+
+        #connectionMode.active {
+            display: block;
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <!-- HUD -->
+        <div id="hud">
+            <div id="levelInfo">Level 1: Sequential Flow Basics</div>
+            <div id="progressBar">
+                <div id="progressFill">0/12</div>
+            </div>
+            <div id="actionButtons">
+                <button class="btn" id="symbolGuideBtn">Guide</button>
+                <button class="btn" id="testBtn">Test</button>
+                <button class="btn" id="clearBtn">Clear</button>
+                <button class="btn" id="submitBtn">Submit</button>
+                <button class="btn" id="helpBtn">Help</button>
+            </div>
+        </div>
+
+        <!-- Problem Card -->
+        <div id="problemCard">
+            <div id="problemTitle">Challenge 1</div>
+            <div id="problemText">Create a flowchart for making a cup of tea</div>
+        </div>
+
+        <!-- Main Area -->
+        <div id="mainArea">
+            <!-- Canvas -->
+            <div id="canvasArea">
+                <div id="canvas">
+                    <svg width="100%" height="100%" style="position: absolute; top: 0; left: 0; pointer-events: none;">
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                <polygon points="0 0, 10 3, 0 6" fill="#333" />
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Symbol Palette -->
+            <div id="symbolPalette">
+                <div id="paletteTitle">Flowchart Symbols</div>
+            </div>
+        </div>
+
+        <!-- Connection Mode Indicator -->
+        <div id="connectionMode">Tap symbols to connect</div>
+
+        <!-- Feedback -->
+        <div id="feedback" class="feedback"></div>
+
+        <!-- Symbol Guide Modal -->
+        <div id="guideModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-title">Flowchart Symbol Guide</div>
+                <div class="symbol-guide">
+                    <div class="guide-item">
+                        <div class="guide-visual">
+                            <div class="oval" style="transform: scale(0.5); width: 80px; height: 40px; font-size: 10px;">START</div>
+                        </div>
+                        <div class="guide-text">
+                            <div class="guide-name">Oval (Terminator)</div>
+                            <div class="guide-desc">Use for START and END. Every flowchart must begin with START and finish with END.</div>
+                        </div>
+                    </div>
+                    <div class="guide-item">
+                        <div class="guide-visual">
+                            <div class="rectangle" style="transform: scale(0.5); width: 100px; height: 50px; font-size: 9px;">Process</div>
+                        </div>
+                        <div class="guide-text">
+                            <div class="guide-name">Rectangle (Process)</div>
+                            <div class="guide-desc">Use for actions, calculations, or operations. Example: Add 5 to counter, Multiply length by width.</div>
+                        </div>
+                    </div>
+                    <div class="guide-item">
+                        <div class="guide-visual">
+                            <div class="diamond" style="transform: scale(0.4) rotate(45deg); width: 70px; height: 70px;">
+                                <div class="diamond-content" style="font-size: 8px;">Decision?</div>
+                            </div>
+                        </div>
+                        <div class="guide-text">
+                            <div class="guide-name">Diamond (Decision)</div>
+                            <div class="guide-desc">Use for yes or no questions. Creates two paths: one for YES, one for NO. Example: Is number greater than 10?</div>
+                        </div>
+                    </div>
+                    <div class="guide-item">
+                        <div class="guide-visual">
+                            <div class="parallelogram" style="transform: scale(0.5) skew(-20deg); width: 100px; height: 40px;">
+                                <div class="parallelogram-content" style="font-size: 9px;">Input</div>
+                            </div>
+                        </div>
+                        <div class="guide-text">
+                            <div class="guide-name">Parallelogram (Input/Output)</div>
+                            <div class="guide-desc">Use for getting input from user or displaying output. Example: Get name, Display result.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-text" style="background: #e3f2fd; padding: 10px; border-radius: 8px; margin-top: 10px;">
+                    <strong>How to connect symbols:</strong> Click one symbol, then click another to draw an arrow. Arrows show the flow direction. For loops, draw an arrow backward to repeat steps.
+                </div>
+                <button class="modal-btn" onclick="closeGuide()">Got it!</button>
+            </div>
+        </div>
+
+        <!-- Level Start Modal -->
+        <div id="levelModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-title">Level 1: Sequential Flow Basics</div>
+                <div class="modal-text">Welcome to TechFlow Solutions!</div>
+                <button class="modal-btn" onclick="startLevel()">Start Level</button>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="successModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-title">Excellent Work!</div>
+                <div class="modal-text" id="successText">Challenge completed!</div>
+                <button class="modal-btn" onclick="nextChallenge()">Next Challenge</button>
+            </div>
+        </div>
+
+        <!-- Game Complete Modal -->
+        <div id="completeModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-title">Congratulations!</div>
+                <div class="modal-text">You have mastered flowchart creation! You completed all 12 challenges and are now a certified Flowchart Architect!</div>
+                <button class="modal-btn" onclick="restartGame()">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const gameState = {
+            currentLevel: 1,
+            currentChallenge: 1,
+            totalChallenges: 12,
+            placedSymbols: [],
+            connections: [],
+            selectedSymbol: null,
+            connectionSource: null,
+            draggedElement: null,
+            wrongAttempts: 0,
+            dimmedSymbols: []
+        };
+
+        // Level Definitions
+        const levels = {
+            1: {
+                name: "Sequential Flow Basics",
+                intro: "Welcome to TechFlow Solutions! I am your mentor. Today you will learn to create flowcharts - visual diagrams that show how programs work step by step. Let me explain the symbols. OVAL shapes are terminators - use green ovals labeled START to begin and END to finish. RECTANGLE shapes are processes - they show actions or calculations. PARALLELOGRAM shapes are for input and output - getting data or showing results. DIAMOND shapes are decisions - they ask yes or no questions. Every flowchart needs START at the top, some steps in the middle, and END at the bottom. Arrows connect symbols to show the order. Let us build your first flowchart together!",
+                challenges: [
+                    {
+                        title: "Make a Cup of Tea",
+                        description: "Create a flowchart showing the steps to make a cup of tea",
+                        prompt: "Your first task: create a flowchart for making a cup of tea. Think about the main steps. You need a START oval at the beginning. Then use blue rectangle process symbols for each action like boiling water, adding tea bag, and pouring water. Finish with an END oval. Connect them with arrows in order. You can arrange symbols however you like - just make sure the flow makes sense from START to END. Take your time!",
+                        requiredSymbols: [
+                            {type: 'start', label: 'START', min: 1, max: 1},
+                            {type: 'end', label: 'END', min: 1, max: 1},
+                            {type: 'process', label: 'Boil water', min: 1, max: 1},
+                            {type: 'process', label: 'Add tea bag', min: 1, max: 1},
+                            {type: 'process', label: 'Pour water', min: 1, max: 1}
+                        ],
+                        symbols: [
+                            {type: 'start', label: 'START', count: 1, description: 'Oval - Terminator'},
+                            {type: 'end', label: 'END', count: 1, description: 'Oval - Terminator'},
+                            {type: 'process', label: 'Boil water', count: 1, description: 'Rectangle - Process'},
+                            {type: 'process', label: 'Add tea bag', count: 1, description: 'Rectangle - Process'},
+                            {type: 'process', label: 'Pour water', count: 1, description: 'Rectangle - Process'}
+                        ],
+                        minConnections: 4,
+                        hasLoop: false,
+                        allowExtraSymbols: false
+                    },
+                    {
+                        title: "Calculate Rectangle Area",
+                        description: "Create a flowchart to calculate the area of a rectangle",
+                        prompt: "Now create a flowchart that calculates the area of a rectangle. Remember: area equals length times width. Start with START oval. Use a purple parallelogram to get input values for length and width. Then use a blue rectangle process to calculate area equals length times width. Use another parallelogram to display the area as output. Finish with END oval. Notice how parallelograms are for data going in or out, and rectangles are for processing or calculating.",
+                        requiredSymbols: [
+                            {type: 'start', label: 'START', min: 1, max: 1},
+                            {type: 'end', label: 'END', min: 1, max: 1},
+                            {type: 'input', min: 1, max: 1},
+                            {type: 'process', min: 1, max: 1},
+                            {type: 'output', min: 1, max: 1}
+                        ],
+                        symbols: [
+                            {type: 'start', label: 'START', count: 1, description: 'Oval - Terminator'},
+                            {type: 'end', label: 'END', count: 1, description: 'Oval - Terminator'},
+                            {type: 'input', label: 'Get length and width', count: 1, description: 'Parallelogram - Input'},
+                            {type: 'process', label: 'Multiply length times width', count: 1, description: 'Rectangle - Process'},
+                            {type: 'output', label: 'Display area', count: 1, description: 'Parallelogram - Output'}
+                        ],
+                        minConnections: 4,
+                        hasLoop: false,
+                        allowExtraSymbols: false
+                    },
+                    {
+                        title: "Save a File",
+                        description: "Create a flowchart for saving a file to disk",
+                        prompt: "Create a flowchart that shows how to save a file. The steps are: get the filename from the user with input, open the file as a process, write the data as a process, close the file as another process, then show a success message as output. This is a longer sequence with five process steps between START and END. Plan your layout carefully - you can arrange symbols vertically or however works best!",
+                        requiredSymbols: [
+                            {type: 'start', label: 'START', min: 1, max: 1},
+                            {type: 'end', label: 'END', min: 1, max: 1},
+                            {type: 'input', min: 1, max: 1},
+                            {type: 'process', min: 3, max: 4},
+                            {type: 'output', min: 1, max: 1}
+                        ],
+                        symbols: [
+                            {type: 'start', label: 'START', count: 1, description: 'Oval - Terminator'},
+                            {type: 'end', label: 'END', count: 1, description: 'Oval - Terminator'},
+                            {type: 'input', label: 'Get filename', count: 1, description: 'Parallelogram - Input'},
+                            {type: 'process', label: 'Open file', count: 1, description: 'Rectangle - Process'},
+                            {type: 'process', label: 'Write data', count: 1, description: 'Rectangle - Process'},
+                            {type: 'process', label: 'Close file', count: 1, description: 'Rectangle - Process'},
+                            {type: 'output', label: 'Show success', count: 1, description: 'Parallelogram - Output'}
+                        ],
+                        minConnections: 5,
+                        hasLoop: false,
+                        allowExtraSymbols: false
+                    }
+                ]
+            },
+            2: {
+                name: "Decision Making",
+                intro: "Excellent progress! You have mastered sequential flows. Now we add decision-making with DIAMOND shapes. In real programs, different actions happen based on conditions - like checking if a password is correct or if a number is positive. Diamond symbols ask yes or no questions and create two paths. One arrow exits for YES answers, another for NO answers. Both paths typically merge back together before reaching END. The diamond is your branching tool - it makes flowcharts smart and responsive!",
+                challenges: [
+                    {
+                        title: "Check if Number is Positive",
+                        description: "Create a flowchart that checks if a number is positive",
+                        prompt: "Time to add decision-making! Create a flowchart that gets a number and checks if it is positive. Start with START oval. Use input parallelogram to get the number. Now add a yellow DIAMOND for the decision - it should ask: Is number greater than 0? From the diamond, draw two arrows: one path for YES should go to an output that says Positive. The other path for NO should go to an output that says Not positive. Both output symbols then connect to the same END oval. This is branching - two paths that merge back together!",
+                        requiredSymbols: [
+                            {type: 'start', label: 'START', min: 1, max: 1},
+                            {type: 'end', label: 'END', min: 1, max: 1},
+                            {type: 'input', min: 1, max: 1},
+                            {type: 'decision', min: 1, max: 1},
+                            {type: 'output', min: 2, max: 2}
+                        ],
+                        symbols: [
+                            {type: 'start', label: 'START', count: 1, description: 'Oval - Terminator'},
+                            {type: 'end', label: 'END', count: 1, description: 'Oval - Terminator'},
+                            {type: 'input', label: 'Get number', count: 1, description: 'Parallelogram - Input'},
+                            {type: 'decision', label: 'Is number > 0?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'output', label: 'Positive', count: 1, description: 'Parallelogram - Output'},
+                            {type: 'output', label: 'Not positive', count: 1, description: 'Parallelogram - Output'}
+                        ],
+                        minConnections: 5,
+                        hasLoop: false,
+                        hasBranching: true,
+                        allowExtraSymbols: false
+                    },
+                    {
+                        title: "Grade Pass or Fail",
+                        description: "Determine if a student passes or fails based on score",
+                        prompt: "Create a flowchart that determines if a student passes or fails. Get the score with input. Use a diamond to check: Is score greater than or equal to 50? If YES path: use a process rectangle to assign PASS, then output the result. If NO path: use a process rectangle to assign FAIL, then output the result. Both paths should merge at the output symbol, then go to END. Notice how you can have multiple steps in each branch before they merge!",
+                        requiredSymbols: [
+                            {type: 'start', label: 'START', min: 1, max: 1},
+                            {type: 'end', label: 'END', min: 1, max: 1},
+                            {type: 'input', min: 1, max: 1},
+                            {type: 'decision', min: 1, max: 1},
+                            {type: 'process', min: 2, max: 2},
+                            {type: 'output', min: 1, max: 1}
+                        ],
+                        symbols: [
+                            {type: 'start', label: 'START', count: 1, description: 'Oval - Terminator'},
+                            {type: 'end', label: 'END', count: 1, description: 'Oval - Terminator'},
+                            {type: 'input', label: 'Get score', count: 1, description: 'Parallelogram - Input'},
+                            {type: 'decision', label: 'Is score >= 50?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'process', label: 'Assign PASS', count: 1, description: 'Rectangle - Process'},
+                            {type: 'process', label: 'Assign FAIL', count: 1, description: 'Rectangle - Process'},
+                            {type: 'output', label: 'Display result', count: 1, description: 'Parallelogram - Output'}
+                        ],
+                        minConnections: 6,
+                        hasLoop: false,
+                        hasBranching: true,
+                        allowExtraSymbols: false
+                    },
+                    {
+                        title: "Validate User Age",
+                        description: "Check if user is old enough to access a system",
+                        prompt: "Create an age validation system. Get the user age with input. Use a diamond to check: Is age greater than or equal to 18? YES path: process to grant access, then output Welcome message. NO path: process to deny access, then output Access denied message. Both output messages connect to END. This demonstrates how security systems use flowchart logic to make access decisions!",
+                        requiredSymbols: [
+                            {type: 'start', label: 'START', min: 1, max: 1},
+                            {type: 'end', label: 'END', min: 1, max: 1},
+                            {type: 'input', min: 1, max: 1},
+                            {type: 'decision', min: 1, max: 1},
+                            {type: 'process', min: 2, max: 2},
+                            {type: 'output', min: 2, max: 2}
+                        ],
+                        symbols: [
+                            {type: 'start', label: 'START', count: 1, description: 'Oval - Terminator'},
+                            {type: 'end', label: 'END', count: 1, description: 'Oval - Terminator'},
+                            {type: 'input', label: 'Get age', count: 1, description: 'Parallelogram - Input'},
+                            {type: 'decision', label: 'Is age >= 18?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'process', label: 'Grant access', count: 1, description: 'Rectangle - Process'},
+                            {type: 'output', label: 'Welcome', count: 1, description: 'Parallelogram - Output'},
+                            {type: 'process', label: 'Deny access', count: 1, description: 'Rectangle - Process'},
+                            {type: 'output', label: 'Access denied', count: 1, description: 'Parallelogram - Output'}
+                        ],
+                        minConnections: 7,
+                        hasLoop: false,
+                        hasBranching: true,
+                        allowExtraSymbols: false
+                    }
+                ]
+            },
+            3: {
+                name: "Loops and Iteration",
+                intro: "Impressive work! You are ready for loops - the most powerful flowchart concept. Loops make processes repeat multiple times, like counting from 1 to 100 or processing each item in a list. To create a loop, use a decision diamond to check if you should continue. The YES path does some work, then an arrow flows BACKWARD to the decision to check again. The NO path exits the loop. Every loop needs three parts: 1) Initialization before the loop sets starting values. 2) Condition check in the diamond asks if we should continue. 3) Update step changes values so the loop eventually ends. The backward arrow is the key - it creates the repetition!",
+                challenges: [
+                    {
+                        title: "Count from 1 to 5",
+                        description: "Create a flowchart with a loop that counts from 1 to 5",
+                        prompt: "Your first loop! Create a counter that goes from 1 to 5. Start with START. First initialize: use process rectangle to set counter equals 1. Now the loop begins with a diamond decision: Is counter less than or equal to 5? YES path: output the counter value, then process to add 1 to counter. Here is the key: draw an arrow from this process BACKWARD to the decision diamond - this creates the loop! NO path from diamond: goes straight to END. The backward arrow makes it repeat until counter reaches 6, then it stops. This is iteration!",
+                        requiredSymbols: [
+                            {type: 'start', label: 'START', min: 1, max: 1},
+                            {type: 'end', label: 'END', min: 1, max: 1},
+                            {type: 'process', min: 2, max: 2},
+                            {type: 'decision', min: 1, max: 1},
+                            {type: 'output', min: 1, max: 1}
+                        ],
+                        symbols: [
+                            {type: 'start', label: 'START', count: 1, description: 'Oval - Terminator'},
+                            {type: 'end', label: 'END', count: 1, description: 'Oval - Terminator'},
+                            {type: 'process', label: 'counter = 1', count: 1, description: 'Rectangle - Process'},
+                            {type: 'decision', label: 'Is counter <= 5?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'output', label: 'Display counter', count: 1, description: 'Parallelogram - Output'},
+                            {type: 'process', label: 'counter = counter + 1', count: 1, description: 'Rectangle - Process'}
+                        ],
+                        minConnections: 5,
+                        hasLoop: true,
+                        hasBranching: true,
+                        allowExtraSymbols: false
+                    },
+                    {
+                        title: "Sum Numbers 1 to N",
+                        description: "Calculate the sum of numbers from 1 to N",
+                        prompt: "More advanced loop! Calculate the sum of numbers from 1 to N. START, then input to get N from user. Initialize with process: set sum equals 0 and counter equals 1. Loop decision diamond: Is counter less than or equal to N? YES path: process to add counter to sum, then process to increment counter by 1, then backward arrow to decision. NO path: output to display sum, then END. This demonstrates accumulation - building up a total in a loop!",
+                        requiredSymbols: [
+                            {type: 'start', label: 'START', min: 1, max: 1},
+                            {type: 'end', label: 'END', min: 1, max: 1},
+                            {type: 'input', min: 1, max: 1},
+                            {type: 'process', min: 3, max: 3},
+                            {type: 'decision', min: 1, max: 1},
+                            {type: 'output', min: 1, max: 1}
+                        ],
+                        symbols: [
+                            {type: 'start', label: 'START', count: 1, description: 'Oval - Terminator'},
+                            {type: 'end', label: 'END', count: 1, description: 'Oval - Terminator'},
+                            {type: 'input', label: 'Get N', count: 1, description: 'Parallelogram - Input'},
+                            {type: 'process', label: 'sum = 0, counter = 1', count: 1, description: 'Rectangle - Process'},
+                            {type: 'decision', label: 'Is counter <= N?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'process', label: 'sum = sum + counter', count: 1, description: 'Rectangle - Process'},
+                            {type: 'process', label: 'counter = counter + 1', count: 1, description: 'Rectangle - Process'},
+                            {type: 'output', label: 'Display sum', count: 1, description: 'Parallelogram - Output'}
+                        ],
+                        minConnections: 6,
+                        hasLoop: true,
+                        hasBranching: true,
+                        allowExtraSymbols: false
+                    },
+                    {
+                        title: "Find Largest Number",
+                        description: "Find the largest number in a list of N numbers",
+                        prompt: "Advanced challenge! Find the largest number from N numbers entered by user. START, input to get how many numbers N, initialize: set largest equals 0 and counter equals 1. Loop diamond: Is counter less than or equal to N? YES path: input to get a number, then decision diamond asking Is number greater than largest? If yes: process to set largest equals number. If no: skip that step. Then process to increment counter, backward arrow to main loop diamond. NO path from main loop: output largest, END. This uses a loop with a decision inside it - nested logic!",
+                        requiredSymbols: [
+                            {type: 'start', label: 'START', min: 1, max: 1},
+                            {type: 'end', label: 'END', min: 1, max: 1},
+                            {type: 'input', min: 2, max: 3},
+                            {type: 'process', min: 2, max: 3},
+                            {type: 'decision', min: 2, max: 2},
+                            {type: 'output', min: 1, max: 1}
+                        ],
+                        symbols: [
+                            {type: 'start', label: 'START', count: 1, description: 'Oval - Terminator'},
+                            {type: 'end', label: 'END', count: 1, description: 'Oval - Terminator'},
+                            {type: 'input', label: 'Get N', count: 1, description: 'Parallelogram - Input'},
+                            {type: 'process', label: 'largest = 0, counter = 1', count: 1, description: 'Rectangle - Process'},
+                            {type: 'decision', label: 'Is counter <= N?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'input', label: 'Get number', count: 1, description: 'Parallelogram - Input'},
+                            {type: 'decision', label: 'Is number > largest?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'process', label: 'largest = number', count: 1, description: 'Rectangle - Process'},
+                            {type: 'process', label: 'counter = counter + 1', count: 1, description: 'Rectangle - Process'},
+                            {type: 'output', label: 'Display largest', count: 1, description: 'Parallelogram - Output'}
+                        ],
+                        minConnections: 8,
+                        hasLoop: true,
+                        hasBranching: true,
+                        allowExtraSymbols: true
+                    }
+                ]
+            },
+            4: {
+                name: "Complex Enterprise Systems",
+                intro: "Fantastic! You are now a skilled flowchart creator. This final level combines everything: sequences, decisions, and loops working together. These are enterprise-level systems - like ATM machines and login systems that businesses actually use. The logic is complex with multiple decision points and different exit paths. Some loops exit two different ways depending on conditions. Think carefully about the order of operations and how different paths interact. You have all the skills needed. Plan before you build, and remember you can arrange symbols however makes sense to you. You have got this!",
+                challenges: [
+                    {
+                        title: "ATM Withdrawal System",
+                        description: "Build a complete ATM withdrawal validation system",
+                        prompt: "Create an ATM withdrawal system with multiple validations. START, input to get withdrawal amount, input to get account balance. First decision: Is amount less than or equal to balance? NO path: output Insufficient funds, END. YES path: second decision asking Is amount a multiple of 20? NO path: output Must be multiple of 20, END. YES path: process to dispense cash, process to subtract amount from balance, output to show new balance, END. Notice this has three different END points - multiple exit paths are valid!",
+                        requiredSymbols: [
+                            {type: 'start', label: 'START', min: 1, max: 1},
+                            {type: 'end', label: 'END', min: 1, max: 3},
+                            {type: 'input', min: 2, max: 2},
+                            {type: 'decision', min: 2, max: 2},
+                            {type: 'process', min: 2, max: 2},
+                            {type: 'output', min: 3, max: 3}
+                        ],
+                        symbols: [
+                            {type: 'start', label: 'START', count: 1, description: 'Oval - Terminator'},
+                            {type: 'end', label: 'END', count: 3, description: 'Oval - Terminator'},
+                            {type: 'input', label: 'Get amount', count: 1, description: 'Parallelogram - Input'},
+                            {type: 'input', label: 'Get balance', count: 1, description: 'Parallelogram - Input'},
+                            {type: 'decision', label: 'amount <= balance?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'decision', label: 'amount % 20 == 0?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'process', label: 'Dispense cash', count: 1, description: 'Rectangle - Process'},
+                            {type: 'process', label: 'balance = balance - amount', count: 1, description: 'Rectangle - Process'},
+                            {type: 'output', label: 'Show new balance', count: 1, description: 'Parallelogram - Output'},
+                            {type: 'output', label: 'Insufficient funds', count: 1, description: 'Parallelogram - Output'},
+                            {type: 'output', label: 'Must be multiple of 20', count: 1, description: 'Parallelogram - Output'}
+                        ],
+                        minConnections: 8,
+                        hasLoop: false,
+                        hasBranching: true,
+                        allowExtraSymbols: true
+                    },
+                    {
+                        title: "Login System with Retry",
+                        description: "Create a login system that locks after 3 failed attempts",
+                        prompt: "Build a secure login with retry limit. START, process to set attempts equals 0. Input to get password, process to increment attempts. Decision: Is password correct? YES: output Login success, END. NO: decision asking Is attempts less than 3? YES: output Try again, backward arrow to input password again for loop. NO: output Account locked, END. This loop exits two ways: correct password or too many attempts. Real security systems use this pattern!",
+                        requiredSymbols: [
+                            {type: 'start', label: 'START', min: 1, max: 1},
+                            {type: 'end', label: 'END', min: 1, max: 3},
+                            {type: 'process', min: 2, max: 2},
+                            {type: 'input', min: 1, max: 1},
+                            {type: 'decision', min: 2, max: 2},
+                            {type: 'output', min: 3, max: 3}
+                        ],
+                        symbols: [
+                            {type: 'start', label: 'START', count: 1, description: 'Oval - Terminator'},
+                            {type: 'end', label: 'END', count: 3, description: 'Oval - Terminator'},
+                            {type: 'process', label: 'attempts = 0', count: 1, description: 'Rectangle - Process'},
+                            {type: 'input', label: 'Get password', count: 1, description: 'Parallelogram - Input'},
+                            {type: 'process', label: 'attempts = attempts + 1', count: 1, description: 'Rectangle - Process'},
+                            {type: 'decision', label: 'password correct?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'decision', label: 'attempts < 3?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'output', label: 'Login success', count: 1, description: 'Parallelogram - Output'},
+                            {type: 'output', label: 'Try again', count: 1, description: 'Parallelogram - Output'},
+                            {type: 'output', label: 'Account locked', count: 1, description: 'Parallelogram - Output'}
+                        ],
+                        minConnections: 8,
+                        hasLoop: true,
+                        hasBranching: true,
+                        allowExtraSymbols: true
+                    },
+                    {
+                        title: "Calculate Average with Validation",
+                        description: "Calculate average of positive numbers with input validation",
+                        prompt: "Final challenge! Calculate average of positive numbers. START, initialize: sum equals 0 and count equals 0. Loop to get numbers: input to get number. Decision: Is number not equal to -1 (sentinel to stop)? YES path: nested decision asking Is number positive? If yes: process to add to sum, process to increment count. If no: skip. Then backward arrow to input for next number. NO path (number equals -1): exit loop. After loop: decision asking Is count greater than 0? YES: process to calculate average equals sum divided by count, output average, END. NO: output No valid numbers, END. This tests everything: loops, nested decisions, validation, and multiple exits!",
+                        requiredSymbols: [
+                            {type: 'start', label: 'START', min: 1, max: 1},
+                            {type: 'end', label: 'END', min: 1, max: 2},
+                            {type: 'process', min: 3, max: 5},
+                            {type: 'input', min: 1, max: 1},
+                            {type: 'decision', min: 3, max: 3},
+                            {type: 'output', min: 2, max: 2}
+                        ],
+                        symbols: [
+                            {type: 'start', label: 'START', count: 1, description: 'Oval - Terminator'},
+                            {type: 'end', label: 'END', count: 2, description: 'Oval - Terminator'},
+                            {type: 'process', label: 'sum = 0, count = 0', count: 1, description: 'Rectangle - Process'},
+                            {type: 'input', label: 'Get number', count: 1, description: 'Parallelogram - Input'},
+                            {type: 'decision', label: 'number != -1?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'decision', label: 'number > 0?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'process', label: 'sum = sum + number', count: 1, description: 'Rectangle - Process'},
+                            {type: 'process', label: 'count = count + 1', count: 1, description: 'Rectangle - Process'},
+                            {type: 'decision', label: 'count > 0?', count: 1, description: 'Diamond - Decision'},
+                            {type: 'process', label: 'average = sum / count', count: 1, description: 'Rectangle - Process'},
+                            {type: 'output', label: 'Display average', count: 1, description: 'Parallelogram - Output'},
+                            {type: 'output', label: 'No valid numbers', count: 1, description: 'Parallelogram - Output'}
+                        ],
+                        minConnections: 9,
+                        hasLoop: true,
+                        hasBranching: true,
+                        allowExtraSymbols: true
+                    }
+                ]
+            }
+        };
+
+        // Shuffle array helper
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // Initialize game
+        function initGame() {
+            showLevelModal();
+            updateHUD();
+        }
+
+        function showLevelModal() {
+            const level = levels[gameState.currentLevel];
+            const modal = document.getElementById('levelModal');
+            modal.querySelector('.modal-title').textContent = `Level ${gameState.currentLevel}: ${level.name}`;
+            modal.querySelector('.modal-text').textContent = level.intro;
+            modal.classList.add('active');
+
+            // AI tutor reads level intro
+            sendTutorMessage(level.intro);
+        }
+
+        function startLevel() {
+            document.getElementById('levelModal').classList.remove('active');
+            loadChallenge();
+        }
+
+        function loadChallenge() {
+            const level = levels[gameState.currentLevel];
+            const challenge = level.challenges[gameState.currentChallenge - 1];
+            
+            // Reset state
+            gameState.placedSymbols = [];
+            gameState.connections = [];
+            gameState.selectedSymbol = null;
+            gameState.connectionSource = null;
+            gameState.wrongAttempts = 0;
+            gameState.dimmedSymbols = [];
+
+            // Update UI
+            document.getElementById('problemTitle').textContent = challenge.title;
+            document.getElementById('problemText').textContent = challenge.description;
+            
+            // Clear canvas
+            const canvas = document.getElementById('canvas');
+            const symbols = canvas.querySelectorAll('.flowchart-symbol');
+            symbols.forEach(s => s.remove());
+            
+            // Clear arrows
+            const svg = canvas.querySelector('svg');
+            const arrows = svg.querySelectorAll('.arrow-line');
+            arrows.forEach(a => a.remove());
+
+            // Build palette with randomized symbols
+            buildPalette(challenge.symbols);
+
+            // AI tutor reads challenge prompt
+            sendTutorMessage(challenge.prompt);
+
+            updateHUD();
+        }
+
+        function buildPalette(symbols) {
+            const palette = document.getElementById('symbolPalette');
+            
+            // Remove old symbols
+            const oldSymbols = palette.querySelectorAll('.symbol-item');
+            oldSymbols.forEach(s => s.remove());
+
+            // Randomize the order
+            const shuffledSymbols = shuffleArray(symbols);
+
+            shuffledSymbols.forEach((sym, idx) => {
+                const item = document.createElement('div');
+                item.className = 'symbol-item';
+                item.dataset.type = sym.type;
+                item.dataset.label = sym.label;
+                
+                const visual = createSymbolVisual(sym.type, sym.label, true);
+                item.appendChild(visual);
+
+                const label = document.createElement('div');
+                label.className = 'symbol-label';
+                label.textContent = sym.label;
+                item.appendChild(label);
+
+                const typeDesc = document.createElement('div');
+                typeDesc.className = 'symbol-type';
+                typeDesc.textContent = sym.description;
+                item.appendChild(typeDesc);
+
+                const count = document.createElement('div');
+                count.className = 'symbol-count';
+                count.textContent = `x${sym.count}`;
+                item.appendChild(count);
+
+                // Drag events
+                item.addEventListener('mousedown', startDrag);
+                item.addEventListener('touchstart', startDrag, {passive: false});
+
+                palette.appendChild(item);
+            });
+        }
+
+        function createSymbolVisual(type, label, mini = false) {
+            const container = document.createElement('div');
+            container.className = 'symbol-visual';
+            
+            let html = '';
+            const scale = mini ? 0.4 : 1;
+            
+            if (type === 'start' || type === 'end') {
+                html = `<div class="oval" style="transform: scale(${scale}); margin: 0;">${label}</div>`;
+            } else if (type === 'process') {
+                html = `<div class="rectangle" style="transform: scale(${scale}); margin: 0;">${label}</div>`;
+            } else if (type === 'decision') {
+                html = `<div class="diamond" style="transform: scale(${scale}); margin: 0;">
+                    <div class="diamond-content">${label}</div>
+                </div>`;
+            } else if (type === 'input' || type === 'output') {
+                html = `<div class="parallelogram" style="transform: scale(${scale}); margin: 0;">
+                    <div class="parallelogram-content">${label}</div>
+                </div>`;
+            }
+            
+            container.innerHTML = html;
+            return container;
+        }
+
+        function startDrag(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const item = e.currentTarget;
+            
+            if (item.classList.contains('dimmed')) {
+                return;
+            }
+
+            const type = item.dataset.type;
+            const label = item.dataset.label;
+            
+            // Create dragging element
+            const dragElem = document.createElement('div');
+            dragElem.className = 'flowchart-symbol';
+            dragElem.dataset.type = type;
+            dragElem.dataset.label = label;
+            
+            const visual = createSymbolElement(type, label);
+            dragElem.appendChild(visual);
+            
+            // Add delete button
+            const deleteBtn = document.createElement('div');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = '×';
+            deleteBtn.onclick = () => deleteSymbol(dragElem);
+            dragElem.appendChild(deleteBtn);
+            
+            document.body.appendChild(dragElem);
+            gameState.draggedElement = dragElem;
+            
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            
+            dragElem.style.position = 'fixed';
+            dragElem.style.left = clientX - 50 + 'px';
+            dragElem.style.top = clientY - 25 + 'px';
+            dragElem.style.zIndex = '999';
+            dragElem.style.pointerEvents = 'none';
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag, {passive: false});
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+        }
+
+        function drag(e) {
+            if (!gameState.draggedElement) return;
+            
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            
+            gameState.draggedElement.style.left = clientX - 50 + 'px';
+            gameState.draggedElement.style.top = clientY - 25 + 'px';
+        }
+
+        function endDrag(e) {
+            if (!gameState.draggedElement) return;
+            
+            const dragElem = gameState.draggedElement;
+            const canvas = document.getElementById('canvas');
+            const canvasRect = canvas.getBoundingClientRect();
+            
+            const clientX = e.type.includes('touch') ? e.changedTouches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.changedTouches[0].clientY : e.clientY;
+            
+            // Check if dropped on canvas
+            if (clientX >= canvasRect.left && clientX <= canvasRect.right &&
+                clientY >= canvasRect.top && clientY <= canvasRect.bottom) {
+                
+                // Position relative to canvas
+                const x = clientX - canvasRect.left;
+                const y = clientY - canvasRect.top;
+                
+                dragElem.style.position = 'absolute';
+                dragElem.style.left = x - 50 + 'px';
+                dragElem.style.top = y - 25 + 'px';
+                dragElem.style.pointerEvents = 'auto';
+                dragElem.classList.add('placed');
+                
+                canvas.appendChild(dragElem);
+                gameState.placedSymbols.push(dragElem);
+                
+                // Click to select/connect
+                dragElem.onclick = (e) => {
+                    e.stopPropagation();
+                    selectSymbol(dragElem);
+                };
+            } else {
+                dragElem.remove();
+            }
+            
+            gameState.draggedElement = null;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('mouseup', endDrag);
+            document.removeEventListener('touchend', endDrag);
+        }
+
+        function createSymbolElement(type, label) {
+            if (type === 'start' || type === 'end') {
+                const elem = document.createElement('div');
+                elem.className = 'oval';
+                elem.textContent = label;
+                return elem;
+            } else if (type === 'process') {
+                const elem = document.createElement('div');
+                elem.className = 'rectangle';
+                elem.textContent = label;
+                return elem;
+            } else if (type === 'decision') {
+                const elem = document.createElement('div');
+                elem.className = 'diamond';
+                const content = document.createElement('div');
+                content.className = 'diamond-content';
+                content.textContent = label;
+                elem.appendChild(content);
+                return elem;
+            } else if (type === 'input' || type === 'output') {
+                const elem = document.createElement('div');
+                elem.className = 'parallelogram';
+                const content = document.createElement('div');
+                content.className = 'parallelogram-content';
+                content.textContent = label;
+                elem.appendChild(content);
+                return elem;
+            }
+        }
+
+        function selectSymbol(symbol) {
+            // Deselect previous
+            if (gameState.selectedSymbol) {
+                gameState.selectedSymbol.classList.remove('selected');
+            }
+            
+            // If clicking same symbol, deselect
+            if (gameState.selectedSymbol === symbol) {
+                gameState.selectedSymbol = null;
+                gameState.connectionSource = null;
+                document.getElementById('connectionMode').classList.remove('active');
+                return;
+            }
+            
+            // If no connection in progress, start one
+            if (!gameState.connectionSource) {
+                gameState.selectedSymbol = symbol;
+                gameState.connectionSource = symbol;
+                symbol.classList.add('selected');
+                document.getElementById('connectionMode').classList.add('active');
+            } else {
+                // Complete connection
+                const target = symbol;
+                createConnection(gameState.connectionSource, target);
+                
+                gameState.connectionSource.classList.remove('selected');
+                gameState.connectionSource = null;
+                gameState.selectedSymbol = null;
+                document.getElementById('connectionMode').classList.remove('active');
+            }
+        }
+
+        function createConnection(source, target) {
+            const canvas = document.getElementById('canvas');
+            const svg = canvas.querySelector('svg');
+            const canvasRect = canvas.getBoundingClientRect();
+            
+            const sourceRect = source.getBoundingClientRect();
+            const targetRect = target.getBoundingClientRect();
+            
+            const x1 = sourceRect.left + sourceRect.width / 2 - canvasRect.left;
+            const y1 = sourceRect.bottom - canvasRect.top;
+            const x2 = targetRect.left + targetRect.width / 2 - canvasRect.left;
+            const y2 = targetRect.top - canvasRect.top;
+            
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            line.classList.add('arrow-line');
+            
+            // Check if it's a loop back (y2 > y1)
+            if (y2 > y1) {
+                line.classList.add('loop-back');
+            }
+            
+            const path = `M ${x1} ${y1} L ${x2} ${y2}`;
+            line.setAttribute('d', path);
+            
+            svg.appendChild(line);
+            
+            gameState.connections.push({
+                source: source,
+                target: target,
+                line: line
+            });
+        }
+
+        function deleteSymbol(symbol) {
+            // Remove connections involving this symbol
+            gameState.connections = gameState.connections.filter(conn => {
+                if (conn.source === symbol || conn.target === symbol) {
+                    conn.line.remove();
+                    return false;
+                }
+                return true;
+            });
+            
+            // Remove from placed symbols
+            gameState.placedSymbols = gameState.placedSymbols.filter(s => s !== symbol);
+            
+            symbol.remove();
+        }
+
+        function clearCanvas() {
+            gameState.placedSymbols.forEach(s => s.remove());
+            gameState.connections.forEach(c => c.line.remove());
+            gameState.placedSymbols = [];
+            gameState.connections = [];
+            gameState.selectedSymbol = null;
+            gameState.connectionSource = null;
+            document.getElementById('connectionMode').classList.remove('active');
+        }
+
+        function testFlowchart() {
+            if (gameState.placedSymbols.length === 0) {
+                showFeedback('Place some symbols first!', 'incorrect');
+                return;
+            }
+            
+            sendTutorMessage('Let me trace through your flowchart. I will highlight each symbol to show the flow path.');
+            
+            // Sort symbols by position (top to bottom roughly)
+            const sorted = [...gameState.placedSymbols].sort((a, b) => {
+                const aRect = a.getBoundingClientRect();
+                const bRect = b.getBoundingClientRect();
+                return aRect.top - bRect.top;
+            });
+            
+            let idx = 0;
+            const interval = setInterval(() => {
+                if (idx >= sorted.length) {
+                    clearInterval(interval);
+                    sendTutorMessage('Test complete! Make sure your symbols are connected with arrows and the flow makes logical sense from START to END.');
+                    return;
+                }
+                
+                const symbol = sorted[idx];
+                symbol.style.transform = 'scale(1.2)';
+                symbol.style.transition = 'transform 0.3s';
+                
+                setTimeout(() => {
+                    symbol.style.transform = 'scale(1)';
+                }, 300);
+                
+                idx++;
+            }, 500);
+        }
+
+        function submitFlowchart() {
+            const level = levels[gameState.currentLevel];
+            const challenge = level.challenges[gameState.currentChallenge - 1];
+            
+            // Check solution
+            const result = checkSolution(challenge);
+            
+            if (result.correct) {
+                gameState.wrongAttempts = 0;
+                showFeedback('Perfect! Your flowchart is correct!', 'correct');
+                
+                const chalNum = (gameState.currentLevel - 1) * 3 + gameState.currentChallenge;
+                const successMsg = `Excellent work! You correctly created the ${challenge.title} flowchart with all required symbols and proper flow logic. Your understanding of flowcharts is growing stronger!`;
+                
+                sendTutorMessage(successMsg);
+                
+                setTimeout(() => {
+                    document.getElementById('successModal').classList.add('active');
+                    document.getElementById('successText').textContent = successMsg;
+                }, 1000);
+            } else {
+                gameState.wrongAttempts++;
+                showFeedback(result.message, 'incorrect');
+                
+                provideHint(challenge, result);
+            }
+        }
+
+        function checkSolution(challenge) {
+            const placed = gameState.placedSymbols;
+            
+            // Check required symbols
+            const required = challenge.requiredSymbols;
+            for (const req of required) {
+                let count = 0;
+                
+                if (req.label) {
+                    // Specific label required
+                    count = placed.filter(p => 
+                        p.dataset.type === req.type && 
+                        p.dataset.label === req.label
+                    ).length;
+                } else {
+                    // Any label of this type
+                    count = placed.filter(p => p.dataset.type === req.type).length;
+                }
+                
+                if (count < req.min) {
+                    return {
+                        correct: false,
+                        message: `You need ${req.min} ${req.label || req.type} symbol(s). You have ${count}.`,
+                        issue: 'missing_required',
+                        required: req
+                    };
+                }
+                
+                if (count > req.max) {
+                    return {
+                        correct: false,
+                        message: `Too many ${req.label || req.type} symbols. Maximum is ${req.max}, you have ${count}.`,
+                        issue: 'too_many',
+                        required: req
+                    };
+                }
+            }
+            
+            // Check minimum connections
+            if (gameState.connections.length < challenge.minConnections) {
+                return {
+                    correct: false,
+                    message: `You need at least ${challenge.minConnections} arrow connections. You have ${gameState.connections.length}.`,
+                    issue: 'missing_connections'
+                };
+            }
+            
+            // Check for loops if required
+            if (challenge.hasLoop) {
+                const hasLoopBack = gameState.connections.some(c => {
+                    const sourceRect = c.source.getBoundingClientRect();
+                    const targetRect = c.target.getBoundingClientRect();
+                    return targetRect.top < sourceRect.top;
+                });
+                
+                if (!hasLoopBack) {
+                    return {
+                        correct: false,
+                        message: 'This challenge requires a loop - an arrow must flow backward to repeat steps',
+                        issue: 'no_loop'
+                    };
+                }
+            }
+            
+            // Check START and END
+            const hasStart = placed.some(s => s.dataset.type === 'start');
+            const hasEnd = placed.some(s => s.dataset.type === 'end');
+            
+            if (!hasStart) {
+                return {
+                    correct: false,
+                    message: 'Every flowchart must start with a START oval',
+                    issue: 'no_start'
+                };
+            }
+            
+            if (!hasEnd) {
+                return {
+                    correct: false,
+                    message: 'Every flowchart must end with an END oval',
+                    issue: 'no_end'
+                };
+            }
+            
+            return {correct: true};
+        }
+
+        function provideHint(challenge, result) {
+            const attempts = gameState.wrongAttempts;
+            let hint = '';
+            
+            if (attempts === 1) {
+                // Strategic nudge based on issue
+                if (result.issue === 'missing_required') {
+                    hint = `You are missing a required symbol. The challenge needs ${result.required.min} ${result.required.label || result.required.type} symbol(s). Review the problem and think about what step is missing from your flowchart.`;
+                } else if (result.issue === 'too_many') {
+                    hint = `You have too many ${result.required.label || result.required.type} symbols. You only need ${result.required.max}. Remove extras that do not fit the exact steps described.`;
+                } else if (result.issue === 'no_start') {
+                    hint = 'Remember: every flowchart must begin with a green oval labeled START. This is the terminator symbol that marks the entry point. Place it at the top of your flowchart.';
+                } else if (result.issue === 'no_end') {
+                    hint = 'Every flowchart must finish with a green oval labeled END. This terminator symbol marks where the process finishes. All paths should eventually lead to END.';
+                } else if (result.issue === 'missing_connections') {
+                    hint = `You need more arrow connections to show the flow between symbols. Click one symbol, then click another to draw an arrow. You need at least ${challenge.minConnections} arrows for this challenge.`;
+                } else if (result.issue === 'no_loop') {
+                    hint = 'A loop requires an arrow that flows BACKWARD - pointing upward to an earlier symbol. After processing inside the loop, connect back to the decision diamond to check the condition again. This creates the repetition.';
+                }
+                
+                sendTutorMessage(hint);
+                
+            } else if (attempts === 2) {
+                if (result.issue === 'missing_required') {
+                    hint = `Look at the challenge description again. You specifically need: ${result.required.label || result.required.type}. What step does this represent? Where does it fit in your sequence?`;
+                } else if (result.issue === 'missing_connections') {
+                    hint = 'To connect symbols: click one symbol to select it, then click another symbol to draw an arrow between them. Every symbol should be connected in a chain showing the flow of operations from START to END.';
+                } else if (result.issue === 'no_loop') {
+                    hint = 'For a loop: place your decision diamond, then from the YES path do the work and draw an arrow that points UPWARD back to the decision. The NO path exits the loop. The backward arrow is what creates repetition.';
+                } else {
+                    hint = 'Review the challenge requirements and focus on using only the symbols that match the described steps. Every symbol in the palette is needed for the solution.';
+                }
+                
+                sendTutorMessage(hint);
+                
+            } else if (attempts === 3) {
+                // Provide symbol education
+                hint = 'Let me remind you about the symbols. OVALS are for START and END - they mark beginning and ending. RECTANGLES are for processes like calculations or actions. DIAMONDS are for yes or no questions that create two paths. PARALLELOGRAMS are for input or output - getting data or showing results. Arrows show the flow direction connecting everything. ';
+                
+                if (challenge.hasLoop) {
+                    hint += 'For loops: you need initialization before the loop, a diamond decision to check if you should continue, work done in the YES path, an update step, then a backward arrow to the decision to check again. The NO path exits.';
+                } else if (challenge.hasBranching) {
+                    hint += 'For decisions: the diamond has two exit arrows. Label them YES and NO mentally. Each path can have different steps before they merge back together or go to END.';
+                }
+                
+                const contextData = {
+                    question: challenge.description,
+                    userAnswer: `Flowchart with ${gameState.placedSymbols.length} symbols and ${gameState.connections.length} connections`,
+                    correctAnswer: challenge.requiredSymbols.map(r => `${r.min} ${r.label || r.type}`).join(', '),
+                    reasoning: hint
+                };
+                
+                window.parent.postMessage({
+                    type: 'ai_tutor_set_context',
+                    mistake: true,
+                    data: contextData
+                }, '*');
+                
+                sendTutorMessage(hint);
+                
+            } else {
+                // Rotate different perspectives
+                const rotatingHints = [
+                    'Break the problem into steps. What happens first? What happens second? Each step is usually one symbol. Connect them in order with arrows.',
+                    'Check your connections carefully. Do all the arrows point in logical directions? Does the flow make sense if you trace through it?',
+                    'For decisions with diamonds: make sure BOTH the YES and NO paths are complete. Both should eventually reach END or merge back together.',
+                    'Look at the symbol descriptions in the palette. Each symbol has a specific purpose. Match the challenge requirements to the correct symbol types.',
+                    'Count your symbols. Do you have the right number of each type? Too few means you are missing steps. Too many means you added unnecessary ones.',
+                    'Trace through your flowchart mentally. Start at START, follow each arrow, make decisions at diamonds. Does it do what the challenge asks?'
+                ];
+                
+                hint = rotatingHints[(attempts - 4) % rotatingHints.length];
+                sendTutorMessage(hint);
+            }
+        }
+
+        function showFeedback(message, type) {
+            const feedback = document.getElementById('feedback');
+            feedback.textContent = message;
+            feedback.className = 'feedback ' + type;
+            
+            setTimeout(() => {
+                feedback.classList.remove('correct', 'incorrect');
+                feedback.style.display = 'none';
+            }, 2500);
+        }
+
+        function nextChallenge() {
+            document.getElementById('successModal').classList.remove('active');
+            
+            const level = levels[gameState.currentLevel];
+            
+            if (gameState.currentChallenge < level.challenges.length) {
+                gameState.currentChallenge++;
+                loadChallenge();
+            } else {
+                // Move to next level
+                if (gameState.currentLevel < 4) {
+                    gameState.currentLevel++;
+                    gameState.currentChallenge = 1;
+                    
+                    // Restore dimmed symbols
+                    gameState.dimmedSymbols.forEach(s => s.classList.remove('dimmed'));
+                    gameState.dimmedSymbols = [];
+                    
+                    showLevelModal();
+                } else {
+                    // Game complete
+                    gameComplete();
+                }
+            }
+        }
+
+        function gameComplete() {
+            document.getElementById('completeModal').classList.add('active');
+            sendTutorMessage('Congratulations! You have completed all 12 challenges and mastered flowchart creation. You can now design flowcharts for any algorithm or business process. You understand sequential flows, decision branching, and loops. These are the foundations of programming logic!');
+            
+            // Post game end message
+            window.parent.postMessage('game_end', '*');
+        }
+
+        function restartGame() {
+            gameState.currentLevel = 1;
+            gameState.currentChallenge = 1;
+            gameState.placedSymbols = [];
+            gameState.connections = [];
+            gameState.wrongAttempts = 0;
+            
+            document.getElementById('completeModal').classList.remove('active');
+            
+            // Restore dimmed symbols
+            gameState.dimmedSymbols.forEach(s => s.classList.remove('dimmed'));
+            gameState.dimmedSymbols = [];
+            
+            showLevelModal();
+        }
+
+        function updateHUD() {
+            const levelInfo = document.getElementById('levelInfo');
+            const level = levels[gameState.currentLevel];
+            levelInfo.textContent = `Level ${gameState.currentLevel}: ${level.name} - Challenge ${gameState.currentChallenge}/3`;
+            
+            const totalProgress = (gameState.currentLevel - 1) * 3 + gameState.currentChallenge;
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = (totalProgress / 12 * 100) + '%';
+            progressFill.textContent = `${totalProgress}/12`;
+        }
+
+        function sendTutorMessage(text) {
+            window.parent.postMessage({
+                type: 'ai_tutor_set_context',
+                data: text
+            }, '*');
+            
+            window.parent.postMessage({
+                type: 'ai_tutor_play_audio',
+                texts: [text]
+            }, '*');
+        }
+
+        function showHelp() {
+            const level = levels[gameState.currentLevel];
+            const challenge = level.challenges[gameState.currentChallenge - 1];
+            
+            const helpText = `Let me explain this challenge. ${challenge.prompt}`;
+            sendTutorMessage(helpText);
+            showFeedback('Listen to the explanation', 'correct');
+        }
+
+        function showSymbolGuide() {
+            document.getElementById('guideModal').classList.add('active');
+            sendTutorMessage('Here is your symbol guide. OVAL terminators for START and END. RECTANGLE for processes and calculations. DIAMOND for yes or no decisions. PARALLELOGRAM for input and output. Use arrows to connect them and show flow direction.');
+        }
+
+        function closeGuide() {
+            document.getElementById('guideModal').classList.remove('active');
+        }
+
+        // Event listeners
+        document.getElementById('testBtn').onclick = testFlowchart;
+        document.getElementById('clearBtn').onclick = clearCanvas;
+        document.getElementById('submitBtn').onclick = submitFlowchart;
+        document.getElementById('helpBtn').onclick = showHelp;
+        document.getElementById('symbolGuideBtn').onclick = showSymbolGuide;
+
+        // Initialize
+        window.onload = initGame;
+    </script>
+</body>
+</html>

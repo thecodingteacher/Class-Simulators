@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Python Quest - Grade 7 Block Builder</title>
+  <style>
+    /* ==========================================================================
+           1. CSS VARIABLES & THEME SETUP
+           ========================================================================== */
+    :root {
+      --bg-base: #1e1e24;
+      --bg-panel: #282a36;
+      --bg-editor: #191a21;
+      --bg-console: #0f1015;
+      --border-color: #6272a4;
+      --text-main: #f8f8f2;
+      --text-dim: #8be9fd;
+      --text-muted: #5c678a;
+      --syn-keyword: #ff79c6;
+      --syn-hero: #50fa7b;
+      --btn-run: #4caf50;
+      --btn-run-hover: #45a049;
+      --btn-tts: #bd93f9;
+      --btn-hint: #f1fa8c;
+      --font-ui: 'Segoe UI', system-ui, sans-serif;
+      --font-code: 'Consolas', 'Courier New', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(90deg, #15161b 0%, #282a36 100%);
+      height: 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 30px;
+      border-bottom: 2px solid var(--border-color);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+    }
+
+    header h1 {
+      font-size: 24px;
+      color: var(--syn-hero);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px rgba(80, 250, 123, 0.4);
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .stat-badge {
+      font-size: 16px;
+      font-weight: bold;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+    }
+
+    #workspace {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 60px);
+    }
+
+    .panel-left,
+    .panel-right {
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    .panel-left {
+      flex: 1.2;
+      border-right: 2px solid var(--border-color);
+    }
+
+    .panel-right {
+      flex: 1.3;
+      background-color: var(--bg-editor);
+    }
+
+    /* ==========================================================================
+           2. INSTRUCTIONS & CANVAS
+           ========================================================================== */
+    .instructions-card {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+      min-height: 180px;
+      flex-shrink: 0;
+    }
+
+    .inst-header h2 {
+      color: var(--syn-keyword);
+      font-size: 22px;
+      margin-bottom: 10px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    .instructions-card p {
+      font-size: 16px;
+      line-height: 1.6;
+      color: #d7d7d7;
+      white-space: pre-wrap;
+      overflow-y: auto;
+    }
+
+    .hint-alert {
+      margin-top: 15px;
+      padding: 12px 15px;
+      background-color: rgba(241, 250, 140, 0.1);
+      border-left: 4px solid var(--btn-hint);
+      border-radius: 4px;
+      color: var(--btn-hint);
+      display: none;
+    }
+
+    .canvas-container {
+      flex: 1;
+      background-color: #000;
+      border-radius: 12px;
+      border: 2px solid var(--border-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 1);
+    }
+
+    canvas {
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    /* ==========================================================================
+           3. DRAG & DROP CODE BUILDER
+           ========================================================================== */
+    .editor-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-editor);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .editor-header {
+      background-color: #21222c;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-dim);
+      font-size: 13px;
+      font-weight: bold;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .editor-body {
+      flex: 1;
+      padding: 20px;
+      font-family: var(--font-code);
+      font-size: 18px;
+      line-height: 2.2;
+      overflow-y: auto;
+      color: var(--text-main);
+      background-color: var(--bg-editor);
+      white-space: pre-wrap;
+    }
+
+    /* Drag & Drop Slots */
+    .drop-zone {
+      display: inline-block;
+      min-width: 140px;
+      padding: 0 10px;
+      margin: 0 4px;
+      background-color: rgba(255, 255, 255, 0.05);
+      height: 34px;
+      line-height: 30px;
+      vertical-align: middle;
+      border: 2px dashed var(--text-muted);
+      border-radius: 6px;
+      color: var(--text-muted);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .drop-zone.drag-hover {
+      background-color: rgba(139, 233, 253, 0.2);
+      border-color: var(--text-dim);
+      color: var(--text-dim);
+      transform: scale(1.05);
+    }
+
+    .drop-zone.filled {
+      background-color: #44475a;
+      border-style: solid;
+      border-color: var(--syn-hero);
+      color: #fff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    }
+
+    .drop-zone.filled:hover {
+      background-color: #ff5555;
+      border-color: #ff5555;
+      text-decoration: line-through;
+    }
+
+    /* Palette */
+    .block-palette {
+      background-color: #21222c;
+      border-top: 2px solid var(--border-color);
+      padding: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      min-height: 80px;
+      align-items: center;
+    }
+
+    .drag-block {
+      background-color: #bd93f9;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: var(--font-code);
+      font-size: 15px;
+      font-weight: bold;
+      cursor: grab;
+      user-select: none;
+      transition: 0.2s;
+      box-shadow: 0 4px 0 #9d65f5;
+    }
+
+    .drag-block:active {
+      cursor: grabbing;
+      transform: translateY(4px);
+      box-shadow: none;
+    }
+
+    .drag-block.is-distractor {
+      background-color: #bd93f9;
+      box-shadow: 0 4px 0 #9d65f5;
+    }
+
+    .kw {
+      color: var(--syn-keyword);
+      font-weight: bold;
+    }
+
+    .cm {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .nm {
+      color: var(--syn-number);
+    }
+
+    /* ==========================================================================
+           4. CONTROLS & TERMINAL
+           ========================================================================== */
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-family: var(--font-ui);
+      font-size: 15px;
+      font-weight: bold;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+      flex: 1;
+      color: white;
+    }
+
+    .btn:active {
+      transform: translateY(4px);
+      box-shadow: none;
+    }
+
+    .btn-primary {
+      background-color: var(--btn-run);
+      flex: 2;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--btn-run-hover);
+    }
+
+    .btn-secondary {
+      background-color: var(--border-color);
+    }
+
+    .btn-tts {
+      background-color: var(--btn-tts);
+    }
+
+    .btn-warning {
+      background-color: var(--btn-hint);
+      color: #282a36;
+    }
+
+    .terminal-container {
+      height: 140px;
+      background-color: var(--bg-console);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: inset 0 5px 15px rgba(0, 0, 0, 0.8);
+    }
+
+    .terminal-header {
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 4px;
+    }
+
+    .terminal-output {
+      flex: 1;
+      overflow-y: auto;
+      font-family: var(--font-code);
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .log-entry {
+      padding-left: 8px;
+      border-left: 3px solid transparent;
+    }
+
+    .log-sys {
+      color: var(--text-dim);
+    }
+
+    .log-success {
+      color: var(--syn-hero);
+    }
+
+    .log-error {
+      color: #ff5555;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.3s;
+    }
+
+    .overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background-color: var(--bg-panel);
+      border: 3px solid var(--border-color);
+      border-radius: 16px;
+      padding: 40px;
+      width: 500px;
+      text-align: center;
+      transform: scale(0.8);
+      transition: 0.3s;
+    }
+
+    .overlay.active .modal {
+      transform: scale(1);
+    }
+
+    .modal-title {
+      font-size: 32px;
+      margin-bottom: 15px;
+    }
+
+    .modal-title.success {
+      color: var(--syn-hero);
+    }
+
+    .modal-title.error {
+      color: #ff5555;
+    }
+
+    #start-menu {
+      flex-direction: column;
+      z-index: 200;
+      background: linear-gradient(135deg, #1e1e24, #282a36);
+    }
+
+    #start-menu h1 {
+      font-size: 60px;
+      color: var(--syn-hero);
+      margin-bottom: 10px;
+      text-shadow: 0 0 20px rgba(80, 250, 123, 0.5);
+      text-align: center;
+    }
+
+    #start-menu p {
+      font-size: 20px;
+      color: var(--text-dim);
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    /* ===== LEVEL SELECT SCREEN ===== */
+    #level-select {
+      flex-direction: column;
+      z-index: 150;
+      background: linear-gradient(135deg, #1a1b26 0%, #282a36 50%, #1e1e2e 100%);
+    }
+
+    #level-select h1 {
+      font-size: 52px;
+      color: var(--syn-hero);
+      margin-bottom: 5px;
+      text-shadow: 0 0 30px rgba(80, 250, 123, 0.5);
+      animation: pulseGlow 2s infinite;
+    }
+
+    #level-select .subtitle {
+      font-size: 18px;
+      color: var(--text-dim);
+      margin-bottom: 30px;
+    }
+
+    .pack-container {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .pack-card {
+      background: var(--bg-panel);
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
+      padding: 30px;
+      width: 320px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pack-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      border-color: var(--syn-hero);
+      box-shadow: 0 15px 40px rgba(80, 250, 123, 0.2);
+    }
+
+    .pack-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(transparent, rgba(80, 250, 123, 0.05), transparent 30%);
+      animation: rotateBg 6s linear infinite;
+    }
+
+    .pack-card h2 {
+      font-size: 26px;
+      color: var(--syn-hero);
+      margin-bottom: 5px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pack-card.loops h2 {
+      color: #bd93f9;
+    }
+
+    .pack-card.loops:hover {
+      border-color: #bd93f9;
+      box-shadow: 0 15px 40px rgba(189, 147, 249, 0.2);
+    }
+
+    .pack-card .pack-desc {
+      color: var(--text-dim);
+      font-size: 14px;
+      margin-bottom: 15px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pack-card .pack-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+      display: block;
+      position: relative;
+      z-index: 1;
+    }
+
+    .level-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .level-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      border: 2px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-dim);
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: var(--font-ui);
+    }
+
+    .level-btn:hover {
+      background: var(--syn-hero);
+      color: #1e1e24;
+      transform: scale(1.15);
+      border-color: var(--syn-hero);
+    }
+
+    .pack-card.loops .level-btn:hover {
+      background: #bd93f9;
+      border-color: #bd93f9;
+    }
+
+    .btn-back {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: none;
+      border: 2px solid var(--border-color);
+      color: var(--text-dim);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      font-size: 14px;
+      transition: 0.2s;
+      z-index: 10;
+    }
+
+    .btn-back:hover {
+      border-color: var(--syn-hero);
+      color: var(--syn-hero);
+    }
+
+    /* ===== FLOATING PARTICLES ===== */
+    .bg-particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .bg-particle {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.3;
+      animation: floatUp linear infinite;
+    }
+
+    @keyframes floatUp {
+      0% {
+        transform: translateY(100vh) scale(0);
+        opacity: 0;
+      }
+
+      20% {
+        opacity: 0.4;
+      }
+
+      80% {
+        opacity: 0.2;
+      }
+
+      100% {
+        transform: translateY(-20vh) scale(1);
+        opacity: 0;
+      }
+    }
+
+    @keyframes pulseGlow {
+
+      0%,
+      100% {
+        text-shadow: 0 0 20px rgba(80, 250, 123, 0.4);
+      }
+
+      50% {
+        text-shadow: 0 0 40px rgba(80, 250, 123, 0.8), 0 0 80px rgba(80, 250, 123, 0.3);
+      }
+    }
+
+    @keyframes rotateBg {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes bounceIn {
+      0% {
+        transform: scale(0) rotate(-10deg);
+        opacity: 0;
+      }
+
+      50% {
+        transform: scale(1.1) rotate(2deg);
+      }
+
+      100% {
+        transform: scale(1) rotate(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideInUp {
+      from {
+        transform: translateY(30px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .drop-zone {
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .drop-zone.filled {
+      animation: bounceIn 0.3s;
+    }
+
+    .drag-block {
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .drag-block:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 8px 4px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="start-menu" class="overlay active">
+    <div class="bg-particles" id="bg-particles"></div>
+    <h1>PYTHON QUEST<br><span style="font-size: 32px; color: #f1fa8c;">Grade 7 Block Builder</span></h1>
+    <p>Learn Logic &amp; Python without the typing errors!<br><b>Drag</b> blocks or <b>Click</b> them to fill the empty
+      slots!<br>⚠️ Watch out — not every block belongs!</p>
+    <button class="btn btn-primary" style="font-size: 22px; padding: 20px 50px;"
+      onclick="GameApp.showLevelSelect()">START ADVENTURE</button>
+  </div>
+
+  <div id="level-select" class="overlay">
+    <div class="bg-particles" id="bg-particles-ls"></div>
+    <button class="btn-back" onclick="GameApp.backToSplash()">← Back</button>
+    <h1>🗺️ SELECT LEVEL</h1>
+    <p class="subtitle">Choose a level pack to begin your quest</p>
+    <div class="pack-container">
+      <div class="pack-card basics">
+        <span class="pack-icon">🐍</span>
+        <h2>Basics (1-10)</h2>
+        <p class="pack-desc">Sequence, Variables, If/Else, Functions</p>
+        <div class="level-grid" id="pack-basics"></div>
+      </div>
+      <div class="pack-card loops">
+        <span class="pack-icon">🔁</span>
+        <h2>Loops (11-20)</h2>
+        <p class="pack-desc">While Loops, For Loops, Range, Nested Loops</p>
+        <div class="level-grid" id="pack-loops"></div>
+      </div>
+    </div>
+  </div>
+
+  <header>
+    <h1>Python Quest</h1>
+    <div class="header-stats">
+      <div class="stat-badge" id="inventory">🏹 Arrows: 0</div>
+      <div class="stat-badge" style="background: rgba(0,0,0,0.3);" id="level-display">Level 1 / 20</div>
+      <button class="btn-back" style="position:relative;top:0;left:0;" onclick="GameApp.returnToMenu()">🗺️
+        Levels</button>
+    </div>
+  </header>
+
+  <div id="workspace">
+    <div class="panel-left">
+      <div class="instructions-card">
+        <div class="inst-header">
+          <h2 id="inst-title">Loading...</h2>
+        </div>
+        <p id="inst-desc">Preparing the environment...</p>
+        <div class="hint-alert" id="hint-box"></div>
+      </div>
+      <div class="canvas-container"><canvas id="game-canvas"></canvas></div>
+    </div>
+
+    <div class="panel-right">
+      <div class="editor-container">
+        <div class="editor-header"><span>main.py</span><span>Drag & Drop Workspace</span></div>
+        <div class="editor-body" id="code-editor">
+        </div>
+        <div class="block-palette" id="block-palette">
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-primary" onclick="GameApp.runStudentCode()">▶ Run Script</button>
+        <button class="btn btn-secondary" onclick="GameApp.resetGameWorld()">↺ Reset Map</button>
+        <button class="btn btn-tts" onclick="GameApp.speakHint()">🔊 Listen</button>
+        <button class="btn btn-warning" onclick="GameApp.toggleHint()">💡 Hint</button>
+      </div>
+
+      <div class="terminal-container">
+        <div class="terminal-header">Terminal Log</div>
+        <div class="terminal-output" id="terminal-output">
+          <div class="log-entry log-sys">> Engine initialized. Awaiting block assembly.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="result-modal" class="overlay">
+    <div class="modal">
+      <h2 class="modal-title" id="modal-title">Success!</h2>
+      <p id="modal-desc" style="font-size: 18px; color: #ccc; margin-bottom: 25px;">You completed the level.</p>
+      <button class="btn btn-primary" id="modal-btn" style="width: 100%;"
+        onclick="GameApp.closeModal()">CONTINUE</button>
+    </div>
+  </div>
+
+  <script>
+    /** ========================================================================
+     *  SHUFFLE UTILITY
+     *  Fisher-Yates shuffle for randomising block order
+     *  ======================================================================== */
+    function shuffleArray(arr) {
+      let a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    /** ========================================================================
+     *  1. 10-LEVEL CURRICULUM (Grade 7)
+     *  [DROP_X] represent empty Drop Slots in the templates.
+     *  blocks = correct answers, distractors = wrong blocks
+     *  ======================================================================== */
+    const LEVELS = [
+      {
+        title: "Level 1: The First Step", concept: "Sequence", arrows: 0,
+        desc: "Welcome to Python Quest!\nDrag the commands from the bottom palette into the empty slots [ Drop Here ].\nCode runs in sequence from top to bottom.\n⚠️ Not all blocks are correct — choose wisely!",
+        hint: "Click the 'hero.move_right()' block twice to fill both slots.",
+        codeTemplate: "# Command the hero to reach the goal\n[DROP_1]\n[DROP_2]",
+        blocks: ["hero.move_right()", "hero.move_right()"],
+        distractors: ["hero.move_left()", "hero.move_down()", "hero.move_up()"]
+      },
+      {
+        title: "Level 2: Turning Corners", concept: "Sequence", arrows: 0,
+        desc: "Great job! Now the path turns down. You can insert multiple commands to navigate the corners.\n⚠️ Some blocks look right but will crash you into walls!",
+        hint: "Move right(2), then down(2), then right(3), then up(2).",
+        codeTemplate: "hero.move_right(2)\n# Add more commands below to reach the goal\n[DROP_1]\nhero.move_right(3)\n[DROP_2]",
+        blocks: ["hero.move_down(2)", "hero.move_up(2)"],
+        distractors: ["hero.move_down(3)", "hero.move_left(2)", "hero.move_up(1)"]
+      },
+      {
+        title: "Level 3: Variables", concept: "Variables", arrows: 0,
+        desc: "Variables act like storage boxes for numbers. We can store the number of steps in a variable named `distance`.\n⚠️ Pick the right number AND the right variable name!",
+        hint: "Count the steps to the X. It takes 4 steps. Drop '4', then drop 'distance'.",
+        codeTemplate: "distance = [DROP_1]\n\n# Pass the variable to the movement command\nhero.move_right([DROP_2])",
+        blocks: ["4", "distance"],
+        distractors: ["3", "5", "steps", "speed"]
+      },
+      {
+        title: "Level 4: Math Magic", concept: "Arithmetic", arrows: 0,
+        desc: "Variables can hold the results of math operations (+, -, *, /)!\n⚠️ Watch out for variables that don't exist in this code!",
+        hint: "Add part1 to part2. Then use the 'total' variable to move down 5 spaces.",
+        codeTemplate: "part1 = 3\npart2 = 2\n# Calculate total below\ntotal = [DROP_1] + [DROP_2]\n\nhero.move_right(2)\n# Now move down using the 'total' variable\nhero.move_down([DROP_3])",
+        blocks: ["part1", "part2", "total"],
+        distractors: ["part3", "sum", "result", "3"]
+      },
+      {
+        title: "Level 5: Reassignment", concept: "Variables", arrows: 0,
+        desc: "Variables can change their values as the code runs! Reassign x to new numbers to reach the goal.\n⚠️ The wrong number will crash you into a wall!",
+        hint: "First x is 3. Then make it 2 to move down. Then use x=3 to move right to the goal.",
+        codeTemplate: "x = 3\nhero.move_right(x)\n\n# Change x to 2\nx = [DROP_1]\nhero.move_down(x)\n\n# Change x to 3 and move right\n[DROP_2]\nhero.move_right(x)",
+        blocks: ["2", "x = 3"],
+        distractors: ["1", "4", "x = 2", "x = 5"]
+      },
+      {
+        title: "Level 6: Ammo Pickups", concept: "Combining Logic", arrows: 0,
+        desc: "A Skeleton (S) blocks your path!\nWalk over an Arrow (A) to pick it up. Then use an `if` statement to check your inventory before firing.\n⚠️ Wrong moves or wrong directions will fail!",
+        hint: "Move right 2 to get the arrow. Inside the if statement, shoot right.",
+        codeTemplate: "# 1. Pick up the arrow\n[DROP_1]\n\n# 2. Check and fire\nif hero.has_arrows():\n    [DROP_2]\n\n# 3. Reach the goal\n[DROP_3]",
+        blocks: ["hero.move_right(2)", "hero.shoot_arrow('right')", "hero.move_right(4)"],
+        distractors: ["hero.move_right(3)", "hero.shoot_arrow('left')", "hero.shoot_arrow('down')", "hero.move_left(2)"]
+      },
+      {
+        title: "Level 7: The Detour (If/Else)", concept: "If / Else", arrows: 0,
+        desc: "You have NO arrows! The `else` block runs when the `if` condition is False. We must take the detour around the skeleton.\n⚠️ Pick the right direction for the detour!",
+        hint: "The code will skip the IF and jump to 'else'. Fill in the detour steps: move down 2, then move up 2.",
+        codeTemplate: "if hero.has_arrows():\n    hero.shoot_arrow('right')\n    hero.move_right(3)\nelse:\n    # Take the detour around the skeleton\n    [DROP_1]\n    hero.move_right(3)\n    [DROP_2]\n\nhero.move_right(2)",
+        blocks: ["hero.move_down(2)", "hero.move_up(2)"],
+        distractors: ["hero.move_down(3)", "hero.move_up(3)", "hero.move_left(2)", "hero.move_right(2)"]
+      },
+      {
+        title: "Level 8: Multiple Paths (Elif)", concept: "Elif", arrows: 1,
+        desc: "<code>elif</code> (Else-If) lets you check multiple conditions in order. It allows us to pick a completely different path!\n⚠️ Choose the right direction to check AND shoot!",
+        hint: "Since the path right is blocked by a wall, enemy_ahead('right') is False. It drops to elif. So check if enemy down and shoot down!",
+        codeTemplate: "if hero.enemy_ahead('right'):\n    [DROP_1]\n    hero.move_right(5)\nelif [DROP_2]:\n    hero.shoot_arrow('down')\n    [DROP_3]\n    hero.move_right(5)\n    hero.move_up(2)",
+        blocks: ["hero.shoot_arrow('right')", "hero.enemy_ahead('down')", "hero.move_down(2)"],
+        distractors: ["hero.shoot_arrow('down')", "hero.enemy_ahead('right')", "hero.enemy_ahead('up')", "hero.move_down(3)", "hero.move_up(2)"]
+      },
+      {
+        title: "Level 9: The Magic Light", concept: "Sensors", arrows: 0,
+        desc: "It's pitch black! Use your Magic Light to check for enemies. If `hero.magic_light('right')` finds an enemy, take the detour!\n⚠️ The wrong sensor direction or move will leave you lost in the dark!",
+        hint: "If the light is true, move down 2 to detour. Else (if clear), just go straight.",
+        codeTemplate: "hero.move_right()\n\nif [DROP_1]:\n    # Detour\n    [DROP_2]\n    hero.move_right(3)\n    hero.move_up(2)\nelse:\n    # Path clear\n    hero.move_right(3)\n\nhero.move_right()",
+        blocks: ["hero.magic_light('right')", "hero.move_down(2)"],
+        distractors: ["hero.magic_light('left')", "hero.magic_light('down')", "hero.move_down(3)", "hero.move_up(2)", "hero.has_arrows()"]
+      },
+      {
+        title: "Level 10: Encapsulation (Functions)", concept: "Functions", arrows: 5,
+        desc: "Programmers hate retyping code. You can group code inside a Function using `def`! Finish the `clear_path()` function, then CALL it twice.\n⚠️ Calling the wrong function or using the wrong command will fail!",
+        hint: "Inside clear_path: if light is true, shoot right. Below that, ALWAYS move right 3. Finally, call clear_path() twice!",
+        codeTemplate: "def clear_path():\n    if hero.magic_light('right'):\n        [DROP_1]\n    [DROP_2]\n\n# Call the function below:\n[DROP_3]\n[DROP_4]",
+        blocks: ["hero.shoot_arrow('right')", "hero.move_right(3)", "clear_path()", "clear_path()"],
+        distractors: ["hero.shoot_arrow('down')", "hero.move_right(2)", "hero.move_right(4)", "hero.magic_light('right')", "move_right()"]
+      },
+      {
+        title: "Level 11: While Loop Basics", concept: "While Loop", arrows: 0,
+        desc: "A `while` loop repeats code as long as its condition is True. Use a while loop to walk the hero to the right until reaching the goal!\n⚠️ Pick the right condition and action!",
+        hint: "While x < 6, keep moving right. x starts at 0 and increases by 1 each step.",
+        codeTemplate: "x = 0\nwhile [DROP_1]:\n    hero.move_right()\n    x = x + [DROP_2]",
+        blocks: ["x < 6", "1"],
+        distractors: ["x < 3", "x > 6", "2", "0"]
+      },
+      {
+        title: "Level 12: While with Counting", concept: "While Loop", arrows: 0,
+        desc: "Use a while loop to move down a corridor. Count your steps with a variable!\n⚠️ The wrong number of steps will crash into walls!",
+        hint: "You need to move down 4 times. Use steps < 4 as the condition.",
+        codeTemplate: "steps = 0\nhero.move_right(3)\nwhile [DROP_1]:\n    [DROP_2]\n    steps = steps + 1\nhero.move_right(3)",
+        blocks: ["steps < 4", "hero.move_down()"],
+        distractors: ["steps < 3", "steps < 6", "hero.move_right()", "hero.move_up()"]
+      },
+      {
+        title: "Level 13: For Loop Intro", concept: "For Loop", arrows: 0,
+        desc: "`for i in range(n)` repeats code exactly n times! Use a for loop to move right to the goal.\n⚠️ Count the spaces carefully!",
+        hint: "The goal is 5 spaces to the right. Use range(5).",
+        codeTemplate: "for i in range([DROP_1]):\n    [DROP_2]",
+        blocks: ["5", "hero.move_right()"],
+        distractors: ["3", "4", "6", "hero.move_down()", "hero.move_left()"]
+      },
+      {
+        title: "Level 14: For Loop Navigation", concept: "For Loop", arrows: 0,
+        desc: "Use TWO for loops: one to move right, then one to move down!\n⚠️ Get the counts right or you'll hit walls!",
+        hint: "Move right 3 times with a for loop, then move down 3 times with another for loop. Then move right twice more.",
+        codeTemplate: "for i in range([DROP_1]):\n    hero.move_right()\nfor j in range([DROP_2]):\n    hero.move_down()\nhero.move_right(2)",
+        blocks: ["3", "3"],
+        distractors: ["2", "4", "5", "1"]
+      },
+      {
+        title: "Level 15: While + If Combo", concept: "While + If", arrows: 3,
+        desc: "Use a while loop that checks for enemies with `magic_light`. If one is found, shoot it!\n⚠️ Wrong direction or wrong condition will fail!",
+        hint: "Loop 3 times. Each time, check with magic_light('right'). If true, shoot right. Then move right 2.",
+        codeTemplate: "count = 0\nwhile count < 3:\n    if [DROP_1]:\n        [DROP_2]\n    [DROP_3]\n    count = count + 1",
+        blocks: ["hero.magic_light('right')", "hero.shoot_arrow('right')", "hero.move_right(2)"],
+        distractors: ["hero.magic_light('down')", "hero.shoot_arrow('left')", "hero.move_right(3)", "hero.move_left()"]
+      },
+      {
+        title: "Level 16: For Loop with Steps", concept: "For Loop", arrows: 0,
+        desc: "Use a for loop to move in a zigzag pattern! Each iteration moves right then alternates up/down.\n⚠️ Order matters inside the loop body!",
+        hint: "Loop 3 times: each time move right(2) then move down(1).",
+        codeTemplate: "for i in range(3):\n    [DROP_1]\n    [DROP_2]\nhero.move_right(2)",
+        blocks: ["hero.move_right(2)", "hero.move_down()"],
+        distractors: ["hero.move_right()", "hero.move_down(2)", "hero.move_up()", "hero.move_left()"]
+      },
+      {
+        title: "Level 17: While Loop Exit", concept: "While Loop", arrows: 0,
+        desc: "Use a while loop with a boolean flag! Set `moving` to False to stop the loop when you reach the right column.\n⚠️ Wrong condition check will cause infinite loop!",
+        hint: "While moving is True, move right. After 4 steps, set moving = False. Then move down.",
+        codeTemplate: "moving = True\nsteps = 0\nwhile [DROP_1]:\n    hero.move_right()\n    steps = steps + 1\n    if steps == 4:\n        [DROP_2]\n[DROP_3]",
+        blocks: ["moving", "moving = False", "hero.move_down(3)"],
+        distractors: ["not moving", "moving = True", "hero.move_down(2)", "hero.move_right()"]
+      },
+      {
+        title: "Level 18: For + If Pattern", concept: "For + If", arrows: 5,
+        desc: "It's dark! Use a for loop and check each step with `magic_light` before moving. Shoot enemies you find!\n⚠️ Pick the right number of iterations!",
+        hint: "Loop 4 times. Each time, check right with magic_light. If enemy, shoot. Then move right.",
+        codeTemplate: "for i in range([DROP_1]):\n    if hero.magic_light('right'):\n        [DROP_2]\n    [DROP_3]",
+        blocks: ["4", "hero.shoot_arrow('right')", "hero.move_right()"],
+        distractors: ["3", "5", "hero.shoot_arrow('down')", "hero.move_down()"]
+      },
+      {
+        title: "Level 19: Nested Loops", concept: "Nested Loops", arrows: 0,
+        desc: "Nested loops = loops inside loops! Use an outer loop for rows and inner loop for columns to navigate a grid.\n⚠️ Wrong nesting will take you off course!",
+        hint: "Outer loop 2 times: move right 3, then move down 1. After both outer loops, move right 2 to the goal.",
+        codeTemplate: "for row in range([DROP_1]):\n    for col in range(3):\n        [DROP_2]\n    [DROP_3]\nhero.move_right(2)",
+        blocks: ["2", "hero.move_right()", "hero.move_down()"],
+        distractors: ["3", "4", "hero.move_left()", "hero.move_up()"]
+      },
+      {
+        title: "Level 20: Loop Mastery!", concept: "Combined Loops", arrows: 5,
+        desc: "Final challenge! Use a for loop with a function to navigate a dangerous corridor. Define `advance()` and call it in a loop!\n⚠️ Get the function AND the loop right!",
+        hint: "Define advance(): if light right, shoot right, then move right(2). Loop it 3 times with for.",
+        codeTemplate: "def advance():\n    if hero.magic_light('right'):\n        [DROP_1]\n    [DROP_2]\n\nfor i in range([DROP_3]):\n    [DROP_4]",
+        blocks: ["hero.shoot_arrow('right')", "hero.move_right(2)", "3", "advance()"],
+        distractors: ["hero.shoot_arrow('down')", "hero.move_right(3)", "2", "4", "hero.move_right()"]
+      }
+    ];
+
+    // Original maps stored separately (unchanged)
+    const LEVEL_MAPS = [
+      // Level 1: move_right() x2. H(2,1) → X(4,1)
+      ["WWWWWWWWWW", "W.H.X....W", "WWWWWWWWWW"],
+      // Level 2: right(2), down(2), right(3), up(2). H(2,1)→(4,1)→(4,3)→(7,3)→(7,1)=X
+      ["WWWWWWWWWW", "W.H..WWX.W", "W....WW..W", "W........W", "WWWWWWWWWW"],
+      // Level 3: distance=4, move_right(4). H(2,1) → X(6,1)
+      ["WWWWWWWWWW", "W.H...X..W", "WWWWWWWWWW"],
+      // Level 4: right(2), down(5). H(2,1)→(4,1)→(4,6)=X
+      ["WWWWWWWWWW", "W.H......W", "W........W", "W........W", "W........W", "W........W", "W...X....W", "WWWWWWWWWW"],
+      // Level 5: right(3), down(2), right(3). H(2,1)→(5,1)→(5,3)→(8,3)=X
+      ["WWWWWWWWWWWW", "W.H...WWWWWW", "WWWWW.WWWWWW", "WWWWW...X..W", "WWWWWWWWWWWW"],
+      // Level 6: right(2) pickup A, shoot right kills S, right(4). H(2,1),A(4,1),S(5,1),X(8,1)
+      ["WWWWWWWWWWWW", "W.H.AS..X..W", "WWWWWWWWWWWW"],
+      // Level 7: else path: down(2), right(3), up(2), then right(2). H(2,1),S(4,1). Path: (2,1)→(2,3)→(5,3)→(5,1)→(7,1)=X
+      ["WWWWWWWWWW", "W.H.S..X.W", "W....WWW.W", "W........W", "WWWWWWWWWW"],
+      // Level 8: elif enemy_ahead('down'). H(2,2),S(2,4). shoot down, down(2), right(5), up(2). (2,2)→(2,4)→(7,4)→(7,2)=X
+      ["WWWWWWWWWW", "WWWWWWWWWW", "W.H.W..X.W", "W..WWW...W", "W.S......W", "WWWWWWWWWW"],
+      // Level 9: dark level. right(), if magic_light: down(2), right(3), up(2); else right(3). then right().
+      // Light=true path: H(2,1)→(3,1)→(3,3)→(6,3)→(6,1)→(7,1)=X
+      ["WWWWWWWWWW", "W.H.S..X.W", "W....WWW.W", "W........W", "WWWWWWWWWW"],
+      // Level 10: clear_path() x2. Each: if light→shoot, right(3). H(2,1),S(4,1),S(7,1). (2,1)→(5,1)→(8,1)=X
+      ["WWWWWWWWWWWW", "W.H.S..SX..W", "WWWWWWWWWWWW"],
+      // --- Levels 11-20 (Loops) ---
+      // Level 11: while x<6: move_right, x+1. 6 steps. H(2,1) → X(8,1)
+      ["WWWWWWWWWWWW", "W.H.....X..W", "WWWWWWWWWWWW"],
+      // Level 12: right(3), while steps<4: down, steps+1. right(3). H(2,1)→(5,1)→(5,5)→(8,5)=X
+      ["WWWWWWWWWWWW", "W.H........W", "W..........W", "W..........W", "W..........W", "W.......X..W", "WWWWWWWWWWWW"],
+      // Level 13: for range(5): right. H(2,1) → X(7,1)
+      ["WWWWWWWWWW", "W.H....X.W", "WWWWWWWWWW"],
+      // Level 14: for range(3): right. for range(3): down. right(2). H(2,1)→(5,1)→(5,4)→(7,4)=X
+      ["WWWWWWWWWW", "W.H......W", "W........W", "W........W", "W......X.W", "WWWWWWWWWW"],
+      // Level 15: while count<3: if magic_light shoot, right(2), count+1. H(2,1)→(4,1)→(6,1)→(8,1)=X
+      ["WWWWWWWWWWWW", "W.H.S..SX..W", "WWWWWWWWWWWW"],
+      // Level 16: for range(3): right(2), down(). right(2). H(2,1)→(8,4)→(10,4)=X
+      ["WWWWWWWWWWWWWW", "W.H..........W", "W............W", "W............W", "W.........X..W", "WWWWWWWWWWWWWW"],
+      // Level 17: while moving: right,steps+1,if 4 stop. down(3). H(2,1)→(6,1)→(6,4)=X
+      ["WWWWWWWWWW", "W.H......W", "W........W", "W........W", "W.....X..W", "WWWWWWWWWW"],
+      // Level 18: for range(4): if light shoot, right(). H(2,1),S(4,1),S(5,1).
+      // Iter0: at(2,1) light→S@4 shoot. right→(3,1). Iter1: light→S@5 shoot. right→(4,1). Iter2: right→(5,1). Iter3: right→(6,1)=X.
+      ["WWWWWWWWWW", "W.H.SSX..W", "WWWWWWWWWW"],
+      // Level 19: for row range(2): for col range(3): right(). down(). right(2). H(2,1)→(5,1)→(5,2)→(8,2)→(8,3)→(10,3)=X
+      ["WWWWWWWWWWWWWW", "W.H..........W", "W............W", "W.........X..W", "WWWWWWWWWWWWWW"],
+      // Level 20: advance()=if light shoot, right(2). Loop 3x. H(2,1),S@4,S@7.
+      // advance1: at(2,1) light→S@4 shoot. right(2)→(4,1). advance2: at(4,1) light→S@7 shoot. right(2)→(6,1). advance3: no enemy. right(2)→(8,1)=X
+      ["WWWWWWWWWWWW", "W.H.S..SX..W", "WWWWWWWWWWWW"]
+    ];
+
+    // Attach maps
+    LEVELS.forEach((lvl, i) => { lvl.map = LEVEL_MAPS[i]; });
+
+    /** ========================================================================
+     *  2. AUDIO & GRAPHICS ENGINE
+     *  ======================================================================== */
+    const AudioFX = {
+      ctx: null,
+      init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+      play(f, t, d, v, s = 0) {
+        if (!this.ctx) return; if (this.ctx.state === 'suspended') this.ctx.resume();
+        let o = this.ctx.createOscillator(), g = this.ctx.createGain();
+        o.type = t; o.frequency.setValueAtTime(f, this.ctx.currentTime);
+        if (s !== 0) o.frequency.exponentialRampToValueAtTime(Math.max(f + s, 10), this.ctx.currentTime + d);
+        g.gain.setValueAtTime(v, this.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + d);
+        o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime + d);
+      },
+      step: () => AudioFX.play(150, 'triangle', 0.1, 0.05, -50), bump: () => AudioFX.play(80, 'sawtooth', 0.2, 0.1, -20),
+      shoot: () => AudioFX.play(600, 'square', 0.1, 0.05, 300), light: () => AudioFX.play(800, 'sine', 0.3, 0.05, 200),
+      kill: () => { AudioFX.play(200, 'sawtooth', 0.1, 0.1, -50); setTimeout(() => AudioFX.play(100, 'sawtooth', 0.2, 0.1, -50), 100); },
+      gem: () => { AudioFX.play(800, 'sine', 0.1, 0.1); setTimeout(() => AudioFX.play(1200, 'sine', 0.3, 0.1), 100); },
+      win: () => [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => setTimeout(() => AudioFX.play(f, 'square', 0.2, 0.1), i * 150)),
+      click: () => AudioFX.play(1000, 'sine', 0.05, 0.02),
+      wrong: () => AudioFX.play(200, 'sawtooth', 0.3, 0.08, -100)
+    };
+
+    const TILE_SIZE = 50; const Gfx = { cache: {} };
+    function initGraphics() {
+      const cs = (w, h, df) => { let c = document.createElement('canvas'); c.width = w; c.height = h; df(c.getContext('2d'), w, h); return c; };
+      Gfx.cache.floor = cs(TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+        ctx.fillStyle = '#2a2b36'; ctx.fillRect(0, 0, w, h); ctx.strokeStyle = '#1e1f29'; ctx.lineWidth = 2;
+        let seed = 42; const rnd = () => { let x = Math.sin(seed++) * 1000; return x - Math.floor(x); };
+        for (let i = 0; i < 8; i++) { let x = rnd() * (w - 10); let y = rnd() * (h - 10); ctx.fillStyle = '#30323d'; ctx.fillRect(x, y, 10, 10); ctx.strokeRect(x, y, 10, 10); }
+      });
+      Gfx.cache.wall = cs(TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+        ctx.fillStyle = '#0f1015'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#44475a'; ctx.fillRect(0, 0, w, h / 2);
+        ctx.fillStyle = '#282a36'; ctx.fillRect(0, h / 2, w, h / 2); ctx.strokeStyle = '#1e1e24'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.moveTo(0, h * 0.75); ctx.lineTo(w, h * 0.75);
+        ctx.moveTo(w / 2, h / 2); ctx.lineTo(w / 2, h * 0.75); ctx.moveTo(w / 4, h * 0.75); ctx.lineTo(w / 4, h); ctx.moveTo(w * 0.75, h * 0.75); ctx.lineTo(w * 0.75, h); ctx.stroke();
+      });
+      Gfx.cache.hero = []; for (let i = 0; i < 4; i++) Gfx.cache.hero.push(cs(TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+        let bob = Math.sin(i * Math.PI / 2) * 2;
+        ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(25, 42, 12, 4, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#2e7d32'; ctx.beginPath(); ctx.moveTo(15, 20 + bob); ctx.lineTo(35, 20 + bob); ctx.lineTo(40, 42); ctx.lineTo(10, 42); ctx.fill();
+        ctx.fillStyle = '#5d4037'; ctx.fillRect(17, 34 + bob, 16, 3);
+        ctx.fillStyle = '#ffcc80'; ctx.beginPath(); ctx.arc(25, 16 + bob, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#1b5e20'; ctx.beginPath(); ctx.moveTo(12, 14 + bob); ctx.lineTo(38, 14 + bob); ctx.lineTo(20, 2 + bob); ctx.fill();
+        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(22, 18 + bob, 1.5, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(28, 18 + bob, 1.5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#8d6e63'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(35, 25 + bob, 8, -Math.PI / 2, Math.PI / 2); ctx.stroke();
+      }));
+      Gfx.cache.skeleton = []; for (let i = 0; i < 4; i++) Gfx.cache.skeleton.push(cs(TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+        let bob = Math.cos(i * Math.PI / 2) * 2;
+        ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(25, 42, 12, 4, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(25, 20 + bob); ctx.lineTo(25, 35 + bob); ctx.stroke(); ctx.beginPath(); ctx.moveTo(15, 25 + bob); ctx.lineTo(35, 25 + bob); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(25, 35 + bob); ctx.lineTo(18, 42 + bob); ctx.stroke(); ctx.beginPath(); ctx.moveTo(25, 35 + bob); ctx.lineTo(32, 42 + bob); ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(25, 14 + bob, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(22, 12 + bob, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(28, 12 + bob, 2.5, 0, Math.PI * 2); ctx.fill();
+      }));
+      Gfx.cache.arrowItem = cs(TILE_SIZE, TILE_SIZE, (ctx) => {
+        ctx.strokeStyle = '#8d6e63'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(10, 25); ctx.lineTo(40, 25); ctx.stroke();
+        ctx.fillStyle = '#bdbdbd'; ctx.beginPath(); ctx.moveTo(42, 25); ctx.lineTo(32, 20); ctx.lineTo(32, 30); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(10, 25); ctx.lineTo(16, 20); ctx.lineTo(16, 30); ctx.fill();
+      });
+      Gfx.cache.goal = []; for (let i = 0; i < 8; i++) Gfx.cache.goal.push(cs(TILE_SIZE, TILE_SIZE, (ctx) => {
+        let p = Math.sin(i * Math.PI / 4) * 3, fw = Math.sin(i * Math.PI / 4) * 3;
+        ctx.fillStyle = `rgba(255,215,0,${0.15 + Math.sin(i * Math.PI / 4) * 0.1})`; ctx.beginPath(); ctx.arc(25, 25, 22 + p, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#8d6e63'; ctx.fillRect(12, 8, 4, 36);
+        ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.moveTo(16, 10); ctx.quadraticCurveTo(28 + fw, 14, 38, 12 + fw); ctx.lineTo(36, 24 + fw); ctx.quadraticCurveTo(26 + fw, 22, 16, 26); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#b8860b'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('X', 27 + fw * 0.3, 22 + fw * 0.3);
+      }));
+    }
+    initGraphics();
+
+    /** ========================================================================
+     *  3. PYTHON PARSER & INTERPRETER
+     *  ======================================================================== */
+    class Lexer {
+      constructor(input) { this.input = input; this.tokens = []; this.indentStack = [0]; }
+      tokenize() {
+        const lines = this.input.split(/\r?\n/);
+        for (let i = 0; i < lines.length; i++) {
+          let line = lines[i].split('#')[0];
+          if (line.trim().length > 0) {
+            let spaces = line.match(/^ */)[0].length; let currInd = this.indentStack[this.indentStack.length - 1];
+            if (spaces > currInd) { this.indentStack.push(spaces); this.tokens.push({ type: 'INDENT', value: spaces, line: i + 1 }); }
+            else if (spaces < currInd) { while (this.indentStack.length > 1 && this.indentStack[this.indentStack.length - 1] > spaces) { this.indentStack.pop(); this.tokens.push({ type: 'DEDENT', value: spaces, line: i + 1 }); } }
+            this.processLine(line.trim(), i + 1); this.tokens.push({ type: 'NEWLINE', value: '\n', line: i + 1 });
+          }
+        }
+        while (this.indentStack.length > 1) { this.indentStack.pop(); this.tokens.push({ type: 'DEDENT', value: 0, line: 'EOF' }); }
+        this.tokens.push({ type: 'EOF', value: '', line: 'EOF' }); return this.tokens;
+      }
+      processLine(str, lineNum) {
+        let pos = 0;
+        while (pos < str.length) {
+          let space = str.slice(pos).match(/^\s+/); if (space) { pos += space[0].length; continue; }
+          const regex = /^(==|!=|<=|>=|<|>|\+|-|\*|\/|=|\(|\)|\[|\]|:|,|\bif\b|\belif\b|\belse\b|\bdef\b|\breturn\b|\bnot\b|\band\b|\bor\b|\bpass\b|\bfor\b|\bwhile\b|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|[a-zA-Z_]\w*|\.)/;
+          let match = str.slice(pos).match(regex);
+          if (match) {
+            let val = match[1], type = 'UNKNOWN';
+            if (/^\d+(\.\d+)?$/.test(val)) type = 'NUMBER';
+            else if (/^["'].*["']$/.test(val)) type = 'STRING';
+            else if (['if', 'elif', 'else', 'def', 'return', 'not', 'and', 'or', 'pass', 'for', 'while', 'in', 'range'].includes(val)) type = 'KEYWORD';
+            else if (/^[a-zA-Z_]\w*$/.test(val)) type = 'IDENTIFIER'; else type = 'PUNC';
+            this.tokens.push({ type, value: val, line: lineNum }); pos += match[0].length;
+          } else throw new Error(`Lexer Error Line ${lineNum}`);
+        }
+      }
+    }
+
+    class Parser {
+      constructor(tokens) { this.tokens = tokens; this.pos = 0; }
+      peek() { return this.tokens[this.pos] || { type: 'EOF' }; }
+      consume() { return this.tokens[this.pos++]; }
+      match(val) { if (this.peek().value === val) { this.consume(); return true; } return false; }
+      expect(v) { let t = this.consume(); if (t.value !== v) throw new Error(`Syntax Error: Expected '${v}', got '${t.value}'`); }
+      parse() { let body = []; while (this.peek().type !== 'EOF') { if (this.peek().type === 'NEWLINE') { this.consume(); continue; } body.push(this.parseStatement()); } return { type: 'Program', body }; }
+      parseStatement() {
+        let t = this.peek();
+        if (t.value === 'pass') { this.consume(); return { type: 'PassStatement' }; }
+        if (t.value === 'def') return this.parseFunctionDef();
+        if (t.value === 'if') return this.parseIf();
+        if (t.value === 'for') return this.parseFor();
+        if (t.value === 'while') return this.parseWhile();
+        let expr = this.parseExpression();
+        if (this.match('=')) { return { type: 'Assignment', left: expr.name, right: this.parseExpression() }; }
+        return { type: 'ExpressionStatement', expression: expr };
+      }
+      parseFunctionDef() {
+        this.consume(); let id = this.consume(); this.expect('('); let params = [];
+        if (!this.match(')')) { params.push(this.consume().value); while (this.match(',')) params.push(this.consume().value); this.expect(')'); }
+        this.expect(':'); return { type: 'FunctionDeclaration', name: id.value, params, body: this.parseBlock() };
+      }
+      parseIf() {
+        this.consume(); let test = this.parseExpression(); this.expect(':'); let consequent = this.parseBlock(), alternate = null;
+        while (this.peek().type === 'NEWLINE') this.consume();
+        if (this.peek().value === 'elif') { this.tokens[this.pos].value = 'if'; alternate = [this.parseIf()]; }
+        else if (this.match('else')) { this.expect(':'); alternate = this.parseBlock(); }
+        return { type: 'IfStatement', test, consequent, alternate };
+      }
+      parseBlock() {
+        while (this.peek().type === 'NEWLINE') this.consume();
+        this.expect('INDENT'); let stmts = [];
+        while (this.peek().type !== 'DEDENT' && this.peek().type !== 'EOF') { if (this.peek().type === 'NEWLINE') { this.consume(); continue; } stmts.push(this.parseStatement()); }
+        if (this.peek().type === 'DEDENT') this.consume(); return stmts;
+      }
+      parseFor() {
+        this.consume(); let varName = this.consume().value;
+        this.expect('in'); let iter = this.parseExpression(); this.expect(':');
+        return { type: 'ForStatement', variable: varName, iterable: iter, body: this.parseBlock() };
+      }
+      parseWhile() {
+        this.consume(); let test = this.parseExpression(); this.expect(':');
+        return { type: 'WhileStatement', test, body: this.parseBlock() };
+      }
+      parseExpression() { return this.parseLogical(); }
+      parseLogical() { let n = this.parseComparison(); while (['and', 'or'].includes(this.peek().value)) n = { type: 'LogicalExpression', op: this.consume().value, left: n, right: this.parseComparison() }; return n; }
+      parseComparison() { let n = this.parseAdditive(); while (['==', '!=', '<=', '>=', '<', '>'].includes(this.peek().value)) n = { type: 'BinaryExpression', op: this.consume().value, left: n, right: this.parseAdditive() }; return n; }
+      parseAdditive() { let n = this.parseMultiplicative(); while (['+', '-'].includes(this.peek().value)) n = { type: 'BinaryExpression', op: this.consume().value, left: n, right: this.parseMultiplicative() }; return n; }
+      parseMultiplicative() { let n = this.parsePrimary(); while (['*', '/'].includes(this.peek().value)) n = { type: 'BinaryExpression', op: this.consume().value, left: n, right: this.parsePrimary() }; return n; }
+      parsePrimary() {
+        let t = this.consume();
+        if (t.type === 'NUMBER') return { type: 'Literal', value: parseFloat(t.value) };
+        if (t.type === 'STRING') return { type: 'Literal', value: t.value.replace(/['"]/g, '') };
+        if (t.value === 'True') return { type: 'Literal', value: true };
+        if (t.value === 'False') return { type: 'Literal', value: false };
+        if (t.value === 'not') { let expr = this.parseExpression(); return { type: 'UnaryExpression', op: 'not', argument: expr }; }
+        if (t.type === 'IDENTIFIER' || t.value === 'range') {
+          let n = { type: 'Identifier', name: t.value };
+          while (this.peek().value === '.' || this.peek().value === '(') {
+            if (this.match('.')) n = { type: 'MemberExpression', object: n, property: this.consume().value };
+            else if (this.match('(')) {
+              let args = []; if (!this.match(')')) { args.push(this.parseExpression()); while (this.match(',')) args.push(this.parseExpression()); this.expect(')'); }
+              n = { type: 'CallExpression', callee: n, args };
+            }
+          }
+          return n;
+        }
+        throw new Error(`Unexpected token '${t.value}'`);
+      }
+    }
+
+    class Interpreter {
+      constructor(api) { this.api = api; this.env = {}; this.ops = 0; }
+      async eval(node) {
+        if (++this.ops > 2000) throw new Error("Infinite Loop!"); if (!node) return null;
+        switch (node.type) {
+          case 'Program': for (let s of node.body) await this.eval(s); break;
+          case 'PassStatement': break;
+          case 'ExpressionStatement': await this.eval(node.expression); break;
+          case 'Assignment': this.env[node.left] = await this.eval(node.right); break;
+          case 'Identifier': if (this.env[node.name] !== undefined) return this.env[node.name]; throw new Error(`NameError: Variable '${node.name}' not defined.`);
+          case 'Literal': return node.value;
+          case 'UnaryExpression': if (node.op === 'not') return !(await this.eval(node.argument)); break;
+          case 'LogicalExpression': if (node.op === 'and') return (await this.eval(node.left)) && (await this.eval(node.right)); if (node.op === 'or') return (await this.eval(node.left)) || (await this.eval(node.right)); break;
+          case 'BinaryExpression':
+            let l = await this.eval(node.left), r = await this.eval(node.right);
+            if (node.op === '+') return l + r; if (node.op === '-') return l - r; if (node.op === '*') return l * r; if (node.op === '/') return l / r;
+            if (node.op === '==') return l === r; if (node.op === '!=') return l !== r; if (node.op === '<=') return l <= r; if (node.op === '>=') return l >= r;
+            if (node.op === '<') return l < r; if (node.op === '>') return l > r; break;
+          case 'FunctionDeclaration': this.env[node.name] = { type: 'Function', params: node.params, body: node.body }; break;
+          case 'CallExpression':
+            let args = []; for (let a of node.args) args.push(await this.eval(a));
+            if (node.callee.type === 'Identifier') {
+              if (node.callee.name === 'range') { let start = 0, stop = 0, step = 1; if (args.length === 1) { stop = args[0]; } else if (args.length === 2) { start = args[0]; stop = args[1]; } else if (args.length === 3) { start = args[0]; stop = args[1]; step = args[2]; } let r = []; for (let i = start; step > 0 ? i < stop : i > stop; i += step)r.push(i); return r; }
+              if (this.env[node.callee.name] && this.env[node.callee.name].type === 'Function') {
+                let func = this.env[node.callee.name], oldEnv = Object.assign({}, this.env);
+                for (let i = 0; i < func.params.length; i++) this.env[func.params[i]] = args[i];
+                try { for (let s of func.body) await this.eval(s); } finally { this.env = oldEnv; } return null;
+              } throw new Error(`Function '${node.callee.name}' not defined.`);
+            }
+            if (node.callee.type === 'MemberExpression' && node.callee.object.name === 'hero') {
+              if (typeof this.api[node.callee.property] === 'function') return await this.api[node.callee.property](...args);
+            } throw new Error(`Invalid function call.`);
+          case 'IfStatement':
+            if (await this.eval(node.test)) { for (let s of node.consequent) await this.eval(s); } else if (node.alternate) { for (let s of node.alternate) await this.eval(s); } break;
+          case 'ForStatement': {
+            let iter = await this.eval(node.iterable);
+            if (!Array.isArray(iter)) throw new Error('For loop needs an iterable (use range())');
+            for (let val of iter) { this.env[node.variable] = val; for (let s of node.body) await this.eval(s); }
+            break;
+          }
+          case 'WhileStatement': {
+            while (await this.eval(node.test)) { if (++this.ops > 2000) throw new Error('Infinite Loop!'); for (let s of node.body) await this.eval(s); }
+            break;
+          }
+        }
+      }
+    }
+
+    /** ========================================================================
+     *  4. MAIN APPLICATION LOGIC
+     *  ======================================================================== */
+    const GameApp = {
+      currentLevelIdx: 0, mapData: [], hero: { x: 0, y: 0, targetX: 0, targetY: 0, dir: 1, alive: true, arrows: 0 },
+      enemies: [], items: [], goal: { x: 0, y: 0 }, particles: [], activeLight: null, activeProjectile: null,
+      isProcessingAction: false, lastTime: 0,
+
+      terminal: null, canvas: null, ctx: null,
+
+      init() {
+        this.canvas = document.getElementById('game-canvas'); this.ctx = this.canvas.getContext('2d');
+        this.terminal = document.getElementById('terminal-output');
+      },
+
+      speakHint() {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const lvl = LEVELS[this.currentLevelIdx];
+          let text = lvl.title + ". " + lvl.desc.replace(/<[^>]*>?/gm, '').replace(/`/g, '') + ". Hint: " + lvl.hint;
+          let ut = new SpeechSynthesisUtterance(text); ut.rate = 0.95; window.speechSynthesis.speak(ut);
+        } else alert("TTS not supported.");
+      },
+      logConsole(msg, type = "sys") {
+        const div = document.createElement('div'); div.className = `log-entry log-${type}`; div.innerText = `> ${msg}`;
+        this.terminal.appendChild(div); this.terminal.scrollTop = this.terminal.scrollHeight;
+      },
+      updateUI() { const arr = document.getElementById('inventory'); if (arr) arr.innerText = `🏹 Arrows: ${this.hero.arrows}`; },
+
+      startGame(idx) { AudioFX.init(); document.getElementById('start-menu').classList.remove('active'); document.getElementById('level-select').classList.remove('active'); this.loadLevel(idx || 0); if (!this._loopStarted) { this._loopStarted = true; requestAnimationFrame(t => this.renderLoop(t)); } },
+      showLevelSelect() { AudioFX.init(); document.getElementById('start-menu').classList.remove('active'); document.getElementById('level-select').classList.add('active'); this.populateLevelGrid(); this.spawnParticles('bg-particles-ls'); },
+      backToSplash() { document.getElementById('level-select').classList.remove('active'); document.getElementById('start-menu').classList.add('active'); },
+      returnToMenu() { document.getElementById('level-select').classList.add('active'); this.populateLevelGrid(); },
+      populateLevelGrid() {
+        let unlocked = parseInt(localStorage.getItem('pq_unlocked') || '0');
+        let b = document.getElementById('pack-basics'); b.innerHTML = '';
+        for (let i = 0; i < 10; i++) { let btn = document.createElement('button'); btn.className = 'level-btn'; btn.innerText = i + 1; if (i <= unlocked) { btn.onclick = () => this.startGame(i); btn.style.background = 'rgba(80,250,123,0.15)'; btn.style.borderColor = '#50fa7b'; btn.style.color = '#50fa7b'; } else { btn.style.opacity = '0.3'; btn.style.cursor = 'not-allowed'; btn.title = 'Complete previous levels first'; } b.appendChild(btn); }
+        let l = document.getElementById('pack-loops'); l.innerHTML = '';
+        for (let i = 10; i < 20; i++) { let btn = document.createElement('button'); btn.className = 'level-btn'; btn.innerText = i + 1; if (i <= unlocked) { btn.onclick = () => this.startGame(i); btn.style.background = 'rgba(189,147,249,0.15)'; btn.style.borderColor = '#bd93f9'; btn.style.color = '#bd93f9'; } else { btn.style.opacity = '0.3'; btn.style.cursor = 'not-allowed'; btn.title = 'Complete previous levels first'; } l.appendChild(btn); }
+      },
+      spawnParticles(containerId) {
+        let container = document.getElementById(containerId); if (!container) return; container.innerHTML = '';
+        const colors = ['#50fa7b', '#bd93f9', '#f1fa8c', '#8be9fd', '#ff79c6'];
+        for (let i = 0; i < 25; i++) { let p = document.createElement('div'); p.className = 'bg-particle'; let size = 3 + Math.random() * 6; p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random() * 100}%;background:${colors[Math.floor(Math.random() * colors.length)]};animation-duration:${4 + Math.random() * 8}s;animation-delay:${Math.random() * 5}s;`; container.appendChild(p); }
+      },
+
+      loadLevel(idx) {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        if (idx >= LEVELS.length) { this.showModal("🏆 QUEST COMPLETE!", "You mastered ALL 20 levels of the Python Logic Builder!", 'success', () => this.returnToMenu()); return; }
+        this.currentLevelIdx = idx; const lvl = LEVELS[idx];
+        document.getElementById('level-display').innerText = `Level ${idx + 1} / ${LEVELS.length}`;
+        document.getElementById('inst-title').innerText = lvl.title;
+        document.getElementById('inst-desc').innerHTML = lvl.desc.replace(/`([^`]+)`/g, '<code>$1</code>');
+        document.getElementById('hint-box').innerHTML = "<strong>Hint: </strong>" + lvl.hint;
+        document.getElementById('hint-box').style.display = 'none';
+
+        this.renderEditor();
+        this.terminal.innerHTML = ''; this.logConsole(`Loaded Level ${idx + 1}: ${lvl.title}`, 'sys');
+        this.resetGameWorld();
+      },
+
+      renderEditor() {
+        const lvl = LEVELS[this.currentLevelIdx];
+        let templateHTML = this.highlightTemplate(lvl.codeTemplate);
+        document.getElementById('code-editor').innerHTML = templateHTML;
+
+        // Combine correct blocks + distractors, then SHUFFLE
+        let allBlocks = [...lvl.blocks, ...(lvl.distractors || [])];
+        let shuffled = shuffleArray(allBlocks);
+
+        let paletteHTML = shuffled.map(b => {
+          let escaped = b.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          return `<div class="drag-block" draggable="true" ondragstart="GameApp.dragStart(event)" onclick="GameApp.insertBlockToFirstEmpty('${escaped}')" data-code="${b}">${b}</div>`;
+        }).join('');
+        document.getElementById('block-palette').innerHTML = paletteHTML;
+      },
+
+      highlightTemplate(code) {
+        let drops = [];
+        code = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        code = code.replace(/\[DROP_(\d+)\]/g, (m) => { drops.push(m); return `___DROP_${drops.length - 1}___`; });
+        code = code.replace(/(#.*)/g, '<span class="cm">$1</span>');
+        code = code.replace(/\b(def|if|elif|else|return|pass|and|or|not|for|while|in)\b/g, '<span class="kw">$1</span>');
+        code = code.replace(/\b(hero)\b/g, '<span class="he">$1</span>');
+        code = code.replace(/\b(move_right|move_left|move_up|move_down|shoot_arrow|magic_light|has_arrows|enemy_ahead|range)\b/g, '<span class="me">$1</span>');
+        code = code.replace(/\b(\d+)\b/g, '<span class="nm">$1</span>');
+
+        code = code.replace(/___DROP_(\d+)___/g, (m, idx) => {
+          let match = drops[idx];
+          let id = match.match(/\d+/)[0];
+          return `<span class="drop-zone" id="drop-${id}" data-id="${id}" ondragover="GameApp.dragOver(event)" ondragleave="GameApp.dragLeave(event)" ondrop="GameApp.drop(event)" onclick="GameApp.clearDrop(event)">[ Drag Block Here ]</span>`;
+        });
+        return code;
+      },
+
+      // --- Click & Drag Integration ---
+      insertBlockToFirstEmpty(text) {
+        let empties = document.querySelectorAll('.drop-zone:not(.filled)');
+        if (empties.length > 0) {
+          AudioFX.click();
+          let target = empties[0];
+          target.innerText = text; target.dataset.code = text; target.classList.add('filled');
+        } else { this.logConsole("All slots are filled! Click a slot to empty it.", "sys"); }
+      },
+      dragStart(e) { e.dataTransfer.setData('text/plain', e.target.dataset.code); },
+      dragOver(e) { e.preventDefault(); let target = e.target.closest('.drop-zone'); if (target) target.classList.add('drag-hover'); },
+      dragLeave(e) { let target = e.target.closest('.drop-zone'); if (target) target.classList.remove('drag-hover'); },
+      drop(e) {
+        e.preventDefault();
+        let target = e.target.closest('.drop-zone');
+        if (target) {
+          target.classList.remove('drag-hover');
+          let code = e.dataTransfer.getData('text/plain');
+          if (code) { AudioFX.click(); target.innerText = code; target.dataset.code = code; target.classList.add('filled'); }
+        }
+      },
+      clearDrop(e) {
+        let target = e.target.closest('.drop-zone');
+        if (target && target.classList.contains('filled')) {
+          target.innerText = '[ Drag Block Here ]'; target.dataset.code = ''; target.classList.remove('filled');
+        }
+      },
+
+      resetGameWorld() {
+        this.isRunning = false; this.isProcessingAction = false;
+        this.particles = []; this.activeLight = null; this.activeProjectile = null; this.hero.alive = true;
+        const lvl = LEVELS[this.currentLevelIdx]; this.mapData = lvl.map.map(r => r.split(''));
+        this.enemies = []; this.items = []; this.hero.arrows = typeof lvl.arrows !== 'undefined' ? lvl.arrows : 0;
+
+        for (let y = 0; y < this.mapData.length; y++) {
+          for (let x = 0; x < this.mapData[y].length; x++) {
+            let char = this.mapData[y][x];
+            if (char === 'H') { this.hero.x = this.hero.targetX = x; this.hero.y = this.hero.targetY = y; this.hero.dir = 1; this.mapData[y][x] = '.'; }
+            else if (char === 'S') { this.enemies.push({ x, y }); this.mapData[y][x] = '.'; }
+            else if (char === 'A') { this.items.push({ x, y, type: 'arrow' }); this.mapData[y][x] = '.'; }
+            else if (char === 'X') { this.goal = { x, y }; this.mapData[y][x] = '.'; }
+          }
+        }
+        this.updateUI(); const container = this.canvas.parentElement;
+        if (container) { const rect = container.getBoundingClientRect(); this.canvas.width = rect.width; this.canvas.height = rect.height; }
+      },
+
+      toggleHint() { const h = document.getElementById('hint-box'); h.style.display = h.style.display === 'block' ? 'none' : 'block'; },
+      showModal(title, desc, type, callback) {
+        const overlay = document.getElementById('result-modal'); const titleEl = document.getElementById('modal-title');
+        titleEl.innerText = title; titleEl.className = `modal-title ${type}`; document.getElementById('modal-desc').innerText = desc;
+        const btn = document.getElementById('modal-btn'); btn.innerText = type === 'success' ? 'NEXT LEVEL' : 'RETRY';
+        btn.onclick = () => { overlay.classList.remove('active'); if (callback) callback(); }; overlay.classList.add('active');
+      },
+      closeModal() { document.getElementById('result-modal').classList.remove('active'); },
+
+      emitParticles(x, y, color, type = 'explode') {
+        for (let i = 0; i < (type === 'explode' ? 30 : 15); i++) {
+          let ang = Math.random() * Math.PI * 2; let spd = type === 'explode' ? Math.random() * 60 + 20 : Math.random() * 20 + 5;
+          this.particles.push({ x: x * TILE_SIZE + TILE_SIZE / 2, y: y * TILE_SIZE + TILE_SIZE / 2, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd + (type === 'sparkle' ? -30 : 0), life: 1.0, decay: Math.random() * 2 + 1, color: color, size: Math.random() * 4 + 2 });
+        }
+      },
+
+      getHeroAPI() {
+        const self = this;
+        function _target(dirStr) { let dx = 0, dy = 0; if (dirStr === 'up') dy = -1; else if (dirStr === 'down') dy = 1; else if (dirStr === 'left') dx = -1; else if (dirStr === 'right') dx = 1; return { x: self.hero.targetX + dx, y: self.hero.targetY + dy, dx, dy }; }
+        async function _move(dx, dy, steps) {
+          if (!self.hero.alive) throw new Error("Hero is dead."); let count = parseInt(steps); if (isNaN(count)) count = 1;
+          for (let i = 0; i < count; i++) {
+            let tx = self.hero.targetX + dx, ty = self.hero.targetY + dy; self.hero.dir = dx < 0 ? -1 : (dx > 0 ? 1 : self.hero.dir);
+            if (tx < 0 || tx >= self.mapData[0].length || ty < 0 || ty >= self.mapData.length || self.mapData[ty][tx] === 'W') { self.emitParticles(self.hero.targetX, self.hero.targetY, '#ff5555', 'sparkle'); AudioFX.bump(); throw new Error(`Ouch! Bumped a wall.`); }
+            if (self.enemies.some(e => e.x === tx && e.y === ty)) { self.emitParticles(tx, ty, '#ff5555', 'sparkle'); AudioFX.bump(); throw new Error(`Ran into a Skeleton!`); }
+            self.hero.targetX = tx; self.hero.targetY = ty; self.isProcessingAction = true; AudioFX.step();
+            await new Promise(r => { let c = setInterval(() => { if (!self.isProcessingAction) { clearInterval(c); r(); } }, 20); });
+            let iIdx = self.items.findIndex(it => it.x === tx && it.y === ty);
+            if (iIdx > -1) { self.hero.arrows++; self.updateUI(); self.emitParticles(tx, ty, '#fff', 'sparkle'); AudioFX.gem(); self.logConsole("Picked up an arrow!", "success"); self.items.splice(iIdx, 1); }
+          }
+        }
+        return {
+          move_up: async (s = 1) => await _move(0, -1, s), move_down: async (s = 1) => await _move(0, 1, s), move_left: async (s = 1) => await _move(-1, 0, s), move_right: async (s = 1) => await _move(1, 0, s),
+          has_arrows: () => self.hero.arrows > 0,
+          enemy_ahead: (dirStr = 'right') => { let t = _target(dirStr), tx = self.hero.targetX, ty = self.hero.targetY; for (let i = 0; i < 3; i++) { tx += t.dx; ty += t.dy; if (tx < 0 || tx >= self.mapData[0].length || ty < 0 || ty >= self.mapData.length || self.mapData[ty][tx] === 'W') return false; if (self.enemies.some(e => e.x === tx && e.y === ty)) return true; } return false; },
+          shoot_arrow: async (dirStr = 'right') => {
+            if (self.hero.arrows <= 0) throw new Error("Out of arrows!"); self.hero.arrows--; self.updateUI(); let t = _target(dirStr); self.hero.dir = t.dx < 0 ? -1 : (t.dx > 0 ? 1 : self.hero.dir); AudioFX.shoot(); self.isProcessingAction = true;
+            self.activeProjectile = { x: self.hero.targetX, y: self.hero.targetY, dx: t.dx, dy: t.dy }; let hitEnemy = false;
+            for (let step = 0; step < 24; step++) {
+              self.activeProjectile.x += t.dx * 0.25; self.activeProjectile.y += t.dy * 0.25; await new Promise(r => setTimeout(r, 10));
+              let px = Math.round(self.activeProjectile.x), py = Math.round(self.activeProjectile.y);
+              if (px < 0 || px >= self.mapData[0].length || py < 0 || py >= self.mapData.length || self.mapData[py][px] === 'W') { self.emitParticles(px, py, '#ccc', 'sparkle'); break; }
+              let eIdx = self.enemies.findIndex(e => e.x === px && e.y === py);
+              if (eIdx > -1) { self.enemies.splice(eIdx, 1); self.emitParticles(px, py, '#ffffff', 'explode'); setTimeout(AudioFX.kill, 10); self.logConsole("Skeleton defeated!", "success"); hitEnemy = true; break; }
+            }
+            self.activeProjectile = null; if (!hitEnemy) self.logConsole("Arrow hit nothing...", "sys"); self.isProcessingAction = false;
+          },
+          magic_light: async (dirStr = 'right') => {
+            let t = _target(dirStr); self.hero.dir = t.dx < 0 ? -1 : (t.dx > 0 ? 1 : self.hero.dir); self.activeLight = { dir: dirStr, opacity: 1.0, length: 0 }; AudioFX.light(); self.isProcessingAction = true;
+            let tx = self.hero.targetX, ty = self.hero.targetY, found = false;
+            for (let i = 0; i < 8; i++) {
+              tx += t.dx; ty += t.dy; if (tx < 0 || tx >= self.mapData[0].length || ty < 0 || ty >= self.mapData.length || self.mapData[ty][tx] === 'W') { self.activeLight.length = i * TILE_SIZE; break; }
+              self.activeLight.length = (i + 1) * TILE_SIZE; if (self.enemies.some(e => e.x === tx && e.y === ty)) found = true;
+            }
+            await new Promise(r => setTimeout(() => { self.isProcessingAction = false; r(); }, 400));
+            self.logConsole(found ? `Light detected a Skeleton!` : `No enemies detected.`, "sys"); return found;
+          }
+        };
+      },
+
+      async runStudentCode() {
+        if (this.isRunning) return;
+
+        const lvl = LEVELS[this.currentLevelIdx];
+        let finalCode = lvl.codeTemplate.replace(/\[DROP_(\d+)\]/g, (match, id) => {
+          let el = document.getElementById(`drop-${id}`);
+          if (!el || !el.dataset.code) return 'pass';
+          return el.dataset.code;
+        });
+
+        this.resetGameWorld(); this.isRunning = true; this.terminal.innerHTML = '';
+        this.logConsole("Translating blocks into Code...", "sys");
+
+        let ast;
+        try { AudioFX.init(); let lexer = new Lexer(finalCode); let parser = new Parser(lexer.tokenize()); ast = parser.parse(); }
+        catch (e) { this.logConsole(e.message, "error"); this.showModal("Syntax Error", e.message, "error"); this.isRunning = false; return; }
+
+        this.logConsole("Executing Logic...", "sys");
+        let api = this.getHeroAPI(); let interp = new Interpreter(api);
+        try {
+          await interp.eval(ast);
+          if (this.hero.alive) {
+            if (this.hero.targetX === this.goal.x && this.hero.targetY === this.goal.y) {
+              AudioFX.win(); this.emitParticles(this.hero.targetX, this.hero.targetY, '#f1fa8c', 'explode'); this.logConsole("Goal Reached! Perfect Execution.", "success");
+              let nextLvl = this.currentLevelIdx + 1; let cur = parseInt(localStorage.getItem('pq_unlocked') || '0'); if (nextLvl > cur) localStorage.setItem('pq_unlocked', nextLvl);
+              setTimeout(() => this.showModal("LEVEL COMPLETE!", "Excellent! You programmed the perfect sequence.", "success", () => this.loadLevel(nextLvl)), 500);
+            } else { this.logConsole("Execution finished, but Goal not reached.", "error"); this.showModal("ALMOST", "Your code completed, but you didn't reach the Goal (X). Try again!", "error"); }
+          }
+        } catch (e) { this.logConsole(e.message, "error"); this.showModal("Execution Failed", e.message, "error"); }
+        finally { this.isRunning = false; }
+      },
+
+      renderLoop(time) {
+        let dt = (time - this.lastTime) / 1000; if (dt > 0.1) dt = 0.1; this.lastTime = time;
+
+        if (this.isProcessingAction && !this.activeProjectile && !this.activeLight) {
+          let dx = this.hero.targetX - this.hero.x, dy = this.hero.targetY - this.hero.y, dist = Math.hypot(dx, dy), spd = 6.0 * dt;
+          if (dist < spd) { this.hero.x = this.hero.targetX; this.hero.y = this.hero.targetY; this.isProcessingAction = false; }
+          else { this.hero.x += (dx / dist) * spd; this.hero.y += (dy / dist) * spd; }
+        }
+
+        const ctx = this.ctx; if (!ctx) { requestAnimationFrame(t => this.renderLoop(t)); return; }
+        ctx.fillStyle = '#111'; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        if (this.mapData.length > 0 && this.mapData[0]) {
+          let offX = (this.canvas.width - this.mapData[0].length * TILE_SIZE) / 2, offY = (this.canvas.height - this.mapData.length * TILE_SIZE) / 2;
+          ctx.save(); ctx.translate(offX, offY);
+
+          for (let y = 0; y < this.mapData.length; y++) {
+            for (let x = 0; x < this.mapData[y].length; x++) {
+              ctx.drawImage(Gfx.cache.floor, x * TILE_SIZE, y * TILE_SIZE);
+              if (this.mapData[y][x] === 'W') ctx.drawImage(Gfx.cache.wall, x * TILE_SIZE, y * TILE_SIZE - 10);
+            }
+          }
+
+          let ents = [];
+          if (this.hero.alive) ents.push({ t: 'hero', x: this.hero.x, y: this.hero.y });
+          this.enemies.forEach(e => ents.push({ t: 'enemy', x: e.x, y: e.y }));
+          this.items.forEach(i => ents.push({ t: 'item', x: i.x, y: i.y, type: i.type }));
+          ents.push({ t: 'goal', x: this.goal.x, y: this.goal.y }); ents.sort((a, b) => a.y - b.y);
+
+          let tSec = time / 1000;
+          for (let ent of ents) {
+            let px = ent.x * TILE_SIZE, py = ent.y * TILE_SIZE;
+            if (ent.t === 'goal') { if (Gfx.cache.goal.length) ctx.drawImage(Gfx.cache.goal[Math.floor(tSec * 8) % 8], px, py); }
+            else if (ent.t === 'enemy') { if (Gfx.cache.skeleton.length) ctx.drawImage(Gfx.cache.skeleton[Math.floor(tSec * 4) % 4], px, py - 10); }
+            else if (ent.t === 'item') { if (ent.type === 'arrow' && Gfx.cache.arrowItem) ctx.drawImage(Gfx.cache.arrowItem, px, py); }
+          }
+
+          if (LEVELS[this.currentLevelIdx].dark) {
+            ctx.fillStyle = 'rgba(0,0,10,0.92)'; ctx.fillRect(0, 0, this.mapData[0].length * TILE_SIZE, this.mapData.length * TILE_SIZE);
+            ctx.globalCompositeOperation = 'destination-out';
+            let px = (this.hero.x * TILE_SIZE) + 25, py = (this.hero.y * TILE_SIZE) + 25;
+            let grd = ctx.createRadialGradient(px, py, 10, px, py, 90); grd.addColorStop(0, 'rgba(0,0,0,1)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(px, py, 90, 0, Math.PI * 2); ctx.fill();
+
+            if (this.activeLight) {
+              ctx.fillStyle = `rgba(0,0,0,${this.activeLight.opacity})`; ctx.beginPath(); ctx.moveTo(px, py);
+              let len = this.activeLight.length + 25, wid = 60;
+              if (this.activeLight.dir === 'right') { ctx.lineTo(px + len, py - wid); ctx.lineTo(px + len, py + wid); } else if (this.activeLight.dir === 'down') { ctx.lineTo(px - wid, py + len); ctx.lineTo(px + wid, py + len); } else if (this.activeLight.dir === 'up') { ctx.lineTo(px - wid, py - len); ctx.lineTo(px + wid, py - len); } else if (this.activeLight.dir === 'left') { ctx.lineTo(px - len, py - wid); ctx.lineTo(px - len, py + wid); }
+              ctx.fill();
+            }
+            ctx.globalCompositeOperation = 'source-over';
+            if (this.activeLight) { ctx.fillStyle = `rgba(241, 250, 140, ${this.activeLight.opacity * 0.25})`; ctx.fill(); this.activeLight.opacity -= dt * 2.5; if (this.activeLight.opacity <= 0) this.activeLight = null; }
+          }
+
+          if (this.hero.alive) {
+            let frm = (this.hero.targetX !== this.hero.x || this.hero.targetY !== this.hero.y) ? Math.floor(tSec * 8) % 4 : Math.floor(tSec * 2) % 4;
+            let px = (this.hero.x * TILE_SIZE) + 25, py = (this.hero.y * TILE_SIZE) + 25;
+            ctx.save(); ctx.translate(px, py); if (this.hero.dir < 0) ctx.scale(-1, 1);
+            ctx.drawImage(Gfx.cache.hero[frm], -25, -35); ctx.restore();
+          }
+
+          if (this.activeProjectile) {
+            let px = (this.activeProjectile.x * TILE_SIZE) + 25, py = (this.activeProjectile.y * TILE_SIZE) + 25;
+            ctx.save(); ctx.translate(px, py); ctx.rotate(Math.atan2(this.activeProjectile.dy, this.activeProjectile.dx));
+            if (Gfx.cache.arrowItem) ctx.drawImage(Gfx.cache.arrowItem, -25, -25); ctx.restore();
+          }
+
+          for (let i = this.particles.length - 1; i >= 0; i--) {
+            let p = this.particles[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= p.decay * dt;
+            if (p.life <= 0) { this.particles.splice(i, 1); continue; }
+            ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+          }
+          ctx.globalAlpha = 1.0; ctx.restore();
+        }
+        requestAnimationFrame(t => this.renderLoop(t));
+      }
+    };
+
+    window.onload = () => { GameApp.init(); GameApp.spawnParticles('bg-particles'); };
+  </script>
+</body>
+
+</html>

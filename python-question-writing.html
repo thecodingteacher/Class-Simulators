@@ -1,0 +1,2304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Python Quest - The Data-Driven Hero</title>
+  <style>
+    /* ==========================================================================
+           1. CSS VARIABLES & THEME SETUP
+           ========================================================================== */
+    :root {
+      --bg-base: #1e1e24;
+      --bg-panel: #282a36;
+      --bg-editor: #191a21;
+      --bg-console: #0f1015;
+      --border-color: #6272a4;
+      --text-main: #f8f8f2;
+      --text-dim: #8be9fd;
+      --text-muted: #5c678a;
+      --syn-keyword: #ff79c6;
+      --syn-builtin: #8be9fd;
+      --syn-string: #f1fa8c;
+      --syn-number: #bd93f9;
+      --syn-comment: #6272a4;
+      --syn-hero: #50fa7b;
+      --syn-method: #ffb86c;
+      --btn-run: #4caf50;
+      --btn-run-hover: #45a049;
+      --btn-tts: #bd93f9;
+      --btn-tts-hover: #9d65f5;
+      --btn-reset: #ff5555;
+      --btn-hint: #f1fa8c;
+      --btn-hint-text: #282a36;
+      --font-ui: 'Segoe UI', system-ui, sans-serif;
+      --font-code: 'Consolas', 'Courier New', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(90deg, #15161b 0%, #282a36 100%);
+      height: 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 30px;
+      border-bottom: 2px solid var(--border-color);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+    }
+
+    header h1 {
+      font-size: 24px;
+      color: var(--syn-hero);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px rgba(80, 250, 123, 0.4);
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .stat-badge {
+      font-size: 15px;
+      font-weight: bold;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+    }
+
+    #workspace {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 60px);
+    }
+
+    .panel-left,
+    .panel-right {
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    .panel-left {
+      flex: 1.2;
+      border-right: 2px solid var(--border-color);
+      position: relative;
+    }
+
+    .panel-right {
+      flex: 1;
+      background-color: var(--bg-editor);
+    }
+
+    /* Instructions */
+    .instructions-card {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      max-height: 250px;
+    }
+
+    .inst-header {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .inst-header h2 {
+      color: var(--syn-keyword);
+      font-size: 22px;
+    }
+
+    .instructions-card p {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #d7d7d7;
+      white-space: pre-wrap;
+      overflow-y: auto;
+    }
+
+    .instructions-card code {
+      background-color: rgba(0, 0, 0, 0.4);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--syn-method);
+      font-family: var(--font-code);
+    }
+
+    .hint-alert {
+      margin-top: 15px;
+      padding: 12px 15px;
+      background-color: rgba(241, 250, 140, 0.1);
+      border-left: 4px solid var(--btn-hint);
+      border-radius: 4px;
+      color: var(--btn-hint);
+      display: none;
+    }
+
+    /* Code Reference Dictionary */
+    .reference-card {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .ref-toggle {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 20px;
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid transparent;
+    }
+
+    .ref-toggle:hover {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+
+    .reference-card.open .ref-toggle {
+      border-bottom-color: var(--border-color);
+    }
+
+    .ref-toggle h3 {
+      color: var(--syn-builtin);
+      font-size: 15px;
+    }
+
+    .ref-arrow {
+      color: var(--text-muted);
+      font-size: 12px;
+      transition: transform 0.3s ease;
+    }
+
+    .reference-card.open .ref-arrow {
+      transform: rotate(180deg);
+    }
+
+    .ref-body {
+      max-height: 0;
+      overflow-y: auto;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+      padding: 0 16px;
+    }
+
+    .reference-card.open .ref-body {
+      max-height: 250px;
+      padding: 12px 16px;
+    }
+
+    .ref-section {
+      margin-bottom: 10px;
+    }
+
+    .ref-section-title {
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 3px;
+    }
+
+    .ref-cmd {
+      font-family: var(--font-code);
+      font-size: 13px;
+      padding: 3px 0;
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+    }
+
+    .cmd-code {
+      color: var(--syn-method);
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .cmd-desc {
+      font-family: var(--font-ui);
+      font-size: 12px;
+      color: #999;
+    }
+
+    .he {
+      color: var(--syn-hero);
+      font-weight: bold;
+    }
+
+    .kw {
+      color: var(--syn-keyword);
+      font-weight: bold;
+    }
+
+    .st {
+      color: var(--syn-string);
+    }
+
+    /* Canvas */
+    .canvas-container {
+      flex: 1;
+      background-color: #000;
+      border-radius: 12px;
+      border: 2px solid var(--border-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    canvas {
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    /* Editor */
+    .editor-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-editor);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .editor-header {
+      background-color: #21222c;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-dim);
+      font-size: 13px;
+      font-weight: bold;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .editor-body {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .line-numbers {
+      width: 50px;
+      background-color: #21222c;
+      color: var(--text-muted);
+      font-family: var(--font-code);
+      font-size: 16px;
+      line-height: 24px;
+      text-align: right;
+      padding: 15px 10px;
+      user-select: none;
+      border-right: 1px solid #333;
+      overflow: hidden;
+    }
+
+    .code-area {
+      flex: 1;
+      position: relative;
+    }
+
+    .code-input,
+    .code-output {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 15px;
+      font-family: var(--font-code);
+      font-size: 16px;
+      line-height: 24px;
+      white-space: pre;
+      overflow: auto;
+      tab-size: 4;
+      border: none;
+      outline: none;
+      margin: 0;
+    }
+
+    .code-input {
+      color: transparent;
+      background: transparent;
+      caret-color: var(--text-main);
+      z-index: 2;
+      resize: none;
+    }
+
+    .code-input::selection {
+      background: rgba(139, 233, 253, 0.3);
+    }
+
+    .code-output {
+      color: var(--text-main);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Syntax Highlighting */
+    .bu {
+      color: var(--syn-builtin);
+    }
+
+    .nm {
+      color: var(--syn-number);
+    }
+
+    .cm {
+      color: var(--syn-comment);
+      font-style: italic;
+    }
+
+    .me {
+      color: var(--syn-method);
+    }
+
+    /* Terminal */
+    .terminal-container {
+      height: 180px;
+      background-color: var(--bg-console);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .terminal-header {
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 4px;
+    }
+
+    .terminal-output {
+      flex: 1;
+      overflow-y: auto;
+      font-family: var(--font-code);
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .log-entry {
+      padding-left: 8px;
+      border-left: 3px solid transparent;
+    }
+
+    .log-sys {
+      color: var(--text-dim);
+      border-left-color: var(--text-dim);
+    }
+
+    .log-success {
+      color: var(--syn-hero);
+      border-left-color: var(--syn-hero);
+    }
+
+    .log-error {
+      color: var(--btn-reset);
+      border-left-color: var(--btn-reset);
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: bold;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .btn:active {
+      transform: translateY(4px);
+      box-shadow: none;
+    }
+
+    .btn-primary {
+      flex: 2;
+      background-color: var(--btn-run);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--btn-run-hover);
+    }
+
+    .btn-secondary {
+      flex: 1;
+      background-color: var(--border-color);
+      color: white;
+    }
+
+    .btn-warning {
+      flex: 1;
+      background-color: var(--btn-hint);
+      color: var(--btn-hint-text);
+    }
+
+    .btn-tts {
+      flex: 1;
+      background-color: var(--btn-tts);
+      color: white;
+    }
+
+    /* Modals */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background-color: var(--bg-panel);
+      border: 3px solid var(--border-color);
+      border-radius: 16px;
+      padding: 40px;
+      width: 500px;
+      text-align: center;
+      transform: scale(0.8);
+      transition: transform 0.3s ease;
+    }
+
+    .overlay.active .modal {
+      transform: scale(1);
+    }
+
+    .modal-title {
+      font-size: 32px;
+      margin-bottom: 15px;
+    }
+
+    .modal-title.success {
+      color: var(--syn-hero);
+    }
+
+    .modal-title.error {
+      color: var(--btn-reset);
+    }
+
+    .modal-desc {
+      font-size: 18px;
+      line-height: 1.5;
+      margin-bottom: 30px;
+      color: #ccc;
+    }
+
+    #start-menu {
+      flex-direction: column;
+      z-index: 200;
+      background: linear-gradient(135deg, #1e1e24, #282a36);
+    }
+
+    #start-menu h1 {
+      font-size: 70px;
+      color: var(--syn-hero);
+      margin-bottom: 10px;
+      text-align: center;
+      text-shadow: 0 0 20px rgba(80, 250, 123, 0.5);
+    }
+
+    #start-menu p {
+      font-size: 20px;
+      color: var(--text-dim);
+      margin-bottom: 50px;
+      text-align: center;
+    }
+
+    .cheat-text {
+      color: var(--syn-comment);
+      margin-top: 20px;
+      font-size: 14px;
+      font-style: italic;
+    }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 5px;
+    }
+
+    /* Victory Screen */
+    #victory-screen {
+      flex-direction: column;
+      z-index: 300;
+      background: radial-gradient(ellipse at center, #1a1a2e 0%, #0f0f1a 100%);
+    }
+
+    .victory-title {
+      font-size: 72px;
+      color: #ffd700;
+      text-shadow: 0 0 30px rgba(255, 215, 0, 0.6), 0 0 60px rgba(255, 215, 0, 0.3);
+      margin-bottom: 10px;
+      animation: victoryPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes victoryPulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    .victory-subtitle {
+      font-size: 26px;
+      color: var(--syn-hero);
+      margin-bottom: 15px;
+      text-shadow: 0 0 15px rgba(80, 250, 123, 0.4);
+    }
+
+    .victory-desc {
+      font-size: 17px;
+      color: #ccc;
+      margin-bottom: 35px;
+      line-height: 1.6;
+      max-width: 600px;
+      text-align: center;
+    }
+
+    .victory-stats {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 35px;
+    }
+
+    .victory-stat {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px 30px;
+      text-align: center;
+    }
+
+    .victory-stat-num {
+      font-size: 42px;
+      font-weight: bold;
+      color: var(--syn-hero);
+    }
+
+    .victory-stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 5px;
+    }
+
+    .confetti-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #victory-screen>*:not(.confetti-canvas) {
+      z-index: 1;
+      position: relative;
+    }
+
+    /* Teacher Dashboard */
+    #teacher-dashboard {
+      flex-direction: column;
+      z-index: 250;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(8px);
+    }
+
+    .teacher-panel {
+      background: var(--bg-panel);
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
+      padding: 30px;
+      width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .teacher-panel h2 {
+      color: var(--syn-hero);
+      font-size: 26px;
+      margin-bottom: 5px;
+    }
+
+    .teacher-panel .teacher-sub {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    .student-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #333;
+    }
+
+    .student-name {
+      font-weight: bold;
+      color: var(--text-main);
+      font-size: 15px;
+    }
+
+    .student-progress {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .progress-badge {
+      font-size: 13px;
+      padding: 4px 12px;
+      border-radius: 12px;
+      background: rgba(80, 250, 123, 0.15);
+      color: var(--syn-hero);
+      font-weight: bold;
+    }
+
+    .progress-bar-mini {
+      width: 120px;
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--syn-hero), #8be9fd);
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+
+    .no-students {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 40px;
+      font-size: 15px;
+    }
+
+    .student-time {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .btn-teacher {
+      background: rgba(80, 250, 123, 0.15);
+      color: var(--syn-hero);
+      border: 1px solid var(--syn-hero);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: var(--font-ui);
+    }
+
+    .btn-teacher:hover {
+      background: rgba(80, 250, 123, 0.3);
+    }
+
+    /* Name / Resume Prompts */
+    #name-prompt {
+      z-index: 350;
+    }
+
+    #name-prompt .modal {
+      width: 420px;
+    }
+
+    #name-prompt input {
+      width: 100%;
+      padding: 14px;
+      font-size: 18px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-editor);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      margin-bottom: 20px;
+      outline: none;
+      text-align: center;
+    }
+
+    #name-prompt input:focus {
+      border-color: var(--syn-hero);
+    }
+
+    #name-prompt input::placeholder {
+      color: var(--text-muted);
+    }
+
+    #resume-prompt {
+      z-index: 340;
+    }
+
+    #resume-prompt .modal {
+      width: 480px;
+    }
+
+    .resume-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .resume-buttons .btn {
+      flex: 1;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="start-menu" class="overlay active">
+    <h1>PYTHON QUEST<br><span style="font-size: 32px; color: #f1fa8c;">The Weapons Master</span></h1>
+    <p>Master 21 Levels of Python — Dictionaries, Boss Fights, Dynamic Weapons, and Custom Functions!</p>
+    <button class="btn btn-primary" style="font-size: 22px; padding: 20px 50px;" onclick="GameApp.startGame()">START
+      ADVENTURE</button>
+    <div class="cheat-text">Teacher Note: Click outside the code editor and press the SPACE BAR to instantly skip
+      levels.</div>
+  </div>
+
+  <header>
+    <h1>Python Quest</h1>
+    <div class="header-stats">
+      <button class="btn-teacher" onclick="GameApp.showTeacherDashboard()">📊 Teacher View</button>
+      <div class="stat-badge" id="inventory">🎒 Items: None | 🗡️ Eq: None</div>
+      <div class="stat-badge" style="background: rgba(0,0,0,0.3);" id="level-display">Level 1 / 21</div>
+    </div>
+  </header>
+
+  <div id="workspace">
+    <div class="panel-left">
+      <div class="instructions-card">
+        <div class="inst-header">
+          <h2 id="inst-title">Loading...</h2>
+        </div>
+        <p id="inst-desc">Preparing the environment...</p>
+        <div class="hint-alert" id="hint-box"></div>
+      </div>
+
+      <div class="reference-card" id="reference-card">
+        <div class="ref-toggle" onclick="document.getElementById('reference-card').classList.toggle('open')">
+          <h3>📖 Code Reference Dictionary</h3>
+          <span class="ref-arrow">▼</span>
+        </div>
+        <div class="ref-body" id="ref-body">
+          <div class="ref-section">
+            <div class="ref-section-title">🚶 Movement</div>
+            <div class="ref-cmd"><span class="cmd-code"><span class="he">hero</span>.move_right()</span> <span
+                class="cmd-desc">— Move one block right</span></div>
+            <div class="ref-cmd"><span class="cmd-code"><span class="he">hero</span>.move_down(2)</span> <span
+                class="cmd-desc">— Move multiple blocks</span></div>
+          </div>
+          <div class="ref-section">
+            <div class="ref-section-title">⚔️ Combat & Scanners</div>
+            <div class="ref-cmd"><span class="cmd-code"><span class="he">hero</span>.has_weapon(<span
+                  class="st">'bow'</span>)</span> <span class="cmd-desc">— Check for items in inventory</span></div>
+            <div class="ref-cmd"><span class="cmd-code"><span class="he">hero</span>.attack(<span
+                  class="st">'right'</span>, dict)</span> <span class="cmd-desc">— Attack passing a config
+                Dictionary</span></div>
+            <div class="ref-cmd"><span class="cmd-code"><span class="he">hero</span>.scan(<span
+                  class="st">'right'</span>)</span> <span class="cmd-desc">— Analyzes enemy, returns a Dictionary</span>
+            </div>
+          </div>
+          <div class="ref-section">
+            <div class="ref-section-title">📘 Dictionaries & Python</div>
+            <div class="ref-cmd"><span class="cmd-code">d = {<span class="st">"weapon"</span>: <span
+                  class="st">"sword"</span>}</span> <span class="cmd-desc">— Create a Data Dictionary</span></div>
+            <div class="ref-cmd"><span class="cmd-code">d[<span class="st">"hp"</span>]</span> <span class="cmd-desc">—
+                Access values using a key</span></div>
+            <div class="ref-cmd"><span class="cmd-code"><span class="kw">def</span> attack_boss():</span> <span
+                class="cmd-desc">— Define your own custom function</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="canvas-container">
+        <canvas id="game-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="panel-right">
+      <div class="editor-container">
+        <div class="editor-header">
+          <span>main.py</span><span>Language: Python Logic Subset</span>
+        </div>
+        <div class="editor-body">
+          <div class="line-numbers" id="line-numbers">1</div>
+          <div class="code-area">
+            <pre class="code-output" id="code-output"></pre>
+            <textarea class="code-input" id="code-input" spellcheck="false" wrap="off"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-primary" onclick="GameApp.runStudentCode()">▶ Run Code</button>
+        <button class="btn btn-secondary" onclick="GameApp.resetGameWorld()">↺ Reset Map</button>
+        <button class="btn btn-tts" onclick="GameApp.speakHint()">🔊 Listen</button>
+        <button class="btn btn-warning" onclick="GameApp.toggleHint()">💡 Hint</button>
+      </div>
+
+      <div class="terminal-container">
+        <div class="terminal-header">Terminal Output</div>
+        <div class="terminal-output" id="terminal-output">
+          <div class="log-entry log-sys">> Engine initialized.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="result-modal" class="overlay">
+    <div class="modal">
+      <h2 class="modal-title" id="modal-title">Success!</h2>
+      <p class="modal-desc" id="modal-desc">You completed the level.</p>
+      <button class="btn btn-primary" id="modal-btn" style="width: 100%;"
+        onclick="GameApp.closeModal()">CONTINUE</button>
+    </div>
+  </div>
+
+  <div id="victory-screen" class="overlay">
+    <canvas class="confetti-canvas" id="confetti-canvas"></canvas>
+    <div class="victory-title">🏆 VICTORY! 🏆</div>
+    <div class="victory-subtitle">Congratulations, <span id="victory-name">Hero</span>!</div>
+    <div class="victory-desc">You have conquered all 21 levels of Python Quest!<br>You are a true Python Logic Master —
+      master of Variables, Dictionaries, Conditionals, Functions, and Combat!</div>
+    <div class="victory-stats">
+      <div class="victory-stat">
+        <div class="victory-stat-num" id="victory-completed">21</div>
+        <div class="victory-stat-label">Levels Beaten</div>
+      </div>
+      <div class="victory-stat">
+        <div class="victory-stat-num">⭐</div>
+        <div class="victory-stat-label">Quest Complete</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="font-size:20px; padding:18px 50px;" onclick="GameApp.playAgain()">🔄 PLAY
+      AGAIN</button>
+  </div>
+
+  <div id="teacher-dashboard" class="overlay" onclick="if(event.target===this)GameApp.closeTeacherDashboard()">
+    <div class="teacher-panel">
+      <h2>📊 Student Progress Dashboard</h2>
+      <p class="teacher-sub">Tracking all students who have played on this device</p>
+      <div id="teacher-student-list"></div>
+      <button class="btn btn-secondary" style="width:100%; margin-top:15px;"
+        onclick="GameApp.closeTeacherDashboard()">CLOSE</button>
+    </div>
+  </div>
+
+  <div id="name-prompt" class="overlay">
+    <div class="modal">
+      <h2 class="modal-title" style="color: var(--syn-builtin);">👋 Welcome, Adventurer!</h2>
+      <p class="modal-desc">Enter your name to track your progress:</p>
+      <input type="text" id="student-name-input" placeholder="Type your name here..." maxlength="30"
+        onkeydown="if(event.key==='Enter')GameApp.submitName()">
+      <button class="btn btn-primary" style="width:100%;" onclick="GameApp.submitName()">BEGIN QUEST</button>
+    </div>
+  </div>
+
+  <div id="resume-prompt" class="overlay">
+    <div class="modal">
+      <h2 class="modal-title" style="color: var(--syn-builtin);">🔄 Welcome Back!</h2>
+      <p class="modal-desc" id="resume-level-info">You have saved progress.</p>
+      <div class="resume-buttons">
+        <button class="btn btn-primary" onclick="GameApp.resumeProgress()">RESUME</button>
+        <button class="btn btn-secondary" onclick="GameApp.startFresh()">START FRESH</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ========================================================================
+     * 1. 20-LEVEL CURRICULUM
+     * Legend: . = Floor, W = Wall, H = Hero, S = Skeleton, B = Boss, D = Dragon, 
+     *         V = Sword, A = Bow, X = Goal
+     * ========================================================================
+     */
+    const LEVELS = [
+      {
+        title: "Level 1: The First Step",
+        desc: "Welcome to Python Quest!\nYour goal is to program your hero to reach the gold Goal (X).\n\nComputers run code in order, from top to bottom. This is called a Sequence.\n\nType: <code>hero.move_right()</code>",
+        hint: "Type `hero.move_right()` on two separate lines to reach the Goal.",
+        code: "# Command the hero to reach the goal\nhero.move_right()\n",
+        map: ["WWWWWWWWWW", "W...H..X.W", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 2: The Hallway",
+        desc: "Great job! Now the path turns.\nYou have more methods (commands) available:\n\n<code>hero.move_down()</code>\n<code>hero.move_up()</code>\n<code>hero.move_left()</code>",
+        hint: "Move right twice, then down twice, then right again.",
+        code: "hero.move_right()\nhero.move_right()\n# Add more commands below\n",
+        map: ["WWWWWWWWWW", "W.H.WW.X.W", "W...WW...W", "W........W", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 3: Variables",
+        desc: "Variables act like storage boxes for numbers or text.\nInstead of typing <code>move_right()</code> many times, pass a variable to it!\n\nExample:\n<code>steps = 3</code>\n<code>hero.move_right(steps)</code>",
+        hint: "Set the 'distance' variable to 4 to reach the goal.",
+        code: "distance = 2\n# Fix the variable above\nhero.move_right(distance)\n",
+        map: ["WWWWWWWWWW", "W.H....X.W", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 4: Math Magic",
+        desc: "Variables can hold the results of math operations (+, -, *, /)!\n\nUse math to calculate the distance needed to move down to the Goal.",
+        hint: "Set `total = part1 + part2` and use it inside `hero.move_down(total)`.",
+        code: "part1 = 3\npart2 = 2\n# Calculate total below\n\n\nhero.move_right(2)\n# Now move down using the 'total' variable\n",
+        map: ["WWWWWWWWWW", "W.H......W", "W........W", "W........W", "W........W", "W........W", "W.X......W", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 5: Conditionals", inv: { bow: 1 },
+        desc: "A skeleton blocks your path! You have a 'bow' in your inventory.\nUse an <code>if</code> statement to check before attacking:\n\n<code>if hero.has_weapon('bow'):</code>\n<code>    hero.attack('right', {'weapon': 'bow', 'power': 10})</code>",
+        hint: "If you have a bow, attack right. Then move right 2.",
+        code: "if hero.has_weapon('bow'):\n    # Attack here\n    pass\n\nhero.move_right(2)\n",
+        map: ["WWWWWWWWWW", "W.H.S..X.W", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 6: Python Dictionaries",
+        desc: "Python Dictionaries <code>{}</code> store Key-Value pairs! They are an amazing way to configure complex data.\nLet's create a dictionary to configure a heavy attack.\n\n<code>config = {\"weapon\": \"sword\", \"power\": 100}</code>",
+        hint: "Create an attack dictionary with weapon: 'sword' and power: 100.",
+        code: "hero.move_right() # Pick up sword\n\n# Create the dictionary configuration!\nattack_config = {\"weapon\": \"sword\", \"power\": 100}\n\n# Strike the Boss!\nhero.attack('right', attack_config)\n\nhero.move_right(2)\n",
+        map: ["WWWWWWWWWW", "W.HVB..X.W", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 7: The Tactical Scanner",
+        desc: "Instead of hardcoding dictionaries, use your Scanner! <code>hero.scan('right')</code> returns a data dictionary containing the enemy's exact stats.\n\n<code>enemy = hero.scan('right')</code>\n<code>print(enemy[\"hp\"])</code>",
+        hint: "Scan the right, save it to a variable, then access its keys using brackets.",
+        code: "hero.move_right()\n\n# Scan the enemy\nenemy_dict = hero.scan('right')\nprint(enemy_dict[\"type\"])\n\n# Attack using the scanned dictionary's 'weakness' and 'hp'!\nhero.attack('right', {\"weapon\": enemy_dict[\"weakness\"], \"power\": enemy_dict[\"hp\"]})\n\nhero.move_right(2)\n",
+        map: ["WWWWWWWWWW", "W.HAS..X.W", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 8: If/Else Logic",
+        desc: "Use an <code>if / else</code> statement to make a decision based on the scan.\n\n<code>if enemy[\"type\"] == 'skeleton':</code>\n<code>    hero.attack('right', config)</code>\n<code>else:</code>\n<code>    hero.move_down(2)</code>",
+        hint: "If the enemy is a skeleton, attack it. Else, go around via the bottom path.",
+        code: "hero.move_right()\nenemy = hero.scan('right')\n\nif enemy[\"type\"] == 'skeleton':\n    hero.attack('right', {\"weapon\": \"bow\", \"power\": 10})\n    hero.move_right(2)\nelse:\n    # Go around (down 2, right 2, up 2)\n    pass\n\nhero.move_right()\n",
+        map: ["WWWWWWWWWW", "W.HAS..X.W", "WWW...WW.W", "WWW...WW.W", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 9: Elif Paths",
+        desc: "You have two paths. Use <code>elif</code> to check if the enemy is a boss or a skeleton, then use the correct weapon!\nBosses are weak to swords. Skeletons are weak to bows.",
+        hint: "If boss, use sword/100. Elif skeleton, use bow/10.",
+        code: "enemy1 = hero.scan('right')\nif enemy1[\"type\"] == 'boss':\n    hero.attack('right', {\"weapon\": \"sword\", \"power\": 100})\n    hero.move_right(4)\nelif hero.scan('down')[\"type\"] == 'skeleton':\n    hero.attack('down', {\"weapon\": \"bow\", \"power\": 10})\n    hero.move_down(2)\n    hero.move_right(4)\n    hero.move_up(2)\n",
+        map: ["WWWWWWWWWW", "WWWWWWWX.W", "W.HVB....W", "W.AWWW.WWW", "W.S....WWW", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 10: Dynamic Dictionary Construction",
+        desc: "The game gets harder! You don't know what is ahead. Scan the enemy and dynamically pass its <code>weakness</code> and <code>hp</code> into a brand new attack dictionary.",
+        hint: "config = {\"weapon\": enemy['weakness'], \"power\": enemy['hp']}",
+        code: "hero.move_right(2)\n\nenemy = hero.scan('right')\n# Build a dynamic dictionary!\nconfig = {\"weapon\": enemy[\"weakness\"], \"power\": enemy[\"hp\"]}\nhero.attack('right', config)\n\nhero.move_right(3)\n",
+        map: ["WWWWWWWWWW", "W.HVA.S..X", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 11: Encapsulation",
+        desc: "Wrap your logic in a reusable <code>def</code> function so you don't have to rewrite code for every enemy you face.",
+        hint: "Define `clear_path()`. Inside it, scan, attack dynamically, and move right 2. Call it twice.",
+        code: "def clear_path():\n    enemy = hero.scan('right')\n    if enemy[\"type\"] != \"none\":\n        hero.attack('right', {\"weapon\": enemy[\"weakness\"], \"power\": enemy[\"hp\"]})\n    hero.move_right(2)\n\nhero.move_right() # get sword\n# Call it twice to clear the hallway\n\n",
+        map: ["WWWWWWWWWW", "W.HVB.B.XW", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 12: Range Tactics",
+        desc: "Bows have a range of 3 blocks! You can shoot the Dragon (D) before it reaches you.",
+        hint: "Move right to get the bow. Attack right using the Dragon's HP and weakness from the scan.",
+        code: "hero.move_right()\nenemy = hero.scan('right')\n\n# Attack from a distance!\n\n\nhero.move_right(4)\n",
+        map: ["WWWWWWWWWW", "W.HA...DXW", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 13: Twin Functions Enforced",
+        desc: "TEACHER ENFORCEMENT: The parser will reject your code unless you define exactly TWO different functions!\n\nDefine `step()` and `destroy()`.",
+        hint: "Define step() to move right. Define destroy() to scan and attack. Call them to reach the goal.",
+        code: "def step():\n    hero.move_right()\n\n# Define destroy() below\n\n\n\n# Use them to win\nstep()\nstep()\n",
+        map: ["WWWWWWWWWW", "W.HVA.S.XW", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 14: Math with Dictionaries",
+        desc: "This Boss has a magical shield! You must add 50 extra power to its base HP to break it.",
+        hint: "Calculate `pwr = enemy['hp'] + 50` and use it in your attack dictionary.",
+        code: "hero.move_right(2)\nenemy = hero.scan('right')\n\n# Break the shield with math!\npwr = enemy[\"hp\"] + 50\nhero.attack('right', {\"weapon\": enemy[\"weakness\"], \"power\": pwr})\n\nhero.move_right(3)\n",
+        map: ["WWWWWWWWWW", "W.H.VB..XW", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 15: The Dragon's Lair",
+        desc: "Dragons are weak to bows, but they have massive HP (200). Use your dynamic dictionary attack to take it down!",
+        hint: "Scan, attack with weakness and HP.",
+        code: "hero.move_right(2)\nenemy = hero.scan('right')\n\n# Slay the Dragon!\n\n\nhero.move_right(4)\n",
+        map: ["WWWWWWWWWW", "W.H.VAD.XW", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 16: Multiple Logic Paths",
+        desc: "You face a random assortment of enemies. Write a robust loop-like function that handles anything.",
+        hint: "Define clear(). If type is 'none', just move. Else, attack then move.",
+        code: "def clear():\n    enemy = hero.scan('right')\n    if enemy[\"type\"] == \"none\":\n        hero.move_right()\n    else:\n        hero.attack('right', {\"weapon\": enemy[\"weakness\"], \"power\": enemy[\"hp\"]})\n        hero.move_right()\n\nhero.move_right() # get weapons\nclear()\nclear()\nclear()\n",
+        map: ["WWWWWWWWWW", "W.HVAS.BXW", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 17: Complex Conditions",
+        desc: "Check `enemy['hp'] > 50` to decide if you want to use a heavy attack or a light attack!",
+        hint: "If HP > 50, use sword. Else use bow.",
+        code: "hero.move_right(2)\nenemy = hero.scan('right')\n\nif enemy[\"hp\"] > 50:\n    hero.attack('right', {\"weapon\": \"sword\", \"power\": enemy[\"hp\"]})\nelse:\n    hero.attack('right', {\"weapon\": \"bow\", \"power\": enemy[\"hp\"]})\n\nhero.move_right(3)\n",
+        map: ["WWWWWWWWWW", "W.HVA.B.XW", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 18: Boss Rush",
+        desc: "Three enemies! Use your `clear()` function from earlier to defeat them all safely from a distance when possible.",
+        hint: "Define clear() that scans and attacks dynamically. Call it 4 times.",
+        code: "def clear():\n    enemy = hero.scan('right')\n    if enemy[\"type\"] != \"none\":\n        hero.attack('right', {\"weapon\": enemy[\"weakness\"], \"power\": enemy[\"hp\"]})\n    hero.move_right()\n\nhero.move_right(2)\n# clear the rush\n\n",
+        map: ["WWWWWWWWWW", "W.HVASBDXW", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 19: Shielded Double",
+        desc: "Two shielded enemies! Add 50 to their HP dynamically inside your function.",
+        hint: "In your function, set power to enemy['hp'] + 50.",
+        code: "def smash():\n    enemy = hero.scan('right')\n    if enemy[\"type\"] != \"none\":\n        hero.attack('right', {\"weapon\": enemy[\"weakness\"], \"power\": enemy[\"hp\"] + 50})\n    hero.move_right()\n\nhero.move_right(2)\n# Call smash() enough times\n\n",
+        map: ["WWWWWWWWWW", "W.HVA.B.DX", "WWWWWWWWWW"]
+      },
+      {
+        title: "Level 20: The Grand Master",
+        desc: "FINAL EXAM! You must write TWO functions (enforced!). Combine your knowledge of Variables, If/Else, Dictionaries, Math, and Functions to complete the quest!",
+        hint: "Write prep() to get weapons. Write conquer() to scan, calculate shield (+100), and attack dynamically.",
+        code: "def prep():\n    hero.move_right(2)\n\n# Define your conquer function!\n\n\n\n# Execute your master plan\nprep()\n",
+        map: ["WWWWWWWWWW", "W.HV.A.D.X", "WWWWWWWWWW"]
+      }
+      , {
+        title: "Level 21: THE FINAL BOSS",
+        desc: "⚔️ THE ULTIMATE CHALLENGE! ⚔️\nThree fearsome guardians block your path to glory.\n\nYou MUST define TWO functions (enforced!).\nUse everything: Variables, Dictionaries, Conditionals, Math (+100 shields), and Functions!\n\nDefine <code>prepare()</code> to collect weapons.\nDefine <code>destroy()</code> to scan, calculate shield-break power (+100), and attack!",
+        hint: "Define prepare() to move right 2 (collecting weapons). Define destroy() to scan right, add 100 to enemy HP, attack with scanned weakness, then move right 2. Call prepare() once, destroy() three times, then move right 2 to reach X.",
+        code: "# === THE FINAL BOSS FIGHT ===\n# Define TWO functions to win!\n\ndef prepare():\n    hero.move_right(2)\n\n# Define destroy() below!\n# It should: scan, calculate power (+100), attack, move right 2\n\n\n\n# Execute your master plan!\nprep = prepare\nprep()\n# Call destroy() three times, then move right 2\n",
+        map: ["WWWWWWWWWWWWWW", "W.HVA.S.B.D.XW", "WWWWWWWWWWWWWW"]
+      }
+    ];
+
+    /**
+     * ========================================================================
+     * 2. PROCEDURAL WEB AUDIO SYNTHESIZER
+     * ========================================================================
+     */
+    const AudioFX = {
+      ctx: null,
+      init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+      play(freq, type, dur, vol, slide = 0) {
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        if (slide !== 0) osc.frequency.exponentialRampToValueAtTime(Math.max(freq + slide, 10), this.ctx.currentTime + dur);
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + dur);
+      },
+      step: () => AudioFX.play(150, 'triangle', 0.1, 0.05, -50),
+      bump: () => AudioFX.play(80, 'sawtooth', 0.2, 0.1, -20),
+      shoot: () => AudioFX.play(600, 'square', 0.1, 0.05, 300),
+      slash: () => AudioFX.play(400, 'sawtooth', 0.1, 0.05, -200),
+      kill: () => { AudioFX.play(200, 'sawtooth', 0.1, 0.1, -50); setTimeout(() => AudioFX.play(100, 'sawtooth', 0.2, 0.1, -50), 100); },
+      gem: () => { AudioFX.play(800, 'sine', 0.1, 0.1); setTimeout(() => AudioFX.play(1200, 'sine', 0.3, 0.1), 100); },
+      win: () => { [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => setTimeout(() => AudioFX.play(f, 'square', 0.2, 0.1), i * 150)); }
+    };
+
+    /**
+     * ========================================================================
+     * 3. PROCEDURAL GRAPHICS GENERATOR
+     * ========================================================================
+     */
+    const TILE_SIZE = 50;
+    const Gfx = { cache: {} };
+
+    function initGraphics() {
+      const createSurface = (w, h, drawFunc) => {
+        let c = document.createElement('canvas'); c.width = w; c.height = h;
+        drawFunc(c.getContext('2d'), w, h); return c;
+      };
+
+      Gfx.cache.floor = createSurface(TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+        ctx.fillStyle = '#2a2b36'; ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = '#1e1f29'; ctx.lineWidth = 2;
+        let seed = 42; const rnd = () => { let x = Math.sin(seed++) * 1000; return x - Math.floor(x); };
+        for (let i = 0; i < 8; i++) {
+          let x = rnd() * (w - 10); let y = rnd() * (h - 10);
+          ctx.fillStyle = '#30323d'; ctx.fillRect(x, y, 10, 10); ctx.strokeRect(x, y, 10, 10);
+        }
+      });
+
+      Gfx.cache.wall = createSurface(TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+        ctx.fillStyle = '#0f1015'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#44475a'; ctx.fillRect(0, 0, w, h / 2);
+        ctx.fillStyle = '#282a36'; ctx.fillRect(0, h / 2, w, h / 2);
+        ctx.strokeStyle = '#1e1e24'; ctx.lineWidth = 2; ctx.beginPath();
+        ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.moveTo(0, h * 0.75); ctx.lineTo(w, h * 0.75);
+        ctx.moveTo(w / 2, h / 2); ctx.lineTo(w / 2, h * 0.75); ctx.moveTo(w / 4, h * 0.75); ctx.lineTo(w / 4, h);
+        ctx.moveTo(w * 0.75, h * 0.75); ctx.lineTo(w * 0.75, h); ctx.stroke();
+      });
+
+      Gfx.cache.hero = [];
+      for (let i = 0; i < 4; i++) {
+        Gfx.cache.hero.push(createSurface(TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+          let bob = Math.sin(i * Math.PI / 2) * 2;
+          ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(25, 42, 12, 4, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#2e7d32'; ctx.beginPath(); ctx.moveTo(15, 20 + bob); ctx.lineTo(35, 20 + bob); ctx.lineTo(40, 42); ctx.lineTo(10, 42); ctx.fill();
+          ctx.fillStyle = '#ffcc80'; ctx.beginPath(); ctx.arc(25, 16 + bob, 10, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#1b5e20'; ctx.beginPath(); ctx.moveTo(12, 14 + bob); ctx.lineTo(38, 14 + bob); ctx.lineTo(20, 2 + bob); ctx.fill();
+          ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(22, 18 + bob, 1.5, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(28, 18 + bob, 1.5, 0, Math.PI * 2); ctx.fill();
+        }));
+      }
+
+      Gfx.cache.skeleton = [];
+      for (let i = 0; i < 4; i++) {
+        Gfx.cache.skeleton.push(createSurface(TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+          let bob = Math.cos(i * Math.PI / 2) * 2;
+          ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(25, 42, 12, 4, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(25, 20 + bob); ctx.lineTo(25, 35 + bob); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(15, 25 + bob); ctx.lineTo(35, 25 + bob); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(25, 35 + bob); ctx.lineTo(18, 42 + bob); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(25, 35 + bob); ctx.lineTo(32, 42 + bob); ctx.stroke();
+          ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(25, 14 + bob, 8, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(22, 12 + bob, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(28, 12 + bob, 2.5, 0, Math.PI * 2); ctx.fill();
+        }));
+      }
+
+      Gfx.cache.boss = [];
+      for (let i = 0; i < 4; i++) {
+        Gfx.cache.boss.push(createSurface(TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+          let bob = Math.cos(i * Math.PI / 2) * 2;
+          ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.ellipse(25, 42, 16, 6, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(25, 18 + bob); ctx.lineTo(25, 35 + bob); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(10, 25 + bob); ctx.lineTo(40, 25 + bob); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(25, 35 + bob); ctx.lineTo(15, 45 + bob); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(25, 35 + bob); ctx.lineTo(35, 45 + bob); ctx.stroke();
+          ctx.fillStyle = '#ffaaaa'; ctx.beginPath(); ctx.arc(25, 12 + bob, 10, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(21, 10 + bob, 3, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(29, 10 + bob, 3, 0, Math.PI * 2); ctx.fill();
+        }));
+      }
+
+      Gfx.cache.dragon = [];
+      for (let i = 0; i < 4; i++) {
+        Gfx.cache.dragon.push(createSurface(TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+          let bob = Math.sin(i * Math.PI / 2) * 3;
+          ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.ellipse(25, 42, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#4CAF50';
+          ctx.beginPath(); ctx.moveTo(10, 25 + bob); ctx.lineTo(0, 5 + bob); ctx.lineTo(20, 20 + bob); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(40, 25 + bob); ctx.lineTo(50, 5 + bob); ctx.lineTo(30, 20 + bob); ctx.fill();
+          ctx.beginPath(); ctx.arc(25, 25 + bob, 16, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#FFEB3B'; ctx.beginPath(); ctx.arc(20, 20 + bob, 3, 0, Math.PI * 2); ctx.arc(30, 20 + bob, 3, 0, Math.PI * 2); ctx.fill();
+        }));
+      }
+
+      Gfx.cache.bowItem = createSurface(TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+        ctx.strokeStyle = '#8d6e63'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(20, 25, 12, -Math.PI / 2, Math.PI / 2); ctx.stroke();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(20, 13); ctx.lineTo(20, 37); ctx.stroke();
+      });
+
+      Gfx.cache.swordItem = createSurface(TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+        ctx.fillStyle = '#e0e0e0'; ctx.beginPath(); ctx.moveTo(25, 10); ctx.lineTo(28, 15); ctx.lineTo(28, 30); ctx.lineTo(22, 30); ctx.lineTo(22, 15); ctx.fill();
+        ctx.fillStyle = '#ffca28'; ctx.fillRect(18, 30, 14, 4);
+        ctx.fillStyle = '#5d4037'; ctx.fillRect(23, 34, 4, 10);
+      });
+
+      Gfx.cache.goal = [];
+      for (let i = 0; i < 8; i++) {
+        Gfx.cache.goal.push(createSurface(TILE_SIZE, TILE_SIZE, (ctx, w, h) => {
+          let pulse = Math.sin(i * Math.PI / 4) * 3;
+          ctx.fillStyle = `rgba(255, 215, 0, ${0.15 + Math.sin(i * Math.PI / 4) * 0.1})`;
+          ctx.beginPath(); ctx.arc(25, 25, 22 + pulse, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#8d6e63'; ctx.fillRect(12, 8, 4, 36);
+          let flagWave = Math.sin(i * Math.PI / 4) * 3;
+          ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.moveTo(16, 10);
+          ctx.quadraticCurveTo(28 + flagWave, 14, 38, 12 + flagWave); ctx.lineTo(36, 24 + flagWave);
+          ctx.quadraticCurveTo(26 + flagWave, 22, 16, 26); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#b8860b'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('X', 27 + flagWave * 0.3, 22 + flagWave * 0.3);
+        }));
+      }
+    }
+    initGraphics();
+
+    /**
+     * ========================================================================
+     * 4. CUSTOM PYTHON PARSER & AST INTERPRETER (Supports Dicts & Funcs)
+     * ========================================================================
+     */
+    class ReturnValue { constructor(val) { this.val = val; } }
+
+    class Lexer {
+      constructor(input) { this.input = input; this.tokens = []; this.indentStack = [0]; }
+      tokenize() {
+        const lines = this.input.split(/\r?\n/);
+        for (let i = 0; i < lines.length; i++) {
+          let line = lines[i];
+          if (line.includes('#')) line = line.substring(0, line.indexOf('#'));
+          if (line.trim().length > 0) {
+            let spaces = line.match(/^ */)[0].length;
+            let currInd = this.indentStack[this.indentStack.length - 1];
+            if (spaces > currInd) {
+              this.indentStack.push(spaces); this.tokens.push({ type: 'INDENT', value: spaces, line: i + 1 });
+            } else if (spaces < currInd) {
+              while (this.indentStack.length > 1 && this.indentStack[this.indentStack.length - 1] > spaces) {
+                this.indentStack.pop(); this.tokens.push({ type: 'DEDENT', value: spaces, line: i + 1 });
+              }
+            }
+            this.processLine(line.trim(), i + 1);
+            this.tokens.push({ type: 'NEWLINE', value: '\n', line: i + 1 });
+          }
+        }
+        while (this.indentStack.length > 1) { this.indentStack.pop(); this.tokens.push({ type: 'DEDENT', value: 0, line: 'EOF' }); }
+        this.tokens.push({ type: 'EOF', value: '', line: 'EOF' });
+        return this.tokens;
+      }
+
+      processLine(str, lineNum) {
+        let pos = 0;
+        while (pos < str.length) {
+          let space = str.slice(pos).match(/^\s+/);
+          if (space) { pos += space[0].length; continue; }
+          const tokenRegex = /^(==|!=|<=|>=|<|>|\+|-|\*|\/|=|\(|\)|\[|\]|\{|\}|:|,|\bif\b|\belif\b|\belse\b|\bdef\b|\breturn\b|\bnot\b|\band\b|\bor\b|\bpass\b|\bfor\b|\bwhile\b|\d+(?:\.\d+)?|"[^"]*"|'[^']*'|[a-zA-Z_]\w*|\.)/;
+          let match = str.slice(pos).match(tokenRegex);
+          if (match) {
+            let val = match[1]; let type = 'UNKNOWN';
+            if (['for', 'while'].includes(val)) throw new Error(`SyntaxError (Line ${lineNum}): Loops are disabled! Use specific functions or logic instead.`);
+            if (/^\d+(\.\d+)?$/.test(val)) type = 'NUMBER';
+            else if (/^["'].*["']$/.test(val)) type = 'STRING';
+            else if (['if', 'elif', 'else', 'def', 'return', 'not', 'and', 'or', 'pass'].includes(val)) type = 'KEYWORD';
+            else if (/^[a-zA-Z_]\w*$/.test(val)) type = 'IDENTIFIER';
+            else type = 'PUNC';
+            this.tokens.push({ type, value: val, line: lineNum });
+            pos += match[0].length;
+          } else { throw new Error(`Lexer Error (Line ${lineNum}): Unrecognized character at '${str.slice(pos, pos + 5)}...'`); }
+        }
+      }
+    }
+
+    class Parser {
+      constructor(tokens) { this.tokens = tokens; this.pos = 0; }
+      peek() { return this.tokens[this.pos] || { type: 'EOF' }; }
+      consume() { return this.tokens[this.pos++]; }
+      match(val) { if (this.peek().value === val) { this.consume(); return true; } return false; }
+      expect(v) { let t = this.consume(); if (t.value !== v) throw new Error(`Syntax Error (Line ${t.line}): Expected '${v}', got '${t.value}'`); }
+
+      parse() {
+        let body = [];
+        while (this.peek().type !== 'EOF') {
+          if (this.peek().type === 'NEWLINE') { this.consume(); continue; }
+          body.push(this.parseStatement());
+        }
+        return { type: 'Program', body };
+      }
+
+      parseStatement() {
+        let t = this.peek();
+        if (t.value === 'pass') { this.consume(); return { type: 'PassStatement' }; }
+        if (t.value === 'def') return this.parseFunctionDef();
+        if (t.value === 'if') return this.parseIf();
+        if (t.value === 'return') {
+          this.consume(); let arg = null;
+          if (!['NEWLINE', 'DEDENT', 'EOF'].includes(this.peek().type)) arg = this.parseExpression();
+          return { type: 'ReturnStatement', argument: arg };
+        }
+        let expr = this.parseExpression();
+        if (this.match('=')) {
+          if (expr.type !== 'Identifier') throw new Error(`Syntax Error (Line ${t.line}): Invalid assignment target.`);
+          let right = this.parseExpression();
+          return { type: 'Assignment', left: expr.name, right };
+        }
+        return { type: 'ExpressionStatement', expression: expr };
+      }
+
+      parseFunctionDef() {
+        let line = this.consume().line; let id = this.consume();
+        if (id.type !== 'IDENTIFIER') throw new Error(`Syntax Error: Expected function name`);
+        this.expect('('); let params = [];
+        if (!this.match(')')) {
+          params.push(this.consume().value);
+          while (this.match(',')) params.push(this.consume().value);
+          this.expect(')');
+        }
+        this.expect(':'); let body = this.parseBlock();
+        return { type: 'FunctionDeclaration', name: id.value, params, body, line };
+      }
+
+      parseIf() {
+        let line = this.consume().line; let test = this.parseExpression();
+        this.expect(':'); let consequent = this.parseBlock(); let alternate = null;
+        while (this.peek().type === 'NEWLINE') this.consume();
+        if (this.peek().value === 'elif') {
+          this.tokens[this.pos].value = 'if'; alternate = [this.parseIf()];
+        } else if (this.match('else')) {
+          this.expect(':'); alternate = this.parseBlock();
+        }
+        return { type: 'IfStatement', test, consequent, alternate, line };
+      }
+
+      parseBlock() {
+        while (this.peek().type === 'NEWLINE') this.consume();
+        let t = this.consume();
+        if (t.type !== 'INDENT') throw new Error(`Syntax Error (Line ${t.line}): Expected an indented block.`);
+        let statements = [];
+        while (this.peek().type !== 'DEDENT' && this.peek().type !== 'EOF') {
+          if (this.peek().type === 'NEWLINE') { this.consume(); continue; }
+          statements.push(this.parseStatement());
+        }
+        if (this.peek().type === 'DEDENT') this.consume();
+        return statements;
+      }
+
+      parseExpression() { return this.parseLogical(); }
+      parseLogical() {
+        let node = this.parseComparison();
+        while (['and', 'or'].includes(this.peek().value)) {
+          let op = this.consume().value; node = { type: 'LogicalExpression', op, left: node, right: this.parseComparison() };
+        }
+        return node;
+      }
+      parseComparison() {
+        let node = this.parseAdditive();
+        while (['==', '!=', '<=', '>=', '<', '>'].includes(this.peek().value)) {
+          let op = this.consume().value; node = { type: 'BinaryExpression', op, left: node, right: this.parseAdditive() };
+        }
+        return node;
+      }
+      parseAdditive() {
+        let node = this.parseMultiplicative();
+        while (['+', '-'].includes(this.peek().value)) {
+          let op = this.consume().value; node = { type: 'BinaryExpression', op, left: node, right: this.parseMultiplicative() };
+        }
+        return node;
+      }
+      parseMultiplicative() {
+        let node = this.parsePrimary();
+        while (['*', '/'].includes(this.peek().value)) {
+          let op = this.consume().value; node = { type: 'BinaryExpression', op, left: node, right: this.parsePrimary() };
+        }
+        return node;
+      }
+      parsePrimary() {
+        let t = this.consume();
+        if (t.type === 'NUMBER') return { type: 'Literal', value: parseFloat(t.value) };
+        if (t.type === 'STRING') return { type: 'Literal', value: t.value.replace(/['"]/g, '') };
+        if (t.value === 'True') return { type: 'Literal', value: true };
+        if (t.value === 'False') return { type: 'Literal', value: false };
+        if (t.value === 'not') return { type: 'UnaryOp', op: 'not', argument: this.parsePrimary() };
+
+        if (t.value === '[') {
+          let elements = [];
+          if (!this.match(']')) {
+            elements.push(this.parseExpression());
+            while (this.match(',')) elements.push(this.parseExpression());
+            this.expect(']');
+          }
+          return { type: 'ListExpression', elements };
+        }
+
+        // Parse Dictionaries {}
+        if (t.value === '{') {
+          let properties = [];
+          if (!this.match('}')) {
+            do {
+              let key = this.parseExpression();
+              this.expect(':');
+              let value = this.parseExpression();
+              properties.push({ key, value });
+            } while (this.match(','));
+            this.expect('}');
+          }
+          return { type: 'DictionaryExpression', properties };
+        }
+
+        if (t.type === 'IDENTIFIER') {
+          let node = { type: 'Identifier', name: t.value };
+          while (this.peek().value === '.' || this.peek().value === '(' || this.peek().value === '[') {
+            if (this.match('.')) {
+              let prop = this.consume();
+              if (prop.type !== 'IDENTIFIER') throw new Error(`Syntax Error Line ${t.line}: Expected property`);
+              node = { type: 'MemberExpression', object: node, property: prop.value };
+            } else if (this.match('(')) {
+              let args = [];
+              if (!this.match(')')) {
+                args.push(this.parseExpression());
+                while (this.match(',')) args.push(this.parseExpression());
+                this.expect(')');
+              }
+              node = { type: 'CallExpression', callee: node, args, line: t.line };
+            } else if (this.match('[')) {
+              let index = this.parseExpression();
+              this.expect(']');
+              node = { type: 'IndexExpression', object: node, index };
+            }
+          }
+          return node;
+        }
+        throw new Error(`Syntax Error (Line ${t.line}): Unexpected token '${t.value}'`);
+      }
+    }
+
+    class Interpreter {
+      constructor(api) { this.api = api; this.env = {}; this.ops = 0; this.MAX_OPS = 2000; }
+      checkHalt() { if (++this.ops > this.MAX_OPS) throw new Error("Infinite Recursion / Limit Reached!"); }
+
+      async eval(node) {
+        this.checkHalt(); if (!node) return null;
+        switch (node.type) {
+          case 'Program':
+            for (let s of node.body) await this.eval(s); break;
+          case 'PassStatement': break;
+          case 'ExpressionStatement': await this.eval(node.expression); break;
+          case 'Assignment': this.env[node.left] = await this.eval(node.right); break;
+          case 'Identifier':
+            if (this.env[node.name] !== undefined) return this.env[node.name];
+            throw new Error(`NameError: Variable '${node.name}' is not defined.`);
+          case 'Literal': return node.value;
+          case 'ListExpression':
+            let list = []; for (let e of node.elements) list.push(await this.eval(e)); return list;
+          case 'DictionaryExpression':
+            let dict = {};
+            for (let p of node.properties) {
+              let k;
+              if (p.key.type === 'Literal') k = p.key.value;
+              else if (p.key.type === 'Identifier') k = p.key.name;
+              else k = await this.eval(p.key);
+              dict[k] = await this.eval(p.value);
+            }
+            return dict;
+          case 'IndexExpression':
+            let obj = await this.eval(node.object); let idx = await this.eval(node.index);
+            if (obj && typeof obj === 'object') return obj[idx];
+            throw new Error("TypeError: Target does not support dictionary/list access.");
+          case 'UnaryOp':
+            if (node.op === 'not') return !(await this.eval(node.argument)); break;
+          case 'LogicalExpression':
+            let lv = await this.eval(node.left);
+            if (node.op === 'and') { if (!lv) return false; return await this.eval(node.right); }
+            if (node.op === 'or') { if (lv) return true; return await this.eval(node.right); }
+            break;
+          case 'BinaryExpression':
+            let l = await this.eval(node.left); let r = await this.eval(node.right);
+            if (node.op === '+') return l + r; if (node.op === '-') return l - r;
+            if (node.op === '*') return l * r; if (node.op === '/') return l / r;
+            if (node.op === '==') return l === r; if (node.op === '!=') return l !== r;
+            if (node.op === '<=') return l <= r; if (node.op === '>=') return l >= r;
+            if (node.op === '<') return l < r; if (node.op === '>') return l > r;
+            break;
+          case 'FunctionDeclaration':
+            this.env[node.name] = { type: 'Function', params: node.params, body: node.body }; break;
+          case 'ReturnStatement':
+            let v = node.argument ? await this.eval(node.argument) : null; throw new ReturnValue(v);
+          case 'CallExpression':
+            let args = []; for (let a of node.args) args.push(await this.eval(a));
+            if (node.callee.type === 'Identifier') {
+              if (this.env[node.callee.name]) {
+                let func = this.env[node.callee.name];
+                if (func.type === 'Function') {
+                  let oldEnv = this.env; this.env = Object.assign({}, oldEnv);
+                  for (let i = 0; i < func.params.length; i++) this.env[func.params[i]] = args[i] !== undefined ? args[i] : null;
+                  let retVal = null;
+                  try { for (let s of func.body) await this.eval(s); }
+                  catch (e) { if (e instanceof ReturnValue) retVal = e.val; else throw e; }
+                  finally { this.env = oldEnv; }
+                  return retVal;
+                }
+              }
+              if (node.callee.name === 'print') { GameApp.logConsole(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '), 'print'); return null; }
+              throw new Error(`NameError: function '${node.callee.name}' is not defined.`);
+            }
+            if (node.callee.type === 'MemberExpression') {
+              if (node.callee.object.type === 'Identifier' && node.callee.object.name === 'hero') {
+                let method = node.callee.property;
+                if (typeof this.api[method] === 'function') return await this.api[method](...args);
+                throw new Error(`AttributeError: 'hero' does not know method '${method}()'`);
+              }
+              throw new Error(`Coding Error: You tried to call something that isn't a function.`);
+            }
+            throw new Error(`Runtime Error: Invalid function call.`);
+          case 'IfStatement':
+            let cond = await this.eval(node.test);
+            if (cond) { for (let s of node.consequent) await this.eval(s); }
+            else if (node.alternate) { for (let s of node.alternate) await this.eval(s); }
+            break;
+        }
+      }
+    }
+
+    /**
+     * ========================================================================
+     * 5. UI, EDITOR & GAME LOGIC CONTROLLERS
+     * ========================================================================
+     */
+    const GameApp = {
+      isRunning: false, currentLevelIdx: 0, mapData: [],
+      hero: { x: 0, y: 0, targetX: 0, targetY: 0, dir: 1, alive: true, inventory: {}, equipped: null },
+      enemies: [], items: [], goal: { x: 0, y: 0 }, particles: [],
+      activeProjectile: null, isProcessingAction: false, lastTime: 0,
+      studentName: '', completedLevels: [], renderLoopStarted: false,
+
+      init() {
+        this.editorInput = document.getElementById('code-input');
+        this.editorOutput = document.getElementById('code-output');
+        this.lineNumbers = document.getElementById('line-numbers');
+        this.terminal = document.getElementById('terminal-output');
+        this.canvas = document.getElementById('game-canvas');
+        this.ctx = this.canvas.getContext('2d');
+
+        this.editorInput.addEventListener('input', () => this.updateEditor());
+        this.editorInput.addEventListener('scroll', () => {
+          this.editorOutput.scrollTop = this.editorInput.scrollTop;
+          this.editorOutput.scrollLeft = this.editorInput.scrollLeft;
+          this.lineNumbers.scrollTop = this.editorInput.scrollTop;
+        });
+
+        this.editorInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Tab') {
+            e.preventDefault(); let start = this.editorInput.selectionStart;
+            this.editorInput.value = this.editorInput.value.substring(0, start) + "    " + this.editorInput.value.substring(this.editorInput.selectionEnd);
+            this.editorInput.selectionStart = this.editorInput.selectionEnd = start + 4;
+            this.updateEditor();
+          } else if (e.key === 'Enter') {
+            e.preventDefault(); let start = this.editorInput.selectionStart;
+            let lines = this.editorInput.value.substring(0, start).split('\n');
+            let currentLine = lines[lines.length - 1];
+            let indent = (currentLine.match(/^\s*/) || [''])[0];
+            if (currentLine.trim().endsWith(':')) indent += "    ";
+            this.editorInput.value = this.editorInput.value.substring(0, start) + "\n" + indent + this.editorInput.value.substring(this.editorInput.selectionEnd);
+            this.editorInput.selectionStart = this.editorInput.selectionEnd = start + 1 + indent.length;
+            this.updateEditor(); this.editorInput.blur(); this.editorInput.focus();
+          }
+        });
+
+    
+
+      logConsole(msg, type = "sys") {
+        const div = document.createElement('div');
+        div.className = `log-entry log-${type}`;
+        div.innerText = `> ${msg}`;
+        this.terminal.appendChild(div);
+        this.terminal.scrollTop = this.terminal.scrollHeight;
+      },
+
+      updateEditor() {
+        let code = this.editorInput.value;
+        const lines = code.split('\n').length;
+        this.lineNumbers.innerHTML = Array.from({ length: Math.max(1, lines) }, (_, i) => i + 1).join('<br>');
+        let safeCode = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const rules = [
+          { rx: /(#.*)/g, cls: 'cm' },
+          { rx: /("[^"]*"|'[^']*')/g, cls: 'st' },
+          { rx: /\b(def|if|elif|else|return|pass|and|or|not)\b/g, cls: 'kw' },
+          { rx: /\b(print|len|int|str|float|True|False)\b/g, cls: 'bu' },
+          { rx: /\b(hero)\b/g, cls: 'he' },
+          { rx: /\b(move_right|move_left|move_up|move_down|equip|attack|scan|has_weapon)\b/g, cls: 'me' },
+          { rx: /\b(\d+)\b/g, cls: 'nm' }
+        ];
+        let matches = [];
+        rules.forEach(rule => {
+          rule.rx.lastIndex = 0; let m;
+          while ((m = rule.rx.exec(safeCode)) !== null) {
+            if (m.index === rule.rx.lastIndex) rule.rx.lastIndex++;
+            matches.push({ start: m.index, end: m.index + m[0].length, cls: rule.cls, text: m[0] });
+          }
+        });
+        matches.sort((a, b) => a.start - b.start || b.end - a.end);
+        let finalMatches = [], lastEnd = 0;
+        for (let m of matches) if (m.start >= lastEnd) { finalMatches.push(m); lastEnd = m.end; }
+        let html = '', cursor = 0;
+        for (let m of finalMatches) {
+          html += safeCode.substring(cursor, m.start) + `<span class="${m.cls}">${m.text}</span>`;
+          cursor = m.end;
+        }
+        html += safeCode.substring(cursor);
+        if (code.endsWith('\n')) html += ' ';
+        this.editorOutput.innerHTML = html;
+      },
+
+      updateUI() {
+        let invArr = [];
+        for (let key in this.hero.inventory) {
+          if (this.hero.inventory[key] > 0) invArr.push(`${key}(${this.hero.inventory[key]})`);
+        }
+        let invString = invArr.length > 0 ? invArr.join(', ') : 'None';
+        let eqString = this.hero.equipped ? this.hero.equipped : 'None';
+        const arrEl = document.getElementById('inventory');
+        if (arrEl) arrEl.innerText = `🎒 Items: ${invString} | 🗡️ Eq: ${eqString}`;
+      },
+
+      startGame() {
+        AudioFX.init();
+        document.getElementById('start-menu').classList.remove('active');
+        this.completedLevels = [];
+        this.showNamePrompt();
+      },
+
+      loadLevel(idx) {
+        if (idx >= LEVELS.length) {
+          this.showVictoryScreen();
+          return;
+        }
+        this.currentLevelIdx = idx; const lvl = LEVELS[idx];
+        document.getElementById('level-display').innerText = `Level ${idx + 1} / ${LEVELS.length}`;
+        document.getElementById('inst-title').innerText = lvl.title;
+        document.getElementById('inst-desc').innerHTML = lvl.desc.replace(/`([^`]+)`/g, '<code>$1</code>');
+        document.getElementById('hint-box').innerHTML = "<strong>Hint: </strong>" + lvl.hint;
+        document.getElementById('hint-box').style.display = 'none';
+        this.editorInput.value = lvl.code;
+        this.updateEditor();
+        this.terminal.innerHTML = '';
+        this.logConsole(`Loaded Level ${idx + 1}: ${lvl.title}`, 'sys');
+        this.resetGameWorld();
+        this.saveProgress();
+      },
+
+      resetGameWorld() {
+        this.isRunning = false; this.isProcessingAction = false;
+        this.particles = []; this.activeProjectile = null;
+        this.hero.alive = true; this.hero.inventory = {}; this.hero.equipped = null;
+
+        const lvl = LEVELS[this.currentLevelIdx];
+        this.mapData = lvl.map.map(r => r.split(''));
+        this.enemies = []; this.items = [];
+
+        if (lvl.inv) Object.assign(this.hero.inventory, lvl.inv);
+
+        for (let y = 0; y < this.mapData.length; y++) {
+          for (let x = 0; x < this.mapData[y].length; x++) {
+            let char = this.mapData[y][x];
+            if (char === 'H') { this.hero.x = this.hero.targetX = x; this.hero.y = this.hero.targetY = y; this.hero.dir = 1; this.mapData[y][x] = '.'; }
+            else if (char === 'S') { this.enemies.push({ x, y, type: 'skeleton', hp: 10, weakness: 'bow' }); this.mapData[y][x] = '.'; }
+            else if (char === 'B') { this.enemies.push({ x, y, type: 'boss', hp: 100, weakness: 'sword' }); this.mapData[y][x] = '.'; }
+            else if (char === 'D') { this.enemies.push({ x, y, type: 'dragon', hp: 200, weakness: 'bow' }); this.mapData[y][x] = '.'; }
+            else if (char === 'A') { this.items.push({ x, y, type: 'bow' }); this.mapData[y][x] = '.'; }
+            else if (char === 'V') { this.items.push({ x, y, type: 'sword' }); this.mapData[y][x] = '.'; }
+            else if (char === 'X') { this.goal = { x, y }; this.mapData[y][x] = '.'; }
+          }
+        }
+        this.updateUI();
+
+        const container = this.canvas.parentElement;
+        if (container) {
+          const rect = container.getBoundingClientRect();
+          this.canvas.width = rect.width; this.canvas.height = rect.height;
+        }
+      },
+
+      toggleHint() {
+        const h = document.getElementById('hint-box');
+        h.style.display = h.style.display === 'block' ? 'none' : 'block';
+      },
+
+      showModal(title, desc, type, callback) {
+        const overlay = document.getElementById('result-modal');
+        const titleEl = document.getElementById('modal-title');
+        titleEl.innerText = title; titleEl.className = `modal-title ${type}`;
+        document.getElementById('modal-desc').innerText = desc;
+        const btn = document.getElementById('modal-btn');
+        btn.innerText = type === 'success' ? 'NEXT LEVEL' : 'RETRY';
+        btn.onclick = () => { overlay.classList.remove('active'); if (callback) callback(); };
+        overlay.classList.add('active');
+      },
+
+      emitParticles(x, y, color, type = 'explode') {
+        for (let i = 0; i < (type === 'explode' ? 30 : 15); i++) {
+          let ang = Math.random() * Math.PI * 2;
+          let spd = type === 'explode' ? Math.random() * 60 + 20 : Math.random() * 20 + 5;
+          this.particles.push({
+            x: x * TILE_SIZE + TILE_SIZE / 2, y: y * TILE_SIZE + TILE_SIZE / 2,
+            vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd + (type === 'sparkle' ? -30 : 0),
+            life: 1.0, decay: Math.random() * 2 + 1, color: color, size: Math.random() * 4 + 2
+          });
+        }
+      },
+
+      getHeroAPI() {
+        const self = this;
+
+        function _target(dirStr) {
+          let dx = 0, dy = 0;
+          if (dirStr === 'up') dy = -1; else if (dirStr === 'down') dy = 1;
+          else if (dirStr === 'left') dx = -1; else if (dirStr === 'right') dx = 1;
+          else throw new Error(`Direction Error: '${dirStr}' is not a valid direction! Use 'up', 'down', 'left', or 'right'.`);
+          return { x: self.hero.targetX + dx, y: self.hero.targetY + dy, dx, dy };
+        }
+
+        async function _move(dx, dy, steps) {
+          if (!self.hero.alive) throw new Error("Hero is dead.");
+          let count = parseInt(steps); if (isNaN(count)) count = 1;
+
+          for (let i = 0; i < count; i++) {
+            let tx = self.hero.targetX + dx; let ty = self.hero.targetY + dy;
+            self.hero.dir = dx < 0 ? -1 : (dx > 0 ? 1 : self.hero.dir);
+
+            if (tx < 0 || tx >= self.mapData[0].length || ty < 0 || ty >= self.mapData.length || self.mapData[ty][tx] === 'W') {
+              self.emitParticles(self.hero.targetX, self.hero.targetY, '#ff5555', 'sparkle');
+              AudioFX.bump(); throw new Error(`Movement Error: You tried to walk into a wall! Check your math and step counts.`);
+            }
+            if (self.enemies.some(e => e.x === tx && e.y === ty)) {
+              self.emitParticles(tx, ty, '#ff5555', 'sparkle');
+              AudioFX.bump(); throw new Error(`Combat Error: You walked into an enemy! Scan them and attack first.`);
+            }
+
+            self.hero.targetX = tx; self.hero.targetY = ty;
+            self.isProcessingAction = true; AudioFX.step();
+
+            await new Promise(res => {
+              let check = setInterval(() => { if (!self.isProcessingAction) { clearInterval(check); res(); } }, 20);
+            });
+
+            // Check items (Weapons)
+            let iIdx = self.items.findIndex(it => it.x === tx && it.y === ty);
+            if (iIdx > -1) {
+              let it = self.items[iIdx];
+              self.hero.inventory[it.type] = (self.hero.inventory[it.type] || 0) + 1;
+              self.updateUI();
+              self.emitParticles(tx, ty, '#fff', 'sparkle');
+              AudioFX.gem();
+              self.logConsole(`Picked up weapon: ${it.type}!`, "success");
+              self.items.splice(iIdx, 1);
+            }
+          }
+        }
+
+        return {
+          move_up: async (s = 1) => await _move(0, -1, s),
+          move_down: async (s = 1) => await _move(0, 1, s),
+          move_left: async (s = 1) => await _move(-1, 0, s),
+          move_right: async (s = 1) => await _move(1, 0, s),
+
+          has_weapon: (wepStr) => { return (self.hero.inventory[wepStr] || 0) > 0; },
+
+          scan: (dirStr = 'right') => {
+            let t = _target(dirStr);
+            let tx = self.hero.targetX; let ty = self.hero.targetY;
+            for (let i = 0; i < 4; i++) {
+              tx += t.dx; ty += t.dy;
+              if (tx < 0 || tx >= self.mapData[0].length || ty < 0 || ty >= self.mapData.length || self.mapData[ty][tx] === 'W') break;
+              let found = self.enemies.find(e => e.x === tx && e.y === ty);
+              if (found) {
+                self.logConsole(`Scanned a ${found.type}!`, "success");
+                return { "type": found.type, "hp": found.hp, "weakness": found.weakness };
+              }
+            }
+            return { "type": "none", "hp": 0, "weakness": "none" };
+          },
+
+          equip: (name) => {
+            if (!(self.hero.inventory[name] > 0)) throw new Error(`Equip Error: You don't have the weapon '${name}' in your inventory!`);
+            self.hero.equipped = name;
+            self.logConsole(`Equipped: ${name}`, "success");
+            self.updateUI();
+          },
+
+          attack: async (dirStr = 'right', configDict) => {
+            if (!configDict || typeof configDict !== 'object') {
+              throw new Error("Attack Error: You must pass a configuration Dictionary {} as the second parameter!");
+            }
+
+            let weapon = configDict.weapon;
+            if (!weapon) throw new Error("Attack Error: Your dictionary is missing the 'weapon' key! E.g. {'weapon': 'sword'}");
+            if (!(self.hero.inventory[weapon] > 0)) throw new Error(`Attack Error: You don't have a '${weapon}' in your inventory!`);
+
+            let power = configDict.power || 0;
+            self.hero.equipped = weapon;
+            self.updateUI();
+
+            let t = _target(dirStr);
+            self.hero.dir = (t.dx === -1) ? -1 : (t.dx === 1 ? 1 : self.hero.dir);
+
+            let range = weapon === 'bow' ? 3 : 1;
+            if (weapon === 'sword') AudioFX.slash(); else AudioFX.shoot();
+
+            self.isProcessingAction = true;
+            let hitEnemy = null;
+
+            if (weapon === 'bow') {
+              self.activeProjectile = { x: self.hero.targetX, y: self.hero.targetY, dx: t.dx, dy: t.dy };
+            } else {
+              self.emitParticles(self.hero.targetX + t.dx, self.hero.targetY + t.dy, '#ffb86c', 'sparkle');
+            }
+
+            for (let i = 1; i <= range; i++) {
+              let tx = self.hero.targetX + t.dx * i;
+              let ty = self.hero.targetY + t.dy * i;
+              if (tx < 0 || tx >= self.mapData[0].length || ty < 0 || ty >= self.mapData.length || self.mapData[ty][tx] === 'W') break;
+
+              let eIdx = self.enemies.findIndex(e => e.x === tx && e.y === ty);
+
+              if (eIdx > -1) {
+                hitEnemy = self.enemies[eIdx];
+
+                if (self.activeProjectile) {
+                  for (let step = 0; step < i * 4; step++) {
+                    self.activeProjectile.x += t.dx * 0.25; self.activeProjectile.y += t.dy * 0.25;
+                    await new Promise(r => setTimeout(r, 10));
+                  }
+                }
+
+                if (hitEnemy.weakness !== weapon) {
+                  self.emitParticles(tx, ty, '#ff5555', 'sparkle');
+                  throw new Error(`Attack Failed! The ${hitEnemy.type} is immune to ${weapon}. It is weak to ${hitEnemy.weakness}!`);
+                }
+                if (power < hitEnemy.hp) {
+                  self.emitParticles(tx, ty, '#ff5555', 'sparkle');
+                  throw new Error(`Attack Failed! You used ${power} power, but the ${hitEnemy.type} has ${hitEnemy.hp} HP. You need more power!`);
+                }
+
+                self.enemies.splice(eIdx, 1);
+                self.emitParticles(tx, ty, '#ffffff', 'explode');
+                setTimeout(AudioFX.kill, 10);
+                self.logConsole(`Defeated ${hitEnemy.type}!`, "success");
+                break;
+              }
+            }
+
+            if (!hitEnemy) {
+              if (self.activeProjectile) {
+                for (let step = 0; step < range * 4; step++) {
+                  self.activeProjectile.x += t.dx * 0.25; self.activeProjectile.y += t.dy * 0.25;
+                  await new Promise(r => setTimeout(r, 10));
+                }
+              }
+              self.logConsole(`Attacked ${dirStr} with ${weapon}, but hit nothing.`, "sys");
+            }
+
+            self.activeProjectile = null;
+            self.isProcessingAction = false;
+            await new Promise(r => setTimeout(r, 200));
+          }
+        };
+      },
+
+      async runStudentCode() {
+        if (this.isRunning) return;
+        this.resetGameWorld();
+        this.isRunning = true; this.terminal.innerHTML = '';
+        this.logConsole("Parsing Python AST...", "sys");
+
+        let pyCode = this.editorInput.value; let ast;
+        try {
+          AudioFX.init();
+          let lexer = new Lexer(pyCode);
+          let parser = new Parser(lexer.tokenize());
+          ast = parser.parse();
+
+          // TEACHER ENFORCEMENT: Level 13 and 20 requires writing TWO functions
+          if (this.currentLevelIdx === 12 || this.currentLevelIdx === 19 || this.currentLevelIdx === 20) {
+            let funcs = ast.body.filter(n => n.type === 'FunctionDeclaration');
+            if (funcs.length < 2) {
+              throw new Error("Requirement Failed: You must write and define exactly TWO different functions (using 'def') to beat this level.");
+            }
+          }
+
+        } catch (e) {
+          this.logConsole(e.message, "error");
+          this.showModal("Syntax Error", e.message, "error");
+          this.isRunning = false; return;
+        }
+
+        this.logConsole("Executing Logic...", "sys");
+        let api = this.getHeroAPI();
+        let interp = new Interpreter(api);
+
+        try {
+          await interp.eval(ast);
+          if (this.hero.alive) {
+            if (this.hero.targetX === this.goal.x && this.hero.targetY === this.goal.y) {
+              AudioFX.win();
+              this.emitParticles(this.hero.targetX, this.hero.targetY, '#f1fa8c', 'explode');
+              this.logConsole("Goal Reached! Perfect Execution.", "success");
+              this.completedLevels = this.completedLevels || [];
+              if (!this.completedLevels.includes(this.currentLevelIdx)) {
+                this.completedLevels.push(this.currentLevelIdx);
+              }
+              this.saveProgress();
+              setTimeout(() => this.showModal("LEVEL COMPLETE!", "Excellent! Your code works perfectly.", "success", () => this.loadLevel(this.currentLevelIdx + 1)), 500);
+            } else {
+              this.logConsole("Execution finished, but Goal not reached.", "error");
+              this.showModal("EXECUTION FINISHED", "Your code completed, but you didn't reach the Goal (X). Did you move far enough?", "error");
+            }
+          }
+        } catch (e) {
+          this.logConsole(e.message, "error");
+          this.showModal("Execution Failed", e.message, "error");
+        } finally {
+          this.isRunning = false;
+        }
+      },
+
+      // ==================== LOCAL STORAGE & PROGRESS ====================
+      saveProgress() {
+        const name = this.studentName;
+        if (!name) return;
+        try {
+          let students = JSON.parse(localStorage.getItem('pythonQuestStage5_students') || '[]');
+          let idx = students.findIndex(s => s.name === name);
+          const record = {
+            name,
+            currentLevel: this.currentLevelIdx + 1,
+            completedLevels: this.completedLevels || [],
+            lastPlayed: new Date().toISOString()
+          };
+          if (idx >= 0) students[idx] = record;
+          else students.push(record);
+          localStorage.setItem('pythonQuestStage5_students', JSON.stringify(students));
+          localStorage.setItem('pythonQuestStage5_current', name);
+        } catch (e) { /* localStorage may be unavailable */ }
+      },
+
+      loadStudentProgress(name) {
+        try {
+          let students = JSON.parse(localStorage.getItem('pythonQuestStage5_students') || '[]');
+          return students.find(s => s.name === name) || null;
+        } catch (e) { return null; }
+      },
+
+      getAllStudents() {
+        try {
+          return JSON.parse(localStorage.getItem('pythonQuestStage5_students') || '[]');
+        } catch (e) { return []; }
+      },
+
+      // ==================== NAME & RESUME PROMPTS ====================
+      showNamePrompt() {
+        document.getElementById('name-prompt').classList.add('active');
+        setTimeout(() => document.getElementById('student-name-input').focus(), 100);
+      },
+
+      submitName() {
+        const input = document.getElementById('student-name-input');
+        const name = input.value.trim();
+        if (!name) { input.style.borderColor = '#ff5555'; return; }
+        this.studentName = name;
+        document.getElementById('name-prompt').classList.remove('active');
+        const saved = this.loadStudentProgress(name);
+        if (saved && saved.currentLevel > 1) {
+          this.completedLevels = saved.completedLevels || [];
+          this.showResumePrompt(saved);
+        } else {
+          this.completedLevels = [];
+          this.beginGame(0);
+        }
+      },
+
+      showResumePrompt(saved) {
+        document.getElementById('resume-level-info').innerText =
+          `Welcome back, ${saved.name}! You were on Level ${saved.currentLevel} with ${saved.completedLevels.length} level${saved.completedLevels.length !== 1 ? 's' : ''} completed.`;
+        document.getElementById('resume-prompt').classList.add('active');
+      },
+
+      resumeProgress() {
+        document.getElementById('resume-prompt').classList.remove('active');
+        const saved = this.loadStudentProgress(this.studentName);
+        if (saved) {
+          this.completedLevels = saved.completedLevels || [];
+          this.beginGame(saved.currentLevel - 1);
+        } else {
+          this.beginGame(0);
+        }
+      },
+
+      startFresh() {
+        document.getElementById('resume-prompt').classList.remove('active');
+        this.completedLevels = [];
+        this.beginGame(0);
+      },
+
+      beginGame(levelIdx) {
+        this.loadLevel(levelIdx);
+        if (!this.renderLoopStarted) {
+          this.renderLoopStarted = true;
+          requestAnimationFrame((t) => this.renderLoop(t));
+        }
+      },
+
+      // ==================== TEACHER DASHBOARD ====================
+      showTeacherDashboard() {
+        const list = document.getElementById('teacher-student-list');
+        const students = this.getAllStudents();
+        if (students.length === 0) {
+          list.innerHTML = '<div class="no-students">No students have played yet on this device.</div>';
+        } else {
+          students.sort((a, b) => (b.completedLevels?.length || 0) - (a.completedLevels?.length || 0));
+          list.innerHTML = students.map(s => {
+            const completed = s.completedLevels ? s.completedLevels.length : 0;
+            const pct = Math.round((completed / LEVELS.length) * 100);
+            const lastDate = s.lastPlayed ? new Date(s.lastPlayed).toLocaleString() : 'Unknown';
+            return `<div class="student-row">
+              <div>
+                <div class="student-name">${s.name}</div>
+                <div class="student-time">Last played: ${lastDate}</div>
+              </div>
+              <div class="student-progress">
+                <span class="progress-badge">${completed} / ${LEVELS.length}</span>
+                <div class="progress-bar-mini"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+                ${completed >= LEVELS.length ? '<span style="font-size:18px;">🏆</span>' : ''}
+              </div>
+            </div>`;
+          }).join('');
+        }
+        document.getElementById('teacher-dashboard').classList.add('active');
+      },
+
+      closeTeacherDashboard() {
+        document.getElementById('teacher-dashboard').classList.remove('active');
+      },
+
+      // ==================== VICTORY SCREEN ====================
+      showVictoryScreen() {
+        this.completedLevels = this.completedLevels || [];
+        if (!this.completedLevels.includes(this.currentLevelIdx)) {
+          this.completedLevels.push(this.currentLevelIdx);
+        }
+        this.saveProgress();
+
+        document.getElementById('victory-completed').innerText = this.completedLevels.length;
+        document.getElementById('victory-name').innerText = this.studentName || 'Hero';
+        document.getElementById('victory-screen').classList.add('active');
+
+        AudioFX.win();
+        setTimeout(() => AudioFX.win(), 600);
+        setTimeout(() => AudioFX.win(), 1200);
+
+        this.startConfetti();
+      },
+
+      startConfetti() {
+        const canvas = document.getElementById('confetti-canvas');
+        if (!canvas) return;
+        const cCtx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const pieces = [];
+        const colors = ['#ff79c6', '#50fa7b', '#f1fa8c', '#8be9fd', '#bd93f9', '#ffb86c', '#ff5555', '#ffd700'];
+        for (let i = 0; i < 200; i++) {
+          pieces.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height - canvas.height,
+            w: Math.random() * 10 + 5, h: Math.random() * 6 + 3,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            vy: Math.random() * 3 + 2, vx: Math.random() * 2 - 1,
+            rot: Math.random() * 360, rotSpd: Math.random() * 10 - 5
+          });
+        }
+        const animate = () => {
+          if (!document.getElementById('victory-screen').classList.contains('active')) return;
+          cCtx.clearRect(0, 0, canvas.width, canvas.height);
+          pieces.forEach(p => {
+            p.y += p.vy; p.x += p.vx; p.rot += p.rotSpd;
+            if (p.y > canvas.height) { p.y = -10; p.x = Math.random() * canvas.width; }
+            cCtx.save(); cCtx.translate(p.x, p.y);
+            cCtx.rotate(p.rot * Math.PI / 180);
+            cCtx.fillStyle = p.color;
+            cCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            cCtx.restore();
+          });
+          requestAnimationFrame(animate);
+        };
+        requestAnimationFrame(animate);
+      },
+
+      playAgain() {
+        document.getElementById('victory-screen').classList.remove('active');
+        this.completedLevels = [];
+        this.saveProgress();
+        this.loadLevel(0);
+      },
+
+      // ==================== TTS ====================
+      speakHint() {
+        const hint = LEVELS[this.currentLevelIdx]?.hint;
+        if (!hint) return;
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(hint);
+          utter.rate = 0.9;
+          window.speechSynthesis.speak(utter);
+        }
+      },
+
+      renderLoop(time) {
+        let dt = (time - this.lastTime) / 1000;
+        if (dt > 0.1) dt = 0.1;
+        this.lastTime = time;
+
+        if (this.isProcessingAction && !this.activeProjectile) {
+          let dx = this.hero.targetX - this.hero.x; let dy = this.hero.targetY - this.hero.y;
+          let dist = Math.hypot(dx, dy); let spd = 6.0 * dt;
+          if (dist < spd) {
+            this.hero.x = this.hero.targetX; this.hero.y = this.hero.targetY;
+            this.isProcessingAction = false;
+          } else {
+            this.hero.x += (dx / dist) * spd; this.hero.y += (dy / dist) * spd;
+          }
+        }
+
+        const ctx = this.ctx;
+        if (!ctx) { requestAnimationFrame((t) => this.renderLoop(t)); return; }
+
+        ctx.fillStyle = '#111'; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        if (this.mapData.length > 0 && this.mapData[0]) {
+          let offX = (this.canvas.width - this.mapData[0].length * TILE_SIZE) / 2;
+          let offY = (this.canvas.height - this.mapData.length * TILE_SIZE) / 2;
+          ctx.save(); ctx.translate(offX, offY);
+
+          for (let y = 0; y < this.mapData.length; y++) {
+            for (let x = 0; x < this.mapData[y].length; x++) {
+              ctx.drawImage(Gfx.cache.floor, x * TILE_SIZE, y * TILE_SIZE);
+              if (this.mapData[y][x] === 'W') {
+                ctx.drawImage(Gfx.cache.wall, x * TILE_SIZE, y * TILE_SIZE - 10);
+              }
+            }
+          }
+
+          let ents = [];
+          if (this.hero.alive) ents.push({ t: 'hero', x: this.hero.x, y: this.hero.y });
+          this.enemies.forEach(e => ents.push({ t: e.type, x: e.x, y: e.y }));
+          this.items.forEach(i => ents.push({ t: 'item', x: i.x, y: i.y, type: i.type }));
+          ents.push({ t: 'goal', x: this.goal.x, y: this.goal.y });
+          ents.sort((a, b) => a.y - b.y);
+
+          let tSec = time / 1000;
+          for (let ent of ents) {
+            let px = ent.x * TILE_SIZE; let py = ent.y * TILE_SIZE;
+            if (ent.t === 'goal') {
+              let anim = Gfx.cache.goal;
+              if (anim && anim.length > 0) ctx.drawImage(anim[Math.floor(tSec * 8) % anim.length], px, py);
+            } else if (ent.t === 'skeleton') {
+              let anim = Gfx.cache.skeleton;
+              if (anim && anim.length > 0) ctx.drawImage(anim[Math.floor(tSec * 4) % anim.length], px, py - 10);
+            } else if (ent.t === 'boss') {
+              let anim = Gfx.cache.boss;
+              if (anim && anim.length > 0) ctx.drawImage(anim[Math.floor(tSec * 4) % anim.length], px, py - 10);
+            } else if (ent.t === 'dragon') {
+              let anim = Gfx.cache.dragon;
+              if (anim && anim.length > 0) ctx.drawImage(anim[Math.floor(tSec * 4) % anim.length], px, py - 10);
+            } else if (ent.t === 'item') {
+              if (ent.type === 'bow' && Gfx.cache.bowItem) ctx.drawImage(Gfx.cache.bowItem, px, py);
+              if (ent.type === 'sword' && Gfx.cache.swordItem) ctx.drawImage(Gfx.cache.swordItem, px, py);
+            } else if (ent.t === 'hero') {
+              let isMoving = (this.hero.targetX !== this.hero.x || this.hero.targetY !== this.hero.y);
+              let frm = isMoving ? Math.floor(tSec * 8) % 4 : Math.floor(tSec * 2) % 4;
+              ctx.save(); ctx.translate(px + 25, py + 25);
+              if (this.hero.dir < 0) ctx.scale(-1, 1);
+              ctx.drawImage(Gfx.cache.hero[frm], -25, -35); ctx.restore();
+            }
+          }
+
+          if (this.activeProjectile) {
+            let px = (this.activeProjectile.x * TILE_SIZE) + 25;
+            let py = (this.activeProjectile.y * TILE_SIZE) + 25;
+            ctx.save(); ctx.translate(px, py); ctx.rotate(Math.atan2(this.activeProjectile.dy, this.activeProjectile.dx));
+            if (Gfx.cache.bowItem) ctx.drawImage(Gfx.cache.bowItem, -25, -25);
+            ctx.restore();
+          }
+
+          for (let i = this.particles.length - 1; i >= 0; i--) {
+            let p = this.particles[i];
+            p.x += p.vx * dt; p.y += p.vy * dt; p.life -= p.decay * dt;
+            if (p.life <= 0) { this.particles.splice(i, 1); continue; }
+            ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+          }
+          ctx.globalAlpha = 1.0; ctx.restore();
+        }
+        requestAnimationFrame((t) => this.renderLoop(t));
+      }
+    };
+
+    window.onload = () => GameApp.init();
+  </script>
+</body>
+
+</html>

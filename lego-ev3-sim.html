@@ -1,0 +1,2595 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LEGO® MINDSTORMS® Education EV3 Classroom - Simulator</title>
+  <style>
+    /* ==========================================================================
+           1. GLOBAL RESET & VARIABLES
+           ========================================================================== */
+    :root {
+      /* Application Backgrounds */
+      --bg-app: #F4F6F8;
+      --bg-panel: #FFFFFF;
+      --bg-workspace: #F9FAFC;
+      --bg-dots: #DDE2E8;
+
+      /* UI Colors */
+      --border-light: #E0E4E8;
+      --border-dark: #C0C8D0;
+      --text-main: #333333;
+      --text-muted: #7A8599;
+      --ev3-blue: #0085C7;
+
+      /* Scratch/EV3 Block Categories */
+      --cat-movement: #D54388;
+      --cat-movement-dark: #B43873;
+      --cat-events: #FFBF00;
+      --cat-events-dark: #E6A800;
+      --cat-control: #FFAB19;
+      --cat-control-dark: #E69614;
+      --cat-sensors: #5CB1D6;
+      --cat-sensors-dark: #4A96B8;
+
+      /* Layout Dimensions */
+      --header-height: 56px;
+      --sidebar-width: 85px;
+      --palette-width: 320px;
+      --right-panel-width: 450px;
+
+      /* Block Geometry */
+      --block-padding: 12px;
+      --block-height: 48px;
+      --notch-width: 24px;
+      --notch-height: 6px;
+      --notch-offset: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E0;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #A0AEC0;
+    }
+
+    /* ==========================================================================
+           2. HEADER UI
+           ========================================================================== */
+    .app-header {
+      height: var(--header-height);
+      background-color: var(--bg-panel);
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 1000;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .mac-controls {
+      display: flex;
+      gap: 8px;
+      margin-right: 15px;
+    }
+
+    .mac-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .dot-close {
+      background: #FF5F56;
+      border: 1px solid #E0443E;
+    }
+
+    .dot-min {
+      background: #FFBD2E;
+      border: 1px solid #DEA123;
+    }
+
+    .dot-max {
+      background: #27C93F;
+      border: 1px solid #1AAB29;
+    }
+
+    .header-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-title svg {
+      width: 24px;
+      height: 24px;
+      fill: var(--ev3-blue);
+    }
+
+    .header-center {
+      display: flex;
+      gap: 10px;
+    }
+
+    .tab-btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--text-muted);
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .tab-btn.active {
+      background: var(--bg-app);
+      color: var(--ev3-blue);
+      border-color: var(--border-light);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+
+    .brick-status {
+      width: 32px;
+      height: 32px;
+      background: #E8ECEF;
+      border: 2px solid #4CAF50;
+      border-radius: 6px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .brick-status::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: #4CAF50;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #4CAF50;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
+
+    /* ==========================================================================
+           3. MAIN LAYOUT
+           ========================================================================== */
+    .main-layout {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - var(--header-height));
+      overflow: hidden;
+    }
+
+    /* ==========================================================================
+           4. LEFT SIDEBAR (CATEGORIES)
+           ========================================================================== */
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--bg-panel);
+      border-right: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 20px;
+      z-index: 50;
+    }
+
+    .cat-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 24px;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .cat-btn.active,
+    .cat-btn:hover {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+
+    .cat-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      margin-bottom: 8px;
+    }
+
+    .cat-movement .cat-circle {
+      background: var(--cat-movement);
+    }
+
+    .cat-events .cat-circle {
+      background: var(--cat-events);
+    }
+
+    .cat-control .cat-circle {
+      background: var(--cat-control);
+    }
+
+    .cat-sensors .cat-circle {
+      background: var(--cat-sensors);
+    }
+
+    .cat-label {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .cat-btn.active .cat-label {
+      color: var(--text-main);
+    }
+
+    /* ==========================================================================
+           5. BLOCK PALETTE
+           ========================================================================== */
+    .palette {
+      width: var(--palette-width);
+      background-color: var(--bg-panel);
+      border-right: 1px solid var(--border-light);
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 20px 15px;
+      z-index: 40;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.02);
+    }
+
+    .palette-section {
+      margin-bottom: 40px;
+    }
+
+    .palette-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 20px;
+      padding-bottom: 5px;
+      border-bottom: 2px solid var(--border-light);
+    }
+
+    /* Container to hold blocks natively positioned in palette */
+    .palette-blocks {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: flex-start;
+    }
+
+    /* ==========================================================================
+           6. WORKSPACE CANVAS
+           ========================================================================== */
+    .workspace {
+      flex: 1;
+      position: relative;
+      background-color: var(--bg-workspace);
+      background-image:
+        radial-gradient(var(--bg-dots) 2px, transparent 2px),
+        radial-gradient(var(--bg-dots) 2px, transparent 2px);
+      background-size: 40px 40px;
+      background-position: 0 0, 20px 20px;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .workspace-scroll-area {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      position: relative;
+      cursor: grab;
+    }
+
+    .workspace-scroll-area:active {
+      cursor: grabbing;
+    }
+
+    .canvas-plane {
+      width: 5000px;
+      height: 5000px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+    }
+
+    .trash-zone {
+      position: absolute;
+      bottom: 30px;
+      left: 30px;
+      width: 80px;
+      height: 80px;
+      background: rgba(255, 255, 255, 0.8);
+      border: 3px dashed var(--border-dark);
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 32px;
+      color: var(--border-dark);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s;
+      z-index: 500;
+    }
+
+    .trash-zone.active {
+      opacity: 1;
+    }
+
+    .trash-zone.hover {
+      background: rgba(244, 67, 54, 0.1);
+      border-color: #F44336;
+      color: #F44336;
+      transform: scale(1.1);
+    }
+
+    /* ==========================================================================
+           7. RIGHT PANEL (CHALLENGES & SIMULATOR)
+           ========================================================================== */
+    .right-panel {
+      width: var(--right-panel-width);
+      background-color: var(--bg-panel);
+      border-left: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      z-index: 60;
+      box-shadow: -4px 0 15px rgba(0, 0, 0, 0.03);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Challenge Card Overlay */
+    .challenge-card {
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--border-light);
+      padding: 15px 20px;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .ch-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 15px;
+    }
+
+    .ch-num {
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--text-main);
+      line-height: 0.8;
+      letter-spacing: -2px;
+    }
+
+    .ch-total {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .ch-nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid var(--ev3-blue);
+      background: #FFF;
+      color: var(--ev3-blue);
+      font-size: 20px;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      background: var(--ev3-blue);
+      color: #FFF;
+    }
+
+    .nav-btn:disabled {
+      border-color: var(--border-light);
+      color: var(--border-light);
+      cursor: not-allowed;
+    }
+
+    .ch-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+
+    .ch-desc {
+      font-size: 13px;
+      color: #4A5568;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .ch-hint {
+      font-size: 12px;
+      color: #B7791F;
+      background: #FEFCBF;
+      padding: 6px 10px;
+      border-left: 3px solid #D69E2E;
+      border-radius: 4px;
+      font-style: italic;
+      font-weight: 500;
+    }
+
+    /* Simulator Viewport */
+    .simulator-viewport {
+      flex: 1 1 0;
+      min-height: 180px;
+      position: relative;
+      background: #E2E8F0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    #sim-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Sensor Dashboard */
+    .dashboard {
+      flex-shrink: 0;
+      background: #FFFFFF;
+      padding: 10px 15px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.02);
+    }
+
+    .dash-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #F7FAFC;
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-light);
+    }
+
+    .dash-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+    }
+
+    .dash-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dash-val {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-main);
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    /* Execution Controls */
+    .exec-controls {
+      flex-shrink: 0;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      background: #FFFFFF;
+    }
+
+    .exec-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: transform 0.1s, background 0.2s;
+      outline: none;
+    }
+
+    .exec-btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn-play {
+      background: #4CAF50;
+    }
+
+    .btn-play:hover {
+      background: #43A047;
+    }
+
+    .btn-stop {
+      background: #F44336;
+      display: none;
+    }
+
+    .btn-stop:hover {
+      background: #E53935;
+    }
+
+    .exec-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: white;
+    }
+
+    /* ==========================================================================
+           8. BLOCK ENGINE CSS (SVG-Based Scratch Styling)
+           ========================================================================== */
+
+    .block-wrapper {
+      position: relative;
+      cursor: grab;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-bottom: 0px;
+      filter: drop-shadow(0px 3px 4px rgba(0, 0, 0, 0.15));
+      touch-action: none;
+    }
+
+    .block-wrapper:active {
+      cursor: grabbing;
+    }
+
+    .block-wrapper.is-dragging {
+      position: absolute !important;
+      pointer-events: none;
+      z-index: 9999 !important;
+      filter: drop-shadow(0px 15px 25px rgba(0, 0, 0, 0.3));
+      transform: scale(1.03);
+      transition: filter 0.15s, transform 0.15s;
+    }
+
+    .block-wrapper.placement-ghost {
+      position: absolute !important;
+      pointer-events: none;
+      z-index: 9998 !important;
+      opacity: 0.7;
+      filter: drop-shadow(0px 10px 20px rgba(0, 0, 0, 0.25));
+    }
+
+    .workspace.placement-mode {
+      cursor: crosshair;
+    }
+
+    /* SVG Background approach — now using pure CSS fills */
+    .block-svg-bg {
+      display: none;
+      /* Disabled: using CSS backgrounds instead */
+    }
+
+    /* Content Container inside the block */
+    .block-content {
+      min-width: 160px;
+      height: var(--block-height);
+      display: inline-flex;
+      align-items: center;
+      padding: 0 16px 0 16px;
+      color: #FFFFFF;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      position: relative;
+      border-radius: 4px;
+    }
+
+    /* Category-based background colors */
+    .block-wrapper[data-cat="movement"]>.block-content,
+    .block-wrapper[data-cat="movement"]>.c-header {
+      background: var(--cat-movement);
+    }
+
+    .block-wrapper[data-cat="movement"]>.c-footer-content {
+      background: var(--cat-movement);
+    }
+
+    .block-wrapper[data-cat="events"]>.block-content {
+      background: var(--cat-events);
+    }
+
+    .block-wrapper[data-cat="control"]>.block-content,
+    .block-wrapper[data-cat="control"]>.c-header {
+      background: var(--cat-control);
+    }
+
+    .block-wrapper[data-cat="control"]>.c-footer-content {
+      background: var(--cat-control);
+    }
+
+    .block-wrapper[data-cat="sensors"]>.block-content,
+    .block-wrapper[data-cat="sensors"]>.c-header {
+      background: var(--cat-sensors);
+    }
+
+    .block-wrapper[data-cat="sensors"]>.c-footer-content {
+      background: var(--cat-sensors);
+    }
+
+    /* Notch: top bump (incoming) for stack blocks */
+    .block-wrapper[data-shape="stack"]>.block-content::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: 16px;
+      width: 24px;
+      height: 5px;
+      border-radius: 0 0 4px 4px;
+      background: inherit;
+    }
+
+    /* Notch: bottom bump (outgoing) for stack and hat blocks */
+    .block-wrapper[data-shape="stack"]>.block-content::after,
+    .block-wrapper[data-shape="hat"]>.block-content::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 16px;
+      width: 24px;
+      height: 5px;
+      border-radius: 0 0 4px 4px;
+      background: inherit;
+    }
+
+    /* Hat block styling */
+    .block-wrapper[data-shape="hat"] .block-content {
+      padding-top: 10px;
+      height: 58px;
+      border-radius: 12px 12px 4px 4px;
+    }
+
+    /* Icons inside blocks */
+    .b-icon {
+      width: 28px;
+      height: 28px;
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-right: 10px;
+    }
+
+    .b-icon svg {
+      width: 16px;
+      height: 16px;
+      fill: white;
+    }
+
+    /* Inputs */
+    .b-input-num {
+      background: #FFFFFF;
+      border: 1px solid rgba(0, 0, 0, 0.2);
+      border-radius: 14px;
+      height: 28px;
+      width: 45px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--text-main);
+      margin: 0 6px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+      outline: none;
+      pointer-events: auto;
+      /* Crucial for interactivity inside draggable div */
+    }
+
+    .b-select {
+      background: rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 14px;
+      height: 28px;
+      padding: 0 10px;
+      font-size: 13px;
+      font-weight: bold;
+      color: white;
+      margin: 0 6px;
+      outline: none;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    .b-select option {
+      color: #333;
+      background: #FFF;
+    }
+
+    /* Boolean Slots & Blocks */
+    .b-bool-slot {
+      background: rgba(0, 0, 0, 0.1);
+      border: 1px dashed rgba(255, 255, 255, 0.6);
+      border-radius: 20px;
+      min-width: 60px;
+      height: 34px;
+      margin: 0 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .b-bool-slot.highlight {
+      background: rgba(255, 255, 255, 0.3);
+      border: 2px solid #FFF;
+    }
+
+    .block-wrapper[data-shape="boolean"] .block-content {
+      height: 40px;
+      border-radius: 20px;
+      padding: 0 16px;
+    }
+
+    /* C-Blocks Structure */
+    .c-body-container {
+      min-height: 40px;
+      margin-left: 15px;
+      padding: 8px 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    /* C-block left bar */
+    .block-wrapper[data-shape="c_shape"]>.c-body-container::before,
+    .block-wrapper[data-shape="c_shape_else"]>.c-body-container::before {
+      content: '';
+      position: absolute;
+      left: -15px;
+      top: 0;
+      bottom: 0;
+      width: 15px;
+      background: inherit;
+    }
+
+    .block-wrapper[data-cat="control"]>.c-body-container::before {
+      background: var(--cat-control);
+    }
+
+    .block-wrapper[data-cat="sensors"]>.c-body-container::before {
+      background: var(--cat-sensors);
+    }
+
+    /* C-header: top bar of C-shape block */
+    .block-wrapper[data-shape="c_shape"]>.c-header,
+    .block-wrapper[data-shape="c_shape_else"]>.c-header {
+      border-radius: 4px 4px 0 0;
+    }
+
+    /* Notch on top of c-header */
+    .block-wrapper[data-shape="c_shape"]>.c-header::before,
+    .block-wrapper[data-shape="c_shape_else"]>.c-header::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: 16px;
+      width: 24px;
+      height: 5px;
+      border-radius: 0 0 4px 4px;
+      background: inherit;
+    }
+
+    /* Inner notch at top of c-body (for snapping blocks inside) */
+    .block-wrapper[data-shape="c_shape"]>.c-body-container::after,
+    .block-wrapper[data-shape="c_shape_else"]>.c-body-container::after {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: 16px;
+      width: 24px;
+      height: 5px;
+      border-radius: 0 0 4px 4px;
+      background: var(--bg-workspace);
+    }
+
+    .c-footer-content {
+      height: 24px;
+      min-width: 120px;
+      position: relative;
+      border-radius: 0 0 4px 4px;
+    }
+
+    /* Notch on bottom of c-footer */
+    .c-footer-content::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 16px;
+      width: 24px;
+      height: 5px;
+      border-radius: 0 0 4px 4px;
+      background: inherit;
+    }
+
+    /* Else divider for if-then-else blocks */
+    .c-else-label {
+      height: 28px;
+      min-width: 120px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      color: #FFFFFF;
+      font-size: 13px;
+      font-weight: 700;
+      position: relative;
+    }
+
+    .block-wrapper[data-cat="control"]>.c-else-label {
+      background: var(--cat-control);
+    }
+
+    .c-else-body {
+      min-height: 40px;
+      margin-left: 15px;
+      padding: 8px 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .c-else-body::before {
+      content: '';
+      position: absolute;
+      left: -15px;
+      top: 0;
+      bottom: 0;
+      width: 15px;
+    }
+
+    .block-wrapper[data-cat="control"]>.c-else-body::before {
+      background: var(--cat-control);
+    }
+
+    /* Next Block Attachment Point */
+    .block-next-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-top: -1px;
+      /* Overlap notch for seamless jigsaw look */
+    }
+
+    /* Snap-in animation */
+    .block-wrapper.snap-animate {
+      animation: snapIn 0.2s ease-out;
+    }
+
+    @keyframes snapIn {
+      0% {
+        transform: scale(1.05);
+        filter: drop-shadow(0px 8px 15px rgba(0, 0, 0, 0.3));
+      }
+
+      100% {
+        transform: scale(1);
+        filter: drop-shadow(0px 3px 4px rgba(0, 0, 0, 0.15));
+      }
+    }
+
+    /* Execution Highlight */
+    .block-wrapper.running>.block-content,
+    .block-wrapper.running>.c-footer-content {
+      filter: brightness(1.2) drop-shadow(0 0 8px rgba(255, 235, 59, 1));
+      z-index: 100;
+    }
+
+    /* Snapping Indicators */
+    .snap-line {
+      position: absolute;
+      height: 6px;
+      background: #FFD500;
+      border-radius: 3px;
+      box-shadow: 0 0 10px rgba(255, 213, 0, 0.8);
+      z-index: 9998;
+      display: none;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+           9. MODALS & OVERLAYS
+           ========================================================================== */
+    .modal-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(4px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 3000;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .modal-bg.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-card {
+      background: #FFFFFF;
+      width: 450px;
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .modal-bg.active .modal-card {
+      transform: scale(1);
+    }
+
+    .m-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin: 0 auto 20px auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 40px;
+    }
+
+    .m-icon.success {
+      background: #F0FDF4;
+      color: #22C55E;
+    }
+
+    .m-icon.fail {
+      background: #FEF2F2;
+      color: #EF4444;
+    }
+
+    .m-title {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--text-main);
+      margin-bottom: 15px;
+    }
+
+    .m-desc {
+      font-size: 16px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 30px;
+    }
+
+    .m-btn {
+      background: var(--ev3-blue);
+      color: #FFF;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 30px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 133, 199, 0.3);
+      transition: all 0.2s;
+    }
+
+    .m-btn:hover {
+      background: #0073AD;
+      transform: translateY(-2px);
+    }
+
+    .m-btn:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="app-header">
+    <div class="header-left">
+      <div class="mac-controls">
+        <div class="mac-dot dot-close"></div>
+        <div class="mac-dot dot-min"></div>
+        <div class="mac-dot dot-max"></div>
+      </div>
+      <div class="header-title">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
+        </svg>
+        LEGO® MINDSTORMS® Education EV3 Simulator
+      </div>
+    </div>
+    <div class="header-center">
+      <div class="tab-btn active">Code</div>
+      <div class="tab-btn">Costumes</div>
+      <div class="tab-btn">Sounds</div>
+    </div>
+    <div class="header-right">
+      <span>EV3 Brick Connected</span>
+      <div class="brick-status"></div>
+    </div>
+  </header>
+
+  <div class="main-layout">
+
+    <div class="sidebar">
+      <div class="cat-btn cat-movement active" data-target="pal-movement">
+        <div class="cat-circle"></div>
+        <div class="cat-label">Movement</div>
+      </div>
+      <div class="cat-btn cat-events" data-target="pal-events">
+        <div class="cat-circle"></div>
+        <div class="cat-label">Events</div>
+      </div>
+      <div class="cat-btn cat-control" data-target="pal-control">
+        <div class="cat-circle"></div>
+        <div class="cat-label">Control</div>
+      </div>
+      <div class="cat-btn cat-sensors" data-target="pal-sensors">
+        <div class="cat-circle"></div>
+        <div class="cat-label">Sensors</div>
+      </div>
+    </div>
+
+    <div class="palette" id="palette">
+    </div>
+
+    <div class="workspace" id="workspace">
+      <div class="workspace-scroll-area" id="scroll-area">
+        <div class="canvas-plane" id="canvas-plane">
+          <div class="snap-line" id="snap-line"></div>
+        </div>
+      </div>
+      <div class="trash-zone" id="trash-zone">🗑️</div>
+    </div>
+
+    <div class="right-panel">
+
+      <div class="challenge-card">
+        <div class="ch-header">
+          <div>
+            <span class="ch-num" id="lbl-ch-num">01</span><span class="ch-total">/20</span>
+          </div>
+          <div class="ch-nav">
+            <button class="nav-btn" id="btn-prev" title="Previous Challenge">❮</button>
+            <button class="nav-btn" id="btn-next" title="Next Challenge">❯</button>
+          </div>
+        </div>
+        <div class="ch-title" id="lbl-ch-title">Move Forward</div>
+        <div class="ch-desc" id="lbl-ch-desc">Program the Driving Base to move forward 2 rotations.</div>
+        <div class="ch-hint" id="lbl-ch-hint">Hint: Use the Pink Movement blocks.</div>
+      </div>
+
+      <div class="simulator-viewport">
+        <canvas id="sim-canvas"></canvas>
+      </div>
+
+      <div class="dashboard">
+        <div class="dash-item">
+          <div class="dash-label">
+            <div class="dash-dot" style="background: var(--cat-control);"></div> Gyro
+          </div>
+          <div class="dash-val" id="val-gyro">0°</div>
+        </div>
+        <div class="dash-item">
+          <div class="dash-label">
+            <div class="dash-dot" style="background: var(--cat-sensors);"></div> Ultra
+          </div>
+          <div class="dash-val" id="val-ultra">255cm</div>
+        </div>
+        <div class="dash-item">
+          <div class="dash-label">
+            <div class="dash-dot" style="background: #9C27B0;"></div> Color
+          </div>
+          <div class="dash-val" id="val-color">White</div>
+        </div>
+        <div class="dash-item">
+          <div class="dash-label">
+            <div class="dash-dot" style="background: var(--cat-movement);"></div> Touch
+          </div>
+          <div class="dash-val" id="val-touch">0</div>
+        </div>
+      </div>
+
+      <div class="exec-controls">
+        <button class="exec-btn btn-play" id="btn-play" title="Run Program">
+          <svg viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </button>
+        <button class="exec-btn btn-stop" id="btn-stop" title="Stop Program">
+          <svg viewBox="0 0 24 24">
+            <path d="M6 6h12v12H6z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="modal-bg" id="modal-success">
+    <div class="modal-card">
+      <div class="m-icon success">★</div>
+      <div class="m-title">Challenge Complete!</div>
+      <div class="m-desc">Incredible programming! Your EV3 executed the code perfectly and solved the challenge.</div>
+      <button class="m-btn" id="btn-modal-next">Next Challenge</button>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="modal-fail">
+    <div class="modal-card">
+      <div class="m-icon fail">!</div>
+      <div class="m-title">Not Quite...</div>
+      <div class="m-desc">The program finished, but the robot didn't reach the goal or crashed. Check your blocks and
+        try again!</div>
+      <button class="m-btn" id="btn-modal-retry"
+        style="background: #EF4444; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);">Try Again</button>
+    </div>
+  </div>
+
+  <script>
+    /**
+         * CORE ARCHITECTURE:
+         * 1. Vector2D & Math Utilities
+         * 2. SVG Generator (Dynamic Block Rendering)
+         * 3. Block Dictionary (Definitions & Logic)
+         * 4. 20 Challenge Configurations (Maps & Win Conditions)
+         * 5. Simulator Engine (Physics, Kinematics, Raycasting)
+         * 6. Drag & Drop Visual Workspace
+         * 7. AST Interpreter (Async Execution)
+         * 8. Application Initialization
+         */
+
+    // ==========================================================================
+    // 1. MATH & VECTOR UTILITIES
+    // ==========================================================================
+    class Vec2 {
+      constructor(x, y) { this.x = x; this.y = y; }
+      add(v) { return new Vec2(this.x + v.x, this.y + v.y); }
+      sub(v) { return new Vec2(this.x - v.x, this.y - v.y); }
+      mul(n) { return new Vec2(this.x * n, this.y * n); }
+      mag() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+      dist(v) { return this.sub(v).mag(); }
+      normalize() { let m = this.mag(); return m === 0 ? new Vec2(0, 0) : new Vec2(this.x / m, this.y / m); }
+      dot(v) { return this.x * v.x + this.y * v.y; }
+    }
+
+    const MathUtils = {
+      deg2rad: d => d * Math.PI / 180,
+      rad2deg: r => r * 180 / Math.PI,
+      clamp: (v, min, max) => Math.max(min, Math.min(max, v)),
+
+      // Line segment intersection (for Raycasting)
+      lineIntersect: (p1, p2, p3, p4) => {
+        let den = (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
+        if (den === 0) return null;
+        let t = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / den;
+        let u = -((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / den;
+        if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+          return new Vec2(p1.x + t * (p2.x - p1.x), p1.y + t * (p2.y - p1.y));
+        }
+        return null;
+      },
+
+      // Point to line segment distance (for Color sensor over lines)
+      pointLineDist: (pt, v, w) => {
+        let l2 = v.dist(w) * v.dist(w);
+        if (l2 === 0) return pt.dist(v);
+        let t = Math.max(0, Math.min(1, pt.sub(v).dot(w.sub(v)) / l2));
+        let projection = v.add(w.sub(v).mul(t));
+        return pt.dist(projection);
+      }
+    };
+
+    // Standard EV3 Colors
+    const COLORS = {
+      'Black': '#222222', 'Blue': '#0085C7', 'Green': '#4CAF50',
+      'Yellow': '#FFEB3B', 'Red': '#F44336', 'White': '#FFFFFF'
+    };
+
+    // SVG Icons Strings
+    const ICONS = {
+      play: `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`,
+      motor: `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16z"/><circle cx="12" cy="12" r="3"/></svg>`,
+      turnR: `<svg viewBox="0 0 24 24"><path d="M21 11a9 9 0 10-9 9v-3a6 6 0 116-6h-3l4.5 5.5L24 11h-3z"/></svg>`,
+      turnL: `<svg viewBox="0 0 24 24"><path d="M3 11a9 9 0 119 9v-3a6 6 0 10-6-6h3L4.5 5.5 0 11h3z"/></svg>`,
+      wait: `<svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8zm.5-13H11v6l5.2 3.2.8-1.2-4.5-2.7V7z"/></svg>`,
+      loop: `<svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.3 0 6 2.7 6 6 0 1-.2 2-.7 2.8l1.5 1.5c.8-1.2 1.2-2.7 1.2-4.3 0-4.4-3.6-8-8-8zm0 14c-3.3 0-6-2.7-6-6 0-1 .2-2 .7-2.8l-1.5-1.5C4.4 8.9 4 10.4 4 12c0 4.4 3.6 8 8 8v3l4-4-4-4v3z"/></svg>`,
+      sensor: `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>`
+    };
+
+    // ==========================================================================
+    // 2. SVG GENERATOR (For Authentic Block Shapes)
+    // ==========================================================================
+    const SVGGenerator = {
+      colors: {
+        events: { main: '#FFBF00', dark: '#E6A800' },
+        movement: { main: '#D54388', dark: '#B43873' },
+        control: { main: '#FFAB19', dark: '#E69614' },
+        sensors: { main: '#5CB1D6', dark: '#4A96B8' }
+      },
+
+      // Generate SVG data URI for background image
+      createBackground: function (type, cat, width, height) {
+        const c = this.colors[cat];
+        let path = '';
+        const nw = 24, nh = 6, no = 16, r = 4; // Notch width, height, offset, radius
+
+        if (type === 'hat') {
+          path = `M 0,${r} a ${r},${r} 0 0,1 ${r},-${r} h ${width - 2 * r} a ${r},${r} 0 0,1 ${r},${r} v ${height - 2 * r} a ${r},${r} 0 0,1 -${r},${r} h -${width - no - nw - r} l -4,${nh} h -16 l -4,-${nh} h -${no - r} a ${r},${r} 0 0,1 -${r},-${r} z`;
+        } else if (type === 'stack') {
+          path = `M 0,${r} a ${r},${r} 0 0,1 ${r},-${r} h ${no - r} l 4,${nh} h 16 l 4,-${nh} h ${width - no - nw - r} a ${r},${r} 0 0,1 ${r},${r} v ${height - 2 * r} a ${r},${r} 0 0,1 -${r},${r} h -${width - no - nw - r} l -4,${nh} h -16 l -4,-${nh} h -${no - r} a ${r},${r} 0 0,1 -${r},-${r} z`;
+        } else if (type === 'boolean') {
+          path = `M ${height / 2},0 h ${width - height} a ${height / 2},${height / 2} 0 0,1 0,${height} h -${width - height} a ${height / 2},${height / 2} 0 0,1 0,-${height} z`;
+        } else if (type === 'c_header') {
+          path = `M 0,${r} a ${r},${r} 0 0,1 ${r},-${r} h ${no - r} l 4,${nh} h 16 l 4,-${nh} h ${width - no - nw - r} a ${r},${r} 0 0,1 ${r},${r} v ${height - r} h -${width - no - nw - 15} l -4,${nh} h -16 l -4,-${nh} h -${no} z`;
+        } else if (type === 'c_footer') {
+          path = `M 0,0 h ${width} a ${r},${r} 0 0,1 ${r},${r} v ${height - 2 * r} a ${r},${r} 0 0,1 -${r},${r} h -${width - no - nw - r} l -4,${nh} h -16 l -4,-${nh} h -${no - r} a ${r},${r} 0 0,1 -${r},-${r} z`;
+        }
+
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height + nh}" viewBox="0 0 ${width} ${height + nh}">
+                                <path d="${path}" fill="${c.main}" stroke="${c.dark}" stroke-width="1.5"/>
+                             </svg>`;
+        return `url('data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}')`;
+      }
+    };
+
+    // ==========================================================================
+    // 3. BLOCK DICTIONARY & LOGIC
+    // ==========================================================================
+    const BLOCKS = {
+      // === EVENTS ===
+      'start': {
+        cat: 'events', shape: 'hat',
+        build: () => `<div class="b-icon">${ICONS.play}</div><span>when program starts</span>`,
+        exec: async (node, ctx) => { /* Entry point, does nothing directly */ }
+      },
+
+      // === MOVEMENT ===
+      'move_rot': {
+        cat: 'movement', shape: 'stack',
+        build: () => `<div class="b-icon">${ICONS.motor}</div> move <select class="b-select" data-id="dir"><option value="1">forward</option><option value="-1">backward</option></select> for <input type="number" class="b-input-num" data-id="rot" value="1"> rotations`,
+        exec: async (node, ctx) => {
+          let dir = parseFloat(node.inputs.dir);
+          let rot = parseFloat(node.inputs.rot);
+          await Engine.robot.moveRotations(ctx.speed * dir, ctx.speed * dir, rot, ctx);
+        }
+      },
+      'turn_deg': {
+        cat: 'movement', shape: 'stack',
+        build: () => `<div class="b-icon">${ICONS.turnR}</div> turn <select class="b-select" data-id="dir"><option value="1">right</option><option value="-1">left</option></select> for <input type="number" class="b-input-num" data-id="deg" value="90"> degrees`,
+        exec: async (node, ctx) => {
+          let dir = parseFloat(node.inputs.dir);
+          let deg = parseFloat(node.inputs.deg);
+          // Turn in place: opposite motor speeds. Target is robot heading rotation.
+          await Engine.robot.turnHeading(ctx.speed * dir, -ctx.speed * dir, deg, ctx);
+        }
+      },
+      'start_move': {
+        cat: 'movement', shape: 'stack',
+        build: () => `<div class="b-icon">${ICONS.motor}</div> start moving <select class="b-select" data-id="dir"><option value="1">forward</option><option value="-1">backward</option></select>`,
+        exec: async (node, ctx) => {
+          let dir = parseFloat(node.inputs.dir);
+          Engine.robot.setContinuous(ctx.speed * dir, ctx.speed * dir);
+        }
+      },
+      'stop_move': {
+        cat: 'movement', shape: 'stack',
+        build: () => `<div class="b-icon">${ICONS.motor}</div> stop moving`,
+        exec: async (node, ctx) => { Engine.robot.stop(); }
+      },
+      'set_speed': {
+        cat: 'movement', shape: 'stack',
+        build: () => `<div class="b-icon">${ICONS.motor}</div> set movement speed to <input type="number" class="b-input-num" data-id="speed" value="50"> %`,
+        exec: async (node, ctx) => { ctx.speed = MathUtils.clamp(parseFloat(node.inputs.speed), -100, 100); }
+      },
+
+      // === CONTROL ===
+      'wait_sec': {
+        cat: 'control', shape: 'stack',
+        build: () => `<div class="b-icon">${ICONS.wait}</div> wait <input type="number" class="b-input-num" data-id="sec" value="1"> seconds`,
+        exec: async (node, ctx) => { await Interpreter.sleep(parseFloat(node.inputs.sec) * 1000, ctx); }
+      },
+      'wait_until': {
+        cat: 'control', shape: 'stack', // Simplified DOM by embedding the boolean selection
+        build: () => `<div class="b-icon">${ICONS.wait}</div> wait until <select class="b-select" data-id="sensor"><option value="touch">Touch</option><option value="distance">Distance</option><option value="color">Color</option><option value="gyro">Gyro</option></select> <select class="b-select" data-id="op"><option value="=">=</option><option value="<"><</option><option value=">">></option></select> <input type="text" class="b-input-num" style="width:60px;" data-id="val" value="1">`,
+        exec: async (node, ctx) => {
+          let s = node.inputs.sensor; let op = node.inputs.op; let v = node.inputs.val;
+          if (s === 'color' && !isNaN(v)) v = 'Red'; // Graceful fallback
+          let startG = Engine.robot.sensors.gyro; // Store base for relative gyro checks
+
+          while (!ctx.abort) {
+            let curV = Engine.robot.sensors[s];
+            if (s === 'gyro') curV = Math.abs(curV - startG); // Relative accumulation
+            if (s === 'touch') curV = curV ? 1 : 0;
+
+            let pass = false;
+            if (op === '=') pass = (curV.toString().toLowerCase() === v.toString().toLowerCase());
+            if (op === '<') pass = (parseFloat(curV) < parseFloat(v));
+            if (op === '>') pass = (parseFloat(curV) > parseFloat(v));
+
+            if (pass) break;
+            await Interpreter.yield();
+          }
+        }
+      },
+      'repeat': {
+        cat: 'control', shape: 'c_shape',
+        build: () => `<div class="b-icon">${ICONS.loop}</div> repeat <input type="number" class="b-input-num" data-id="times" value="4"> times`,
+        exec: async (node, ctx) => {
+          let times = parseInt(node.inputs.times);
+          for (let i = 0; i < times; i++) {
+            if (ctx.abort) break;
+            await Interpreter.runSequence(node.body, ctx);
+            await Interpreter.yield();
+          }
+        }
+      },
+      'forever': {
+        cat: 'control', shape: 'c_shape',
+        build: () => `<div class="b-icon">${ICONS.loop}</div> forever`,
+        exec: async (node, ctx) => {
+          while (!ctx.abort) {
+            await Interpreter.runSequence(node.body, ctx);
+            await Interpreter.yield();
+          }
+        }
+      },
+      'if_then': {
+        cat: 'control', shape: 'c_shape',
+        build: () => `<div class="b-icon">${ICONS.loop}</div> if <select class="b-select" data-id="sensor"><option value="touch">Touch</option><option value="distance">Distance</option><option value="color">Color</option></select> <select class="b-select" data-id="op"><option value="=">=</option><option value="<"><</option></select> <input type="text" class="b-input-num" style="width:60px;" data-id="val" value="1"> then`,
+        exec: async (node, ctx) => {
+          let s = node.inputs.sensor; let op = node.inputs.op; let v = node.inputs.val;
+          let curV = Engine.robot.sensors[s];
+          if (s === 'touch') curV = curV ? 1 : 0;
+
+          let pass = false;
+          if (op === '=') pass = (curV.toString().toLowerCase() === v.toString().toLowerCase());
+          if (op === '<') pass = (parseFloat(curV) < parseFloat(v));
+
+          if (pass) {
+            await Interpreter.runSequence(node.body, ctx);
+          }
+        }
+      },
+      'if_then_else': {
+        cat: 'control', shape: 'c_shape_else',
+        build: () => `<div class="b-icon">${ICONS.loop}</div> if <select class="b-select" data-id="sensor"><option value="touch">Touch</option><option value="distance">Distance</option><option value="color">Color</option></select> <select class="b-select" data-id="op"><option value="=">=</option><option value="<"><</option><option value=">">></option></select> <input type="text" class="b-input-num" style="width:60px;" data-id="val" value="1"> then`,
+        exec: async (node, ctx) => {
+          let s = node.inputs.sensor; let op = node.inputs.op; let v = node.inputs.val;
+          let curV = Engine.robot.sensors[s];
+          if (s === 'touch') curV = curV ? 1 : 0;
+
+          let pass = false;
+          if (op === '=') pass = (curV.toString().toLowerCase() === v.toString().toLowerCase());
+          if (op === '<') pass = (parseFloat(curV) < parseFloat(v));
+          if (op === '>') pass = (parseFloat(curV) > parseFloat(v));
+
+          if (pass) {
+            await Interpreter.runSequence(node.body, ctx);
+          } else {
+            await Interpreter.runSequence(node.elseBody, ctx);
+          }
+        }
+      },
+
+      // === SENSORS (Booleans, visual only for this simplified flat DOM model) ===
+      // In a full implementation these snap into slots. Here we embedded them in Wait/If for DOM simplicity.
+    };
+
+
+    // ==========================================================================
+    // 4. THE 20 PROGRESSIVE CHALLENGES
+    // ==========================================================================
+    const CHALLENGES = [
+      // 1-5: Basic Movement
+      {
+        title: "01. Moving Forward",
+        desc: "Welcome! Connect a 'move forward' block under the Start block. Set it to 2 rotations to reach the Green goal.",
+        hint: "💡 Look at the pink Movement blocks on the left. Which one makes the robot go forward?",
+        start: { x: 50, y: 200, angle: 0 },
+        map: (env) => env.addZone(300, 150, 100, 100, 'Green', true),
+        check: (r) => r.pos.x > 300 && r.vL === 0
+      },
+      {
+        title: "02. Backing Up",
+        desc: "The robot is facing the wrong way. Use 'move backward' for 1.5 rotations to park.",
+        hint: "💡 The same movement block has a dropdown — try changing the direction.",
+        start: { x: 350, y: 200, angle: 0 },
+        map: (env) => env.addZone(50, 150, 100, 100, 'Blue', true),
+        check: (r) => r.pos.x < 150 && r.vL === 0
+      },
+      {
+        title: "03. Turning Right",
+        desc: "Move forward 1 rotation, turn right for 90 degrees, then move forward 1 rotation.",
+        hint: "💡 You'll need more than one block. Think about what happens at each step of the journey.",
+        start: { x: 100, y: 100, angle: 0 },
+        map: (env) => { env.addWall(200, 50, 20, 150); env.addZone(250, 250, 100, 100, 'Green', true); },
+        check: (r) => r.pos.x > 250 && r.pos.y > 250 && r.vL === 0
+      },
+      {
+        title: "04. Turning Left",
+        desc: "Navigate the corner by turning left 90 degrees.",
+        hint: "💡 This is like the last challenge, but now the robot needs to turn the other way.",
+        start: { x: 350, y: 350, angle: Math.PI }, // Facing left
+        map: (env) => { env.addWall(200, 200, 250, 20); env.addZone(50, 50, 100, 100, 'Green', true); },
+        check: (r) => r.pos.x < 150 && r.pos.y < 150 && r.vL === 0
+      },
+      {
+        title: "05. Speed Demon",
+        desc: "Set movement speed to 100% and move forward for 3 rotations. You need speed!",
+        hint: "💡 There's a special pink block that controls how fast the robot goes.",
+        start: { x: 50, y: 200, angle: 0 },
+        map: (env) => env.addZone(350, 150, 100, 100, 'Green', true),
+        check: (r) => r.pos.x > 350 && r.vL === 0 && (Interpreter.ctx?.speed ?? 0) > 80
+      },
+
+      // 6-9: Loops & Control
+      {
+        title: "06. Driving a Square",
+        desc: "Use a 'repeat' loop block! Put Move and Turn blocks inside it to draw a square.",
+        hint: "💡 A square has 4 sides and 4 corners. Can you find a repeating pattern?",
+        start: { x: 100, y: 100, angle: 0 },
+        map: (env) => { env.addZone(50, 50, 100, 100, 'Yellow', true); env.addWaypoint(300, 100); env.addWaypoint(300, 300); env.addWaypoint(100, 300); },
+        check: (r, env) => env.waypointsHit() && r.pos.x < 150 && r.pos.y < 150 && r.vL === 0
+      },
+      {
+        title: "07. Patience (Wait)",
+        desc: "The track has a simulated laser. Wait 2 seconds before moving forward 2 rotations.",
+        hint: "💡 Check the Control category — there's a block that pauses your program.",
+        start: { x: 50, y: 200, angle: 0 },
+        map: (env) => env.addZone(300, 150, 100, 100, 'Green', true),
+        check: (r) => r.pos.x > 300 && (Interpreter.ctx?.elapsedTime ?? 0) > 2.0 && r.vL === 0
+      },
+      {
+        title: "08. Continuous Movement",
+        desc: "Use 'start moving forward'. Then 'wait 2 seconds'. Then 'stop moving'.",
+        hint: "💡 'Start moving' begins motion but doesn't wait for it to finish — you control when to stop.",
+        start: { x: 50, y: 200, angle: 0 },
+        map: (env) => env.addZone(250, 150, 150, 100, 'Green', true),
+        check: (r) => r.pos.x > 250 && r.vL === 0
+      },
+      {
+        title: "09. Infinity Loop",
+        desc: "Use 'forever'. Inside, 'start moving', wait 1, stop, wait 1. The robot will pulse forward.",
+        hint: "💡 The 'forever' block runs its contents over and over. Put a pattern of movement inside it.",
+        start: { x: 50, y: 200, angle: 0 },
+        map: (env) => env.addZone(350, 150, 100, 100, 'Green', true),
+        check: (r) => r.pos.x > 350
+      },
+
+      // 10-14: Touch & Ultrasonic Sensors
+      {
+        title: "10. Touch Sensor Bump",
+        desc: "Start moving. Use 'wait until Touch = 1' (pressed). Then stop.",
+        hint: "💡 The robot has a touch sensor on its front. You can make the program wait for something to happen.",
+        start: { x: 50, y: 200, angle: 0 },
+        map: (env) => env.addWall(350, 50, 20, 300),
+        check: (r) => r.sensors.touch && r.vL === 0
+      },
+      {
+        title: "11. Bump and Retreat",
+        desc: "Start moving. Wait until Touch. Stop. Move backward 1 rotation.",
+        hint: "💡 What should the robot do after it bumps into something? Think about the sequence.",
+        start: { x: 100, y: 200, angle: 0 },
+        map: (env) => { env.addWall(400, 50, 20, 300); env.addZone(100, 150, 150, 100, 'Blue', true); },
+        check: (r, env) => env.hasBumped && r.pos.x < 250 && r.vL === 0,
+        update: (r, env) => { if (r.sensors.touch) env.hasBumped = true; }
+      },
+      {
+        title: "12. Ultrasonic Braking",
+        desc: "Don't hit the wall! Start moving, wait until Distance < 15 cm. Stop.",
+        hint: "💡 The ultrasonic sensor measures distance. Can you use 'wait until' with a distance check?",
+        start: { x: 50, y: 200, angle: 0 },
+        map: (env) => env.addWall(350, 50, 20, 300),
+        check: (r) => r.sensors.distance < 20 && !r.sensors.touch && r.vL === 0
+      },
+      {
+        title: "13. Ultrasonic Avoidance",
+        desc: "Forever: Start moving. If Distance < 20, turn right 90 degrees.",
+        hint: "💡 Combine a loop with a sensor check. The robot needs to react whenever it gets too close.",
+        start: { x: 50, y: 50, angle: 0 },
+        map: (env) => { env.addWall(200, 0, 20, 250); env.addZone(250, 250, 100, 100, 'Green', true); },
+        check: (r) => r.pos.x > 250 && r.pos.y > 250 && !r.sensors.touch
+      },
+      {
+        title: "14. Bumper Car Box",
+        desc: "Forever: Start moving. If Touch = 1, move backward, turn left.",
+        hint: "💡 The robot needs to bounce around like a bumper car. What should it do each time it bumps?",
+        start: { x: 200, y: 200, angle: 0 },
+        map: (env) => { env.addWall(0, 0, 450, 10); env.addWall(0, 390, 450, 10); env.addWall(0, 0, 10, 400); env.addWall(440, 0, 10, 400); },
+        check: (r, env) => env.bumpCount >= 3,
+        update: (r, env) => {
+          if (r.sensors.touch && !env.lastT) env.bumpCount = (env.bumpCount || 0) + 1;
+          env.lastT = r.sensors.touch;
+        }
+      },
+
+      // 15-20: Color, Gyro, and Logic
+      {
+        title: "15. Red Light",
+        desc: "Color Sensor! Start moving. Wait until Color = Red. Stop.",
+        hint: "💡 The color sensor detects what's on the ground. Use 'wait until' with a color condition.",
+        start: { x: 50, y: 200, angle: 0 },
+        map: (env) => { env.addLine(300, 50, 300, 350, 40, 'Red'); env.addZone(260, 150, 80, 100, 'Red', true); },
+        check: (r) => r.sensors.color === 'Red' && r.vL === 0
+      },
+      {
+        title: "16. Find the Green",
+        desc: "Drive over the Blue line. Wait until Color = Green. Stop.",
+        hint: "💡 The robot will pass over different colors. Which one should it stop on?",
+        start: { x: 50, y: 200, angle: 0 },
+        map: (env) => { env.addLine(150, 50, 150, 350, 40, 'Blue'); env.addLine(350, 50, 350, 350, 40, 'Green'); },
+        check: (r) => r.sensors.color === 'Green' && r.vL === 0
+      },
+      {
+        title: "17. Edge Waddle",
+        desc: "Forever loop: If Color = Black, turn left 10 deg. If Color = White, turn right 10 deg. Start moving.",
+        hint: "💡 The robot needs to follow the edge of the line. Think about alternating between two directions.",
+        start: { x: 50, y: 200, angle: 0 },
+        map: (env) => { env.addLine(50, 220, 350, 220, 20, 'Black'); env.addZone(350, 150, 100, 100, 'Green', true); },
+        check: (r) => r.pos.x > 350
+      },
+      {
+        title: "18. Gyro Precision",
+        desc: "Start turning right. Wait until Gyro > 90. Stop.",
+        hint: "💡 The gyro sensor measures how far the robot has rotated. Make it spin and watch the number.",
+        start: { x: 200, y: 200, angle: -Math.PI / 2 }, // Facing Up
+        map: (env) => { },
+        check: (r) => Math.abs(r.sensors.gyro) >= 88 && Math.abs(r.sensors.gyro) <= 95 && r.vL === 0
+      },
+      {
+        title: "19. Multi-Sensor Navigate",
+        desc: "Move until Dist < 15. Turn right using Gyro. Move until Color = Blue. Stop.",
+        hint: "💡 This combines multiple sensors. Break it into stages — what happens at each wall or line?",
+        start: { x: 50, y: 50, angle: 0 },
+        map: (env) => { env.addWall(300, 0, 20, 200); env.addLine(150, 300, 400, 300, 40, 'Blue'); },
+        check: (r) => r.sensors.color === 'Blue' && r.vL === 0 && !r.sensors.touch
+      },
+      {
+        title: "20. The Ultimate Maze",
+        desc: "You are dropped in. Combine loops, ultrasonic, and color sensors to find the Green Exit!",
+        hint: "💡 Think about a wall-following strategy. What should the robot do when it senses a wall ahead?",
+        start: { x: 50, y: 350, angle: -Math.PI / 2 },
+        map: (env) => {
+          env.addWall(150, 150, 20, 250); env.addWall(150, 150, 150, 20); env.addWall(300, 150, 20, 150);
+          env.addLine(200, 50, 280, 50, 40, 'Green');
+        },
+        check: (r) => r.sensors.color === 'Green' && r.vL === 0 && !r.sensors.touch
+      }
+    ];
+
+    // ==========================================================================
+    // 5. SIMULATOR ENVIRONMENT & ROBOT
+    // ==========================================================================
+    class Environment {
+      constructor() { this.clear(); }
+      clear() { this.walls = []; this.zones = []; this.lines = []; this.waypoints = []; }
+      addWall(x, y, w, h) { this.walls.push({ x, y, w, h }); }
+      addZone(x, y, w, h, c, t = false) { this.zones.push({ x, y, w, h, color: COLORS[c] || c, colorName: c, target: t }); }
+      addLine(x1, y1, x2, y2, w, c) { this.lines.push({ p1: new Vec2(x1, y1), p2: new Vec2(x2, y2), w: w, color: COLORS[c] || c, colorName: c }); }
+      addWaypoint(x, y, r = 40) { this.waypoints.push({ p: new Vec2(x, y), r: r, hit: false }); }
+      waypointsHit() { return this.waypoints.length === 0 || this.waypoints.every(w => w.hit); }
+    }
+
+    class Robot {
+      constructor() {
+        this.pos = new Vec2(200, 200);
+        this.angle = 0;
+        this.width = 30; this.length = 40;
+        this.vL = 0; this.vR = 0;
+        this.sensors = { touch: false, distance: 255, color: 'White', gyro: 0 };
+        this.trail = [];
+        this.targetDegL = 0; this.targetDegR = 0;
+        this.movedDegL = 0; this.movedDegR = 0;
+      }
+
+      setContinuous(vl, vr) {
+        this.vL = vl; this.vR = vr;
+        this.targetDegL = 0; this.targetDegR = 0; // Infinite
+      }
+
+      moveRotations(vl, vr, rot, ctx) {
+        return new Promise(resolve => {
+          this.vL = vl; this.vR = vr;
+          this.movedDegL = 0; this.movedDegR = 0;
+
+          let maxV = Math.max(Math.abs(vl), Math.abs(vr));
+          let ratioL = maxV === 0 ? 0 : Math.abs(vl) / maxV;
+          let ratioR = maxV === 0 ? 0 : Math.abs(vr) / maxV;
+
+          this.targetDegL = rot * 360 * ratioL;
+          this.targetDegR = rot * 360 * ratioR;
+
+          this._resolveMove = () => { this.stop(); resolve(); };
+          if (rot === 0) this._resolveMove();
+        });
+      }
+
+      turnHeading(vl, vr, deg, ctx) {
+        return new Promise(resolve => {
+          this.vL = vl; this.vR = vr;
+          let startHeading = this.angle;
+          let targetRad = MathUtils.deg2rad(deg);
+
+          this._resolveMove = () => { this.stop(); resolve(); };
+
+          // Polling check for turning in physics loop
+          this._turnTarget = { start: startHeading, target: targetRad };
+        });
+      }
+
+      stop() {
+        this.vL = 0; this.vR = 0;
+        if (this._resolveMove) { let r = this._resolveMove; this._resolveMove = null; this._turnTarget = null; r(); }
+      }
+
+      update(dt, env) {
+        if (this.vL === 0 && this.vR === 0) {
+          this.updateSensors(env); // Keep updating
+          return;
+        }
+
+        // Convert % speed to px/sec and degrees/sec
+        const maxPxS = 80;
+        let sL = (this.vL / 100) * maxPxS;
+        let sR = (this.vR / 100) * maxPxS;
+
+        // Track internal wheel degrees
+        const degPxRatio = 360 / 150; // Arbitrary 1 rot = 150px
+        this.movedDegL += Math.abs(sL * dt * degPxRatio);
+        this.movedDegR += Math.abs(sR * dt * degPxRatio);
+
+        let vC = (sL + sR) / 2;
+        let omega = (sR - sL) / this.width;
+
+        let nextAngle = this.angle + omega * dt;
+        let nextX = this.pos.x + vC * Math.cos(nextAngle) * dt;
+        let nextY = this.pos.y + vC * Math.sin(nextAngle) * dt;
+        let nextPos = new Vec2(nextX, nextY);
+
+        // Collision Detection
+        let hit = false;
+        const r = Math.max(this.width, this.length) / 2;
+
+        if (nextX < r || nextX > 450 - r || nextY < r || nextY > 400 - r) hit = true;
+
+        if (!hit) {
+          for (let w of env.walls) {
+            let cx = MathUtils.clamp(nextX, w.x, w.x + w.w);
+            let cy = MathUtils.clamp(nextY, w.y, w.y + w.h);
+            if (nextPos.dist(new Vec2(cx, cy)) < r) { hit = true; break; }
+          }
+        }
+
+        if (hit) {
+          this.sensors.touch = true;
+          this.stop(); // Physical constraint
+        } else {
+          this.sensors.touch = false;
+          this.pos = nextPos;
+          this.angle = nextAngle;
+          this.sensors.gyro += MathUtils.rad2deg(omega * dt);
+        }
+
+        this.updateSensors(env);
+
+        // Trail tracking
+        if (this.trail.length === 0 || this.trail[this.trail.length - 1].dist(this.pos) > 10) {
+          this.trail.push(new Vec2(this.pos.x, this.pos.y));
+          if (this.trail.length > 100) this.trail.shift();
+        }
+
+        // Check movement completions
+        if (this._resolveMove && !hit) {
+          if (this._turnTarget) {
+            let turned = Math.abs(this.angle - this._turnTarget.start);
+            if (turned >= this._turnTarget.target) this._resolveMove();
+          } else if (this.targetDegL > 0 || this.targetDegR > 0) {
+            let doneL = this.targetDegL === 0 || this.movedDegL >= this.targetDegL;
+            let doneR = this.targetDegR === 0 || this.movedDegR >= this.targetDegR;
+            if (doneL && doneR) this._resolveMove();
+          }
+        }
+      }
+
+      updateSensors(env) {
+        let fwd = new Vec2(Math.cos(this.angle), Math.sin(this.angle));
+        let frontPos = this.pos.add(fwd.mul(this.length / 2));
+
+        // Ultrasonic Raycast
+        let rayEnd = frontPos.add(fwd.mul(255));
+        let minD = 255;
+
+        // Canvas bounds raycast
+        let b = [[new Vec2(0, 0), new Vec2(450, 0)], [new Vec2(450, 0), new Vec2(450, 400)], [new Vec2(450, 400), new Vec2(0, 400)], [new Vec2(0, 400), new Vec2(0, 0)]];
+        for (let s of b) {
+          let pt = MathUtils.lineIntersect(frontPos, rayEnd, s[0], s[1]);
+          if (pt) { let d = frontPos.dist(pt); if (d < minD) minD = d; }
+        }
+
+        for (let w of env.walls) {
+          let s = [[new Vec2(w.x, w.y), new Vec2(w.x + w.w, w.y)], [new Vec2(w.x + w.w, w.y), new Vec2(w.x + w.w, w.y + w.h)], [new Vec2(w.x + w.w, w.y + w.h), new Vec2(w.x, w.y + w.h)], [new Vec2(w.x, w.y + w.h), new Vec2(w.x, w.y)]];
+          for (let edge of s) {
+            let pt = MathUtils.lineIntersect(frontPos, rayEnd, edge[0], edge[1]);
+            if (pt) { let d = frontPos.dist(pt); if (d < minD) minD = d; }
+          }
+        }
+        this.sensors.distance = minD;
+
+        // Color Sensor
+        let sCol = 'White';
+        for (let z of env.zones) {
+          if (frontPos.x > z.x && frontPos.x < z.x + z.w && frontPos.y > z.y && frontPos.y < z.y + z.h) sCol = z.colorName;
+        }
+        for (let l of env.lines) {
+          if (MathUtils.pointLineDist(frontPos, l.p1, l.p2) <= l.w / 2) sCol = l.colorName;
+        }
+        this.sensors.color = sCol;
+
+        // Waypoints Update
+        for (let wp of env.waypoints) {
+          if (!wp.hit && this.pos.dist(wp.p) < wp.r) wp.hit = true;
+        }
+
+        // UI
+        document.getElementById('val-touch').innerText = this.sensors.touch ? '1' : '0';
+        document.getElementById('val-ultra').innerText = Math.round(this.sensors.distance) + 'cm';
+        document.getElementById('val-color').innerText = this.sensors.color;
+        document.getElementById('val-gyro').innerText = Math.round(this.sensors.gyro) + '°';
+      }
+
+      draw(ctx) {
+        // Trail
+        if (this.trail.length > 1) {
+          ctx.strokeStyle = 'rgba(0, 133, 199, 0.4)'; ctx.lineWidth = 2; ctx.beginPath();
+          ctx.moveTo(this.trail[0].x, this.trail[0].y);
+          for (let i = 1; i < this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+          ctx.stroke();
+        }
+
+        ctx.save();
+        ctx.translate(this.pos.x, this.pos.y);
+        ctx.rotate(this.angle);
+
+        // Body
+        ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = '#A0AEC0'; ctx.lineWidth = 2;
+        ctx.fillRect(-this.length / 2, -this.width / 2, this.length, this.width);
+        ctx.strokeRect(-this.length / 2, -this.width / 2, this.length, this.width);
+
+        // Wheels
+        ctx.fillStyle = '#1A202C';
+        ctx.fillRect(-this.length / 4, -this.width / 2 - 3, this.length / 2, 4);
+        ctx.fillRect(-this.length / 4, this.width / 2 - 1, this.length / 2, 4);
+
+        // Brick Top
+        ctx.fillStyle = '#E2E8F0'; ctx.fillRect(-10, -8, 20, 16);
+        ctx.fillStyle = '#CBD5E0'; ctx.fillRect(-6, -4, 12, 8); // screen
+
+        // Sensors Front
+        ctx.fillStyle = this.sensors.touch ? '#E53E3E' : '#718096';
+        ctx.fillRect(this.length / 2, -this.width / 2 + 2, 4, this.width - 4);
+
+        // US Eyes
+        ctx.fillStyle = '#D69E2E';
+        ctx.beginPath(); ctx.arc(this.length / 2 - 2, -6, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(this.length / 2 - 2, 6, 2, 0, Math.PI * 2); ctx.fill();
+
+        // Color LED
+        let cMap = { 'Red': '#F00', 'Green': '#0F0', 'Blue': '#00F', 'Black': '#000', 'Yellow': '#FF0', 'White': '#FFF' };
+        ctx.fillStyle = cMap[this.sensors.color] || '#FFF';
+        ctx.beginPath(); ctx.arc(this.length / 2 - 8, 0, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.stroke();
+
+        ctx.restore();
+
+        // US Beam
+        if (this.sensors.distance < 255) {
+          ctx.save(); ctx.translate(this.pos.x, this.pos.y); ctx.rotate(this.angle);
+          ctx.strokeStyle = 'rgba(214, 158, 46, 0.5)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+          ctx.beginPath(); ctx.moveTo(this.length / 2, 0); ctx.lineTo(this.length / 2 + this.sensors.distance, 0); ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+
+    const Engine = {
+      canvas: document.getElementById('sim-canvas'),
+      ctx: document.getElementById('sim-canvas').getContext('2d'),
+      env: new Environment(),
+      robot: new Robot(),
+      lastTime: 0,
+
+      init() {
+        const rect = this.canvas.parentElement.getBoundingClientRect();
+        this.canvas.width = rect.width; this.canvas.height = rect.height; // ~450x400
+        requestAnimationFrame(t => this.loop(t));
+      },
+
+      loadChallenge(idx) {
+        let ch = CHALLENGES[idx];
+        this.env.clear();
+        Interpreter.stop();
+
+        document.getElementById('lbl-ch-num').innerText = String(idx + 1).padStart(2, '0');
+        document.getElementById('lbl-ch-title').innerText = ch.title;
+        document.getElementById('lbl-ch-desc').innerText = ch.desc;
+        document.getElementById('lbl-ch-hint').innerText = ch.hint || '';
+
+        ch.map(this.env);
+        this.robot = new Robot();
+        this.robot.pos = new Vec2(ch.start.x, ch.start.y);
+        this.robot.angle = ch.start.angle;
+
+        document.getElementById('btn-prev').disabled = idx === 0;
+        // Lock next button: only enabled if current level is completed OR going backward
+        document.getElementById('btn-next').disabled = idx === CHALLENGES.length - 1 || !App.completedLevels.has(idx);
+      },
+
+      loop(time) {
+        let dt = (time - this.lastTime) / 1000;
+        this.lastTime = time;
+        if (dt > 0.1) dt = 0.1;
+
+        if (Interpreter.isRunning) {
+          Interpreter.ctx.elapsedTime += dt;
+          this.robot.update(dt, this.env);
+
+          let ch = CHALLENGES[App.currentChal];
+          if (ch.update) ch.update(this.robot, this.env);
+
+          // Win check
+          if (ch.check(this.robot, this.env)) {
+            Interpreter.stop();
+            App.completeLevel(App.currentChal);
+            document.getElementById('modal-success').classList.add('active');
+          }
+        }
+
+        this.render();
+        requestAnimationFrame(t => this.loop(t));
+      },
+
+      render() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Draw Zones
+        this.env.zones.forEach(z => {
+          this.ctx.fillStyle = z.color; this.ctx.fillRect(z.x, z.y, z.w, z.h);
+          if (z.target) { this.ctx.strokeStyle = '#333'; this.ctx.lineWidth = 1; this.ctx.setLineDash([4, 4]); this.ctx.strokeRect(z.x, z.y, z.w, z.h); this.ctx.setLineDash([]); }
+        });
+
+        // Draw Lines
+        this.env.lines.forEach(l => {
+          this.ctx.strokeStyle = l.color; this.ctx.lineWidth = l.w; this.ctx.lineCap = 'round';
+          this.ctx.beginPath(); this.ctx.moveTo(l.p1.x, l.p1.y); this.ctx.lineTo(l.p2.x, l.p2.y); this.ctx.stroke();
+        });
+
+        // Draw Walls
+        this.ctx.fillStyle = '#718096'; this.ctx.strokeStyle = '#4A5568'; this.ctx.lineWidth = 1;
+        this.env.walls.forEach(w => {
+          this.ctx.fillRect(w.x, w.y, w.w, w.h);
+          this.ctx.strokeRect(w.x, w.y, w.w, w.h);
+        });
+
+        this.robot.draw(this.ctx);
+      }
+    };
+
+    // ==========================================================================
+    // 6. AST INTERPRETER ENGINE
+    // ==========================================================================
+    const Interpreter = {
+      isRunning: false,
+      ctx: null,
+
+      play() {
+        if (this.isRunning) return;
+
+        let starts = Array.from(document.querySelectorAll('#canvas-plane > .block-wrapper[data-type="start"]'));
+        if (starts.length === 0) { alert('Add a "when program starts" block to the workspace!'); return; }
+
+        this.isRunning = true;
+        document.getElementById('btn-play').style.display = 'none';
+        document.getElementById('btn-stop').style.display = 'flex';
+
+        // Reset map but keep robot where it is (or reset to start)
+        let ch = CHALLENGES[App.currentChal];
+        Engine.env.clear(); ch.map(Engine.env);
+        Engine.robot = new Robot();
+        Engine.robot.pos = new Vec2(ch.start.x, ch.start.y);
+        Engine.robot.angle = ch.start.angle;
+
+        this.ctx = { abort: false, speed: 50, elapsedTime: 0 };
+
+        // Execute threads — find next block via block-next-container
+        starts.forEach(async (startBlock) => {
+          let nextContainer = startBlock.querySelector(':scope > .block-next-container');
+          let firstChild = nextContainer ? nextContainer.querySelector(':scope > .block-wrapper') : null;
+          let seq = this.parseDOMSequence(firstChild);
+          await this.runSequence(seq, this.ctx);
+        });
+      },
+
+      stop() {
+        this.isRunning = false;
+        if (this.ctx) this.ctx.abort = true;
+        Engine.robot.stop();
+        document.getElementById('btn-play').style.display = 'flex';
+        document.getElementById('btn-stop').style.display = 'none';
+        document.querySelectorAll('.running').forEach(e => e.classList.remove('running'));
+      },
+
+      parseDOMSequence(startEl) {
+        let seq = [];
+        let curr = startEl;
+        while (curr && curr.classList.contains('block-wrapper')) {
+          let node = { type: curr.dataset.type, el: curr, inputs: {} };
+          curr.querySelectorAll(':scope > .block-content > input, :scope > .block-content > select, :scope > .c-header > input, :scope > .c-header > select').forEach(i => {
+            node.inputs[i.dataset.id] = i.value;
+          });
+          if (curr.dataset.shape === 'c_shape' || curr.dataset.shape === 'c_shape_else') {
+            let bodyContainer = curr.querySelector(':scope > .c-body-container');
+            let inner = bodyContainer ? bodyContainer.querySelector(':scope > .block-wrapper') : null;
+            node.body = this.parseDOMSequence(inner);
+          }
+          if (curr.dataset.shape === 'c_shape_else') {
+            let elseContainer = curr.querySelector(':scope > .c-else-body');
+            let elseInner = elseContainer ? elseContainer.querySelector(':scope > .block-wrapper') : null;
+            node.elseBody = this.parseDOMSequence(elseInner);
+          }
+          seq.push(node);
+          // Traverse into block-next-container to find the next connected block
+          let nextContainer = curr.querySelector(':scope > .block-next-container');
+          curr = nextContainer ? nextContainer.querySelector(':scope > .block-wrapper') : null;
+        }
+        return seq;
+      },
+
+      async runSequence(seq, ctx) {
+        for (let node of seq) {
+          if (ctx.abort) break;
+          let def = BLOCKS[node.type];
+
+          // Highlight
+          let shape = node.el.dataset.shape;
+          let target = (shape === 'c_shape' || shape === 'c_shape_else') ? node.el.querySelector('.c-header') : node.el;
+          target.classList.add('running');
+
+          if (def && def.exec) await def.exec(node, ctx);
+
+          target.classList.remove('running');
+        }
+      },
+
+      sleep(ms, ctx) {
+        return new Promise(res => {
+          let start = performance.now();
+          let int = setInterval(() => {
+            if (ctx.abort || performance.now() - start >= ms) { clearInterval(int); res(); }
+          }, 20);
+        });
+      },
+
+      yield() { return new Promise(r => setTimeout(r, 10)); }
+    };
+
+    // ==========================================================================
+    // 7. UI & DRAG-AND-DROP WORKSPACE
+    // ==========================================================================
+    const WorkspaceUI = {
+      draggedEl: null,
+      offsetX: 0, offsetY: 0,
+      isDragging: false,
+      dragStartX: 0, dragStartY: 0,
+      dragThreshold: 5,
+
+      // Click-to-place state
+      placementGhost: null,
+      placementType: null,
+
+      init() {
+        this.renderPalette('movement');
+
+        // Category Tabs
+        document.querySelectorAll('.cat-btn').forEach(b => {
+          b.addEventListener('click', e => {
+            document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+            b.classList.add('active');
+            this.renderPalette(b.dataset.target.replace('pal-', ''));
+          });
+        });
+
+        // Setup global Drag events
+        document.addEventListener('mousemove', this.onMove.bind(this));
+        document.addEventListener('mouseup', this.onUp.bind(this));
+
+        // Click-to-place: workspace click handler
+        const workspace = document.getElementById('workspace');
+        workspace.addEventListener('click', e => this.onWorkspaceClick(e));
+
+        // ESC to cancel placement mode
+        document.addEventListener('keydown', e => {
+          if (e.key === 'Escape' && this.placementGhost) {
+            this.cancelPlacement();
+          }
+        });
+
+        // Right-click to cancel placement
+        document.addEventListener('contextmenu', e => {
+          if (this.placementGhost) {
+            e.preventDefault();
+            this.cancelPlacement();
+          }
+        });
+      },
+
+      // Convert client (viewport) coordinates to canvas-plane coordinates
+      clientToPlane(clientX, clientY) {
+        const scroll = document.getElementById('scroll-area');
+        const wsRect = document.getElementById('workspace').getBoundingClientRect();
+        return {
+          x: clientX - wsRect.left + scroll.scrollLeft,
+          y: clientY - wsRect.top + scroll.scrollTop
+        };
+      },
+
+      createBlockDOM(type, isTemplate) {
+        const def = BLOCKS[type];
+        const el = document.createElement('div');
+        el.className = 'block-wrapper';
+        el.dataset.type = type;
+        el.dataset.shape = def.shape;
+        el.dataset.cat = def.cat;
+
+        if (def.shape === 'c_shape') {
+          el.innerHTML = `
+                        <div class="c-header block-content">${def.build()}</div>
+                        <div class="c-body-container dropzone"></div>
+                        <div class="c-footer-content"></div>
+                        <div class="block-next-container"></div>
+                    `;
+        } else if (def.shape === 'c_shape_else') {
+          el.innerHTML = `
+                        <div class="c-header block-content">${def.build()}</div>
+                        <div class="c-body-container dropzone"></div>
+                        <div class="c-else-label">else</div>
+                        <div class="c-else-body dropzone"></div>
+                        <div class="c-footer-content"></div>
+                        <div class="block-next-container"></div>
+                    `;
+        } else {
+          el.innerHTML = `
+                        <div class="block-content">${def.build()}</div>
+                        <div class="block-next-container"></div>
+                    `;
+        }
+
+        // Interaction — both drag and click-to-place
+        el.addEventListener('mousedown', e => this.onDown(e, el, isTemplate));
+        // Allow inputs/selects to be clicked without triggering drag
+        el.querySelectorAll('input, select').forEach(i => {
+          i.addEventListener('mousedown', e => e.stopPropagation());
+          i.addEventListener('click', e => e.stopPropagation());
+        });
+
+        return el;
+      },
+
+      renderPalette(cat) {
+        const pal = document.getElementById('palette');
+        pal.innerHTML = `<div class="palette-title">${cat.charAt(0).toUpperCase() + cat.slice(1)}</div><div class="palette-blocks"></div>`;
+        const cont = pal.querySelector('.palette-blocks');
+
+        for (let key in BLOCKS) {
+          if (BLOCKS[key].cat === cat) {
+            cont.appendChild(this.createBlockDOM(key, true));
+          }
+        }
+      },
+
+      onDown(e, el, isTemplate) {
+        if (e.button !== 0 || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (Interpreter.isRunning) return;
+        e.preventDefault(); e.stopPropagation();
+
+        // Cancel any active placement
+        if (this.placementGhost) {
+          this.cancelPlacement();
+        }
+
+        const plane = document.getElementById('canvas-plane');
+
+        // Record start position for drag-vs-click detection
+        this.dragStartX = e.clientX;
+        this.dragStartY = e.clientY;
+        this.isDragging = false;
+        this.pendingIsTemplate = isTemplate;
+        this.pendingEl = el;
+
+        if (isTemplate) {
+          // Don't create the clone yet — wait for drag threshold
+          // Store info for deferred creation
+          this.draggedEl = null;
+          this.templateRect = el.getBoundingClientRect();
+        } else {
+          // For workspace blocks, start drag immediately
+          this.draggedEl = el;
+
+          // Detach from DOM flow if it's snapped inside a parent (block-next-container or c-body-container)
+          if (el.parentElement !== plane) {
+            // Get current visual position before detaching
+            const elRect = el.getBoundingClientRect();
+            const planeCoords = this.clientToPlane(elRect.left, elRect.top);
+            // If this block has children in its block-next-container, move them to the parent it's leaving
+            const myNextContainer = el.querySelector(':scope > .block-next-container');
+            if (myNextContainer && myNextContainer.firstElementChild) {
+              const oldParent = el.parentElement; // The container we're detaching from
+              // Move all children from our next-container into the spot we're vacating
+              while (myNextContainer.firstElementChild) {
+                oldParent.appendChild(myNextContainer.firstElementChild);
+              }
+            }
+            plane.appendChild(el);
+            el.style.position = 'absolute';
+            el.style.left = planeCoords.x + 'px';
+            el.style.top = planeCoords.y + 'px';
+          }
+
+          const dRect = el.getBoundingClientRect();
+          this.offsetX = e.clientX - dRect.left;
+          this.offsetY = e.clientY - dRect.top;
+        }
+      },
+
+      onMove(e) {
+        // Handle placement ghost following cursor
+        if (this.placementGhost) {
+          const planeCoords = this.clientToPlane(e.clientX, e.clientY);
+          this.placementGhost.style.left = (planeCoords.x - 40) + 'px';
+          this.placementGhost.style.top = (planeCoords.y - 20) + 'px';
+          this.calcSnap(this.placementGhost);
+          return;
+        }
+
+        // Check if we've passed the drag threshold for template blocks
+        if (this.pendingEl && !this.draggedEl && this.pendingIsTemplate) {
+          const dx = e.clientX - this.dragStartX;
+          const dy = e.clientY - this.dragStartY;
+          if (Math.hypot(dx, dy) > this.dragThreshold) {
+            // Passed threshold — create clone and start dragging
+            const plane = document.getElementById('canvas-plane');
+            this.draggedEl = this.createBlockDOM(this.pendingEl.dataset.type, false);
+            this.draggedEl.style.position = 'absolute';
+            plane.appendChild(this.draggedEl);
+
+            // Position at the palette block's visual location
+            const planeCoords = this.clientToPlane(this.templateRect.left, this.templateRect.top);
+            this.draggedEl.style.left = planeCoords.x + 'px';
+            this.draggedEl.style.top = planeCoords.y + 'px';
+
+            this.offsetX = e.clientX - this.templateRect.left;
+            this.offsetY = e.clientY - this.templateRect.top;
+
+            this.draggedEl.classList.add('is-dragging');
+            this.isDragging = true;
+            document.getElementById('trash-zone').classList.add('active');
+          }
+          return;
+        }
+
+        if (!this.draggedEl) return;
+
+        // Mark as dragging once we move
+        if (!this.isDragging) {
+          const dx = e.clientX - this.dragStartX;
+          const dy = e.clientY - this.dragStartY;
+          if (Math.hypot(dx, dy) > this.dragThreshold) {
+            this.isDragging = true;
+            this.draggedEl.classList.add('is-dragging');
+            document.getElementById('trash-zone').classList.add('active');
+          } else {
+            return;
+          }
+        }
+
+        // Move the dragged block in canvas-plane coordinates
+        const planeCoords = this.clientToPlane(e.clientX - this.offsetX, e.clientY - this.offsetY);
+        this.draggedEl.style.left = planeCoords.x + 'px';
+        this.draggedEl.style.top = planeCoords.y + 'px';
+
+        // Trash Hover
+        const tz = document.getElementById('trash-zone');
+        const tzR = tz.getBoundingClientRect();
+        if (e.clientX > tzR.left && e.clientX < tzR.right && e.clientY > tzR.top && e.clientY < tzR.bottom) tz.classList.add('hover');
+        else tz.classList.remove('hover');
+
+        this.calcSnap(this.draggedEl);
+      },
+
+      // Find the visual bottom of the deepest block in a chain
+      getChainBottom(blockEl) {
+        // The bottom attach point is after the block-content (or c-footer for c_shape)
+        // and after any children in block-next-container
+        let nextContainer = blockEl.querySelector(':scope > .block-next-container');
+        if (nextContainer) {
+          let lastChild = nextContainer.querySelector(':scope > .block-wrapper');
+          if (lastChild) return this.getChainBottom(lastChild); // Recurse into the chain
+        }
+        // No more children — return this block's bottom
+        if (blockEl.dataset.shape === 'c_shape' || blockEl.dataset.shape === 'c_shape_else') {
+          let footer = blockEl.querySelector(':scope > .c-footer-content');
+          return footer ? footer.getBoundingClientRect() : blockEl.getBoundingClientRect();
+        } else {
+          let content = blockEl.querySelector(':scope > .block-content');
+          return content ? content.getBoundingClientRect() : blockEl.getBoundingClientRect();
+        }
+      },
+
+      calcSnap(blockEl) {
+        this.snapTarget = null;
+        const ind = document.getElementById('snap-line');
+        ind.style.display = 'none';
+        if (blockEl.dataset.shape === 'hat') return;
+
+        let minDist = 50; // Threshold for easier snapping
+        const dRect = blockEl.getBoundingClientRect();
+        const dNX = dRect.left + 16;
+        const dNY = dRect.top;
+
+        const blocks = Array.from(document.querySelectorAll('#canvas-plane .block-wrapper, #canvas-plane .dropzone'));
+
+        blocks.forEach(b => {
+          if (b === blockEl || blockEl.contains(b)) return;
+          // Skip blocks that are inside the dragged element
+          if (b.closest && b.closest('.is-dragging')) return;
+          if (b.closest && b.closest('.placement-ghost')) return;
+
+          const r = b.getBoundingClientRect();
+
+          if (b.classList.contains('dropzone')) {
+            // Snap into C-block body (dropzone is the c-body-container)
+            let tY = r.top + 4;
+            // Check if there are already blocks inside
+            let existingBlocks = b.querySelectorAll(':scope > .block-wrapper');
+            if (existingBlocks.length > 0) {
+              let lastBlock = existingBlocks[existingBlocks.length - 1];
+              let bottomRect = this.getChainBottom(lastBlock);
+              tY = bottomRect.bottom;
+            }
+            const dist = Math.hypot(dNX - (r.left + 16), dNY - tY);
+            if (dist < minDist) {
+              minDist = dist;
+              this.snapTarget = { el: b, type: 'inner', clientX: r.left + 16, clientY: tY };
+            }
+          } else {
+            // Snap below this block — find the bottom of its entire chain
+            // Only allow snapping to the END of the chain
+            let bottomRect = this.getChainBottom(b);
+            const dist = Math.hypot(dNX - (bottomRect.left + 16), dNY - bottomRect.bottom);
+            if (dist < minDist) {
+              // Find the actual last block in the chain to snap onto
+              let target = b;
+              let nextC = target.querySelector(':scope > .block-next-container');
+              while (nextC) {
+                let child = nextC.querySelector(':scope > .block-wrapper');
+                if (child) {
+                  target = child;
+                  nextC = target.querySelector(':scope > .block-next-container');
+                } else break;
+              }
+              minDist = dist;
+              this.snapTarget = { el: target, type: 'bottom', clientX: bottomRect.left + 16, clientY: bottomRect.bottom };
+            }
+          }
+        });
+
+        if (this.snapTarget) {
+          const planeCoords = this.clientToPlane(this.snapTarget.clientX, this.snapTarget.clientY);
+          ind.style.display = 'block';
+          ind.style.width = '120px';
+          ind.style.left = planeCoords.x + 'px';
+          ind.style.top = planeCoords.y + 'px';
+        }
+      },
+
+      executeSnap(blockEl) {
+        if (!this.snapTarget) return false;
+
+        blockEl.style.position = 'relative';
+        blockEl.style.left = '0';
+        blockEl.style.top = '0';
+
+        if (this.snapTarget.type === 'inner') {
+          // Snap into c-body-container (dropzone)
+          this.snapTarget.el.appendChild(blockEl);
+        } else {
+          // Snap below target block — put into target's block-next-container
+          let nextContainer = this.snapTarget.el.querySelector(':scope > .block-next-container');
+          if (nextContainer) {
+            nextContainer.appendChild(blockEl);
+          } else {
+            // Fallback: create one
+            let nc = document.createElement('div');
+            nc.className = 'block-next-container';
+            nc.appendChild(blockEl);
+            this.snapTarget.el.appendChild(nc);
+          }
+        }
+
+        // Snap animation
+        blockEl.classList.add('snap-animate');
+        setTimeout(() => blockEl.classList.remove('snap-animate'), 200);
+
+        return true;
+      },
+
+      onUp(e) {
+        // Handle placement ghost — ignore mouseup for ghost mode
+        if (this.placementGhost) return;
+
+        const wasDragging = this.isDragging;
+        const pendingEl = this.pendingEl;
+        const pendingIsTemplate = this.pendingIsTemplate;
+
+        // If we had a template pending but never created a clone (click, not drag)
+        if (pendingEl && pendingIsTemplate && !this.draggedEl) {
+          // This was a click on a palette block — enter placement mode
+          this.enterPlacementMode(pendingEl.dataset.type);
+          this.pendingEl = null;
+          this.pendingIsTemplate = false;
+          return;
+        }
+
+        if (!this.draggedEl) {
+          this.pendingEl = null;
+          return;
+        }
+
+        this.draggedEl.classList.remove('is-dragging');
+        document.getElementById('snap-line').style.display = 'none';
+
+        const tz = document.getElementById('trash-zone');
+        if (tz.classList.contains('hover')) {
+          this.draggedEl.remove();
+          this.draggedEl = null;
+          this.pendingEl = null;
+          this.isDragging = false;
+          tz.classList.remove('active', 'hover');
+          return;
+        }
+        tz.classList.remove('active');
+
+        // Execute snap if available
+        if (wasDragging) {
+          this.executeSnap(this.draggedEl);
+        }
+
+        this.draggedEl = null;
+        this.pendingEl = null;
+        this.isDragging = false;
+      },
+
+      // ---- Click-to-Place Mode ----
+
+      enterPlacementMode(blockType) {
+        const plane = document.getElementById('canvas-plane');
+        const workspace = document.getElementById('workspace');
+
+        // Create the ghost block
+        this.placementGhost = this.createBlockDOM(blockType, false);
+        this.placementGhost.classList.add('placement-ghost');
+        this.placementGhost.style.position = 'absolute';
+        this.placementGhost.style.left = '-9999px';
+        this.placementGhost.style.top = '-9999px';
+        this.placementType = blockType;
+        plane.appendChild(this.placementGhost);
+
+        workspace.classList.add('placement-mode');
+      },
+
+      cancelPlacement() {
+        if (this.placementGhost) {
+          this.placementGhost.remove();
+          this.placementGhost = null;
+          this.placementType = null;
+          document.getElementById('workspace').classList.remove('placement-mode');
+          document.getElementById('snap-line').style.display = 'none';
+        }
+      },
+
+      onWorkspaceClick(e) {
+        if (!this.placementGhost) return;
+        // Don't respond if clicking on existing blocks (those handle their own events)
+        if (e.target.closest('.block-wrapper') && !e.target.closest('.placement-ghost')) return;
+
+        e.preventDefault(); e.stopPropagation();
+
+        const plane = document.getElementById('canvas-plane');
+        const ghost = this.placementGhost;
+
+        // Finalize placement
+        ghost.classList.remove('placement-ghost');
+
+        // Try snapping
+        if (this.snapTarget) {
+          this.executeSnap(ghost);
+        } else {
+          // Place at the current position
+          const planeCoords = this.clientToPlane(e.clientX, e.clientY);
+          ghost.style.position = 'absolute';
+          ghost.style.left = (planeCoords.x - 40) + 'px';
+          ghost.style.top = (planeCoords.y - 20) + 'px';
+        }
+
+        // Clear placement mode
+        this.placementGhost = null;
+        this.placementType = null;
+        document.getElementById('workspace').classList.remove('placement-mode');
+        document.getElementById('snap-line').style.display = 'none';
+      }
+    };
+
+    // ==========================================================================
+    // 8. APP INITIALIZATION & CONTROLLER
+    // ==========================================================================
+    const App = {
+      currentChal: 0,
+      completedLevels: new Set(),
+
+      init() {
+        // Load completed levels from localStorage
+        try {
+          const saved = JSON.parse(localStorage.getItem('ev3-completed') || '[]');
+          this.completedLevels = new Set(saved);
+        } catch (e) { this.completedLevels = new Set(); }
+
+        WorkspaceUI.init();
+        Engine.init();
+        this.load(0);
+
+        document.getElementById('btn-play').onclick = () => Interpreter.play();
+        document.getElementById('btn-stop').onclick = () => Interpreter.stop();
+        document.getElementById('btn-prev').onclick = () => this.load(this.currentChal - 1);
+        document.getElementById('btn-next').onclick = () => this.load(this.currentChal + 1);
+        document.getElementById('btn-modal-next').onclick = () => {
+          document.getElementById('modal-success').classList.remove('active');
+          this.load(this.currentChal + 1);
+        };
+        document.getElementById('btn-modal-retry').onclick = () => {
+          document.getElementById('modal-fail').classList.remove('active');
+          Engine.loadChallenge(this.currentChal);
+        };
+
+        // Add default start block to canvas
+        setTimeout(() => {
+          let start = WorkspaceUI.createBlockDOM('start', false);
+          start.style.position = 'absolute'; start.style.left = '50px'; start.style.top = '50px';
+          document.getElementById('canvas-plane').appendChild(start);
+        }, 100);
+      },
+
+      completeLevel(idx) {
+        this.completedLevels.add(idx);
+        try {
+          localStorage.setItem('ev3-completed', JSON.stringify([...this.completedLevels]));
+        } catch (e) { /* ignore */ }
+        // Unlock the next button now
+        document.getElementById('btn-next').disabled = idx === CHALLENGES.length - 1;
+      },
+
+      load(idx) {
+        if (idx < 0 || idx >= CHALLENGES.length) return;
+        // Block forward navigation if current level not completed (allow going back)
+        if (idx > this.currentChal && !this.completedLevels.has(this.currentChal)) return;
+        this.currentChal = idx;
+        Engine.loadChallenge(idx);
+      }
+    };
+
+    // Bootstrap
+    window.onload = () => App.init();
+
+  </script>
+</body>
+
+</html>

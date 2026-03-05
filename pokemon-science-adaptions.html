@@ -1,0 +1,3761 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoDex Australia: Adapto-Battles | Year 6 Science</title>
+    <style>
+        /* ==========================================================================
+   1. CSS VARIABLES & RESET
+   ========================================================================== */
+        :root {
+            /* Color Palette */
+            --bg-dark: #121212;
+            --bg-light: #f4f4f9;
+            --primary: #2ecc71;
+            --primary-dark: #27ae60;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --warning: #f1c40f;
+            --text-dark: #2c3e50;
+            --text-light: #ecf0f1;
+            --ui-border: #34495e;
+            --ui-bg: #ffffff;
+            --ui-hover: #eaeded;
+
+            /* Biome / Type Colors */
+            --type-arid: #e67e22;
+            --type-forest: #229954;
+            --type-aquatic: #2980b9;
+            --type-bushland: #8e44ad;
+            --type-normal: #95a5a6;
+
+            /* Adaptation Category Colors */
+            --cat-structural: #f39c12;
+            --cat-behavioral: #9b59b6;
+            --cat-physiological: #e74c3c;
+
+            /* Typography */
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --font-retro: 'Courier New', Courier, monospace;
+
+            /* Sizing */
+            --game-width: 900px;
+            --game-height: 650px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ==========================================================================
+   2. MAIN CONTAINER & SCREEN MANAGEMENT
+   ========================================================================== */
+        #game-bezel {
+            width: 960px;
+            height: 710px;
+            background: #bdc3c7;
+            border-radius: 20px 20px 40px 20px;
+            box-shadow: inset -5px -5px 20px rgba(0, 0, 0, 0.2), 10px 10px 30px rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            width: var(--game-width);
+            height: var(--game-height);
+            background-color: #000;
+            position: relative;
+            border: 8px solid var(--ui-border);
+            border-radius: 8px;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.9);
+            overflow: hidden;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-light);
+            display: none;
+            flex-direction: column;
+        }
+
+        .active-screen {
+            display: flex !important;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* ==========================================================================
+   3. TYPOGRAPHY & GENERIC COMPONENTS
+   ========================================================================== */
+        h1,
+        h2,
+        h3,
+        h4 {
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            background-color: var(--ui-bg);
+            border: 4px solid var(--ui-border);
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-family: var(--font-main);
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.1s ease-in-out;
+            color: var(--text-dark);
+            text-transform: uppercase;
+            box-shadow: 3px 3px 0 var(--ui-border);
+        }
+
+        .btn:hover {
+            background-color: var(--ui-hover);
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0 var(--ui-border);
+        }
+
+        .btn:active {
+            transform: translate(3px, 3px);
+            box-shadow: 0px 0px 0 var(--ui-border);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ==========================================================================
+   4. TITLE SCREEN
+   ========================================================================== */
+        #screen-title {
+            background: linear-gradient(135deg, var(--type-forest), var(--type-arid));
+            justify-content: center;
+            align-items: center;
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        .title-logo-container {
+            width: 200px;
+            height: 200px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.5));
+            animation: float 3s infinite ease-in-out;
+        }
+
+        #screen-title h1 {
+            font-size: 60px;
+            text-shadow: 4px 4px 0 #000;
+            margin-bottom: 10px;
+            font-family: var(--font-retro);
+        }
+
+        .subtitle {
+            font-size: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 12px 25px;
+            border-radius: 10px;
+            margin-bottom: 50px;
+            font-weight: bold;
+        }
+
+        /* ==========================================================================
+   5. INTRO & PROFESSOR SCREEN
+   ========================================================================== */
+        #screen-intro {
+            background-color: #e8f8f5;
+            padding: 40px;
+        }
+
+        .prof-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 55%;
+            margin-bottom: 20px;
+        }
+
+        .prof-sprite {
+            width: 250px;
+            height: 300px;
+            filter: drop-shadow(0 10px 5px rgba(0, 0, 0, 0.2));
+        }
+
+        #intro-dialog-overlay {
+            background: #fff;
+            border: 6px solid var(--ui-border);
+            border-radius: 12px;
+            padding: 25px;
+            font-size: 22px;
+            line-height: 1.6;
+            flex: 1;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        #intro-dialog-indicator {
+            position: absolute;
+            bottom: 20px;
+            right: 25px;
+            font-size: 24px;
+            animation: blink 1s infinite;
+        }
+
+        /* ==========================================================================
+   6. STARTER SELECTION
+   ========================================================================== */
+        #screen-starter {
+            background-color: #fcf3cf;
+            padding: 40px;
+            align-items: center;
+            text-align: center;
+        }
+
+        .starter-header {
+            margin-bottom: 40px;
+        }
+
+        .starter-grid {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            width: 100%;
+        }
+
+        .starter-card {
+            background: #fff;
+            border: 6px solid var(--ui-border);
+            border-radius: 15px;
+            width: 240px;
+            padding: 30px 20px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .starter-card:hover {
+            transform: translateY(-15px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 30px rgba(46, 204, 113, 0.3);
+        }
+
+        .starter-card svg {
+            width: 140px;
+            height: 140px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.2));
+        }
+
+        .starter-card h3 {
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+
+        /* ==========================================================================
+   7. OVERWORLD MAP
+   ========================================================================== */
+        #screen-overworld {
+            background-color: #000;
+        }
+
+        #map-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Weather Overlay */
+        #weather-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            background: rgba(0, 0, 0, 0);
+            transition: background 2s;
+        }
+
+        .weather-night {
+            background: rgba(0, 0, 50, 0.4) !important;
+        }
+
+        /* UI overlays on map */
+        #overworld-ui {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        .map-info-panel {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 4px solid var(--ui-border);
+            border-radius: 8px;
+            padding: 15px;
+            z-index: 10;
+            box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 3px solid var(--ui-border);
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        /* Notification Toast */
+        #toast-notification {
+            position: absolute;
+            top: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--warning);
+            color: #000;
+            font-weight: bold;
+            padding: 15px 30px;
+            border: 4px solid #d35400;
+            border-radius: 30px;
+            z-index: 100;
+            transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast-visible {
+            top: 20px !important;
+        }
+
+        /* ==========================================================================
+   8. BATTLE SCREEN
+   ========================================================================== */
+        #screen-battle {
+            background: #87CEEB;
+            /* Sky fallback */
+        }
+
+        .battle-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 450px;
+            background-size: cover;
+            background-position: bottom;
+            z-index: 1;
+        }
+
+        .bg-arid {
+            background: linear-gradient(to bottom, #f39c12 30%, #e67e22 50%, #d35400 100%);
+        }
+
+        .bg-forest {
+            background: linear-gradient(to bottom, #87CEEB 30%, #2ecc71 50%, #27ae60 100%);
+        }
+
+        .bg-aquatic {
+            background: linear-gradient(to bottom, #87CEEB 30%, #3498db 50%, #2980b9 100%);
+        }
+
+        .bg-bushland {
+            background: linear-gradient(to bottom, #9b59b6 30%, #8e44ad 50%, #5b2c6f 100%);
+        }
+
+        .bg-normal {
+            background: linear-gradient(to bottom, #87CEEB 30%, #bdc3c7 50%, #95a5a6 100%);
+        }
+
+        /* Platforms */
+        .battle-platform {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        .platform-enemy {
+            width: 280px;
+            height: 70px;
+            top: 250px;
+            right: 60px;
+        }
+
+        .platform-player {
+            width: 350px;
+            height: 90px;
+            bottom: 200px;
+            left: 40px;
+        }
+
+        /* Sprites */
+        .sprite-container {
+            position: absolute;
+            z-index: 5;
+            width: 220px;
+            height: 220px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .sprite-container svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 15px 5px rgba(0, 0, 0, 0.3));
+        }
+
+        #enemy-sprite {
+            top: 80px;
+            right: 90px;
+        }
+
+        #player-sprite {
+            bottom: 230px;
+            left: 100px;
+            transform: scaleX(-1);
+            /* Face right */
+        }
+
+        /* Particles */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        /* HUD / Stat Boxes */
+        .hud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            border: 5px solid var(--ui-border);
+            border-radius: 12px;
+            padding: 15px 20px;
+            width: 340px;
+            z-index: 10;
+            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.2);
+        }
+
+        #enemy-hud {
+            top: 30px;
+            left: 30px;
+        }
+
+        #player-hud {
+            bottom: 230px;
+            right: 30px;
+        }
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .hp-bar-container {
+            width: 100%;
+            height: 18px;
+            background: #bdc3c7;
+            border: 3px solid #7f8c8d;
+            border-radius: 9px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .hp-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 100%;
+            transition: width 0.4s ease-out, background 0.4s;
+        }
+
+        .hp-text {
+            text-align: right;
+            font-size: 16px;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        .status-tray {
+            display: flex;
+            gap: 5px;
+            margin-top: 8px;
+            min-height: 22px;
+        }
+
+        .status-icon {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #fff;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-buff {
+            background: var(--secondary);
+        }
+
+        .status-debuff {
+            background: var(--accent);
+        }
+
+        /* Battle UI Bottom Panel */
+        .battle-ui-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            background: var(--ui-bg);
+            border-top: 8px solid var(--ui-border);
+            z-index: 20;
+            display: flex;
+        }
+
+        #battle-dialog-box {
+            flex: 1;
+            padding: 25px;
+            font-size: 24px;
+            line-height: 1.6;
+            border-right: 8px solid var(--ui-border);
+            position: relative;
+            cursor: pointer;
+            font-family: var(--font-retro);
+            font-weight: bold;
+            color: #111;
+        }
+
+        #battle-dialog-indicator {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            font-size: 24px;
+            animation: blink 1s infinite;
+        }
+
+        #battle-menu {
+            width: 400px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            background: #ecf0f1;
+        }
+
+        .battle-btn {
+            border: none;
+            border-bottom: 2px solid #bdc3c7;
+            border-right: 2px solid #bdc3c7;
+            background: transparent;
+            font-family: var(--font-main);
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            text-transform: uppercase;
+            color: var(--text-dark);
+        }
+
+        .battle-btn:hover {
+            background: var(--ui-border);
+            color: #fff;
+        }
+
+        /* Moves Menu */
+        #moves-menu {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            background: var(--ui-bg);
+            border-top: 8px solid var(--ui-border);
+            z-index: 30;
+            display: none;
+        }
+
+        .moves-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            height: 100%;
+            width: 75%;
+            float: left;
+        }
+
+        .move-btn {
+            border: 2px solid #bdc3c7;
+            border-top: none;
+            border-left: none;
+            background: #fff;
+            font-family: var(--font-main);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .move-btn:hover {
+            background: #f4f6f6;
+        }
+
+        .move-cat {
+            font-size: 11px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 4px;
+            color: #fff;
+            margin-top: 8px;
+            text-transform: uppercase;
+        }
+
+        .cat-str {
+            background: var(--cat-structural);
+        }
+
+        .cat-beh {
+            background: var(--cat-behavioral);
+        }
+
+        .cat-phy {
+            background: var(--cat-physiological);
+        }
+
+        .move-type-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+
+        .moves-cancel {
+            width: 25%;
+            height: 100%;
+            float: right;
+            border-left: 8px solid var(--ui-border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #e74c3c;
+            color: white;
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: var(--font-main);
+            text-transform: uppercase;
+            transition: background 0.2s;
+        }
+
+        .moves-cancel:hover {
+            background: #c0392b;
+        }
+
+        /* Science Fact Popup */
+        #science-fact-popup {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85%;
+            background: rgba(255, 255, 255, 0.98);
+            border: 6px solid var(--primary);
+            border-radius: 12px;
+            padding: 20px 25px;
+            z-index: 150;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: none;
+            font-size: 18px;
+            line-height: 1.5;
+            animation: dropIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* ==========================================================================
+   9. QUIZ / CAPTURE OVERLAY
+   ========================================================================== */
+        #quiz-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 200;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .quiz-box {
+            background: var(--ui-bg);
+            width: 80%;
+            border: 8px solid var(--secondary);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(52, 152, 219, 0.5);
+        }
+
+        .quiz-box h2 {
+            color: var(--secondary);
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .quiz-desc {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 25px;
+        }
+
+        .quiz-q {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            line-height: 1.4;
+            color: var(--text-dark);
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .quiz-btn {
+            text-align: left;
+            padding: 15px 20px;
+            font-size: 18px;
+            background: #ecf0f1;
+            border: 3px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .quiz-btn:hover {
+            background: #d6eaf8;
+            border-color: var(--secondary);
+            transform: translateX(10px);
+        }
+
+        /* ==========================================================================
+   10. ECODEX, PARTY, BAG SCREENS
+   ========================================================================== */
+        .menu-screen {
+            padding: 30px;
+            flex-direction: column;
+        }
+
+        .menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 6px solid var(--ui-border);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .menu-header h2 {
+            font-size: 32px;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        /* EcoDex Layout */
+        .ecodex-layout {
+            display: flex;
+            gap: 30px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .ecodex-list {
+            flex: 1.2;
+            background: #fff;
+            border: 6px solid var(--ui-border);
+            border-radius: 12px;
+            overflow-y: auto;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: min-content;
+            gap: 15px;
+        }
+
+        .ecodex-item {
+            background: #f8f9fa;
+            border: 3px solid #bdc3c7;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.2s, border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .ecodex-item:hover {
+            transform: translateY(-5px);
+            border-color: var(--secondary);
+            background: #fff;
+        }
+
+        .ecodex-item.locked {
+            filter: grayscale(1) brightness(0.6);
+            cursor: not-allowed;
+        }
+
+        .ecodex-item.locked:hover {
+            transform: none;
+            border-color: #bdc3c7;
+            background: #f8f9fa;
+        }
+
+        .ecodex-item svg {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 10px;
+        }
+
+        .ecodex-item span {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .ecodex-details {
+            flex: 2;
+            background: #fff;
+            border: 6px solid var(--ui-border);
+            border-radius: 12px;
+            padding: 25px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .details-top {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 3px dashed #ecf0f1;
+        }
+
+        .details-svg {
+            width: 160px;
+            height: 160px;
+            background: #ecf0f1;
+            border: 4px solid #bdc3c7;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .details-svg svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.2));
+        }
+
+        .details-info h2 {
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .details-info .biome-tag {
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .details-info p {
+            font-size: 16px;
+            color: #555;
+        }
+
+        .adaptations-list h3 {
+            margin-bottom: 15px;
+            color: var(--text-dark);
+        }
+
+        .adapt-item {
+            background: #fdfbf7;
+            border-left: 6px solid;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .adapt-str {
+            border-color: var(--cat-structural);
+        }
+
+        .adapt-beh {
+            border-color: var(--cat-behavioral);
+        }
+
+        .adapt-phy {
+            border-color: var(--cat-physiological);
+        }
+
+        .adapt-item-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .adapt-item-head strong {
+            font-size: 18px;
+        }
+
+        /* Party Layout */
+        .party-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            flex: 1;
+            align-content: start;
+        }
+
+        .party-card {
+            background: #fff;
+            border: 6px solid var(--ui-border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .party-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .party-card.active-member {
+            border-color: var(--primary);
+            background: #f0fbf4;
+        }
+
+        .party-card.fainted {
+            filter: grayscale(1);
+            opacity: 0.7;
+        }
+
+        .party-card svg {
+            width: 90px;
+            height: 90px;
+            filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.2));
+        }
+
+        .party-info {
+            flex: 1;
+        }
+
+        .party-info h3 {
+            margin-bottom: 5px;
+            font-size: 22px;
+        }
+
+        .party-lvl {
+            font-size: 14px;
+            font-weight: bold;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+        }
+
+        /* Bag Layout */
+        .bag-layout {
+            display: flex;
+            gap: 30px;
+            flex: 1;
+            height: 100%;
+        }
+
+        .bag-list {
+            flex: 1;
+            background: #fff;
+            border: 6px solid var(--ui-border);
+            border-radius: 12px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .bag-item {
+            padding: 20px;
+            border-bottom: 3px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-radius: 8px;
+        }
+
+        .bag-item:hover {
+            background: #f4f6f6;
+            padding-left: 25px;
+        }
+
+        .bag-item .qty {
+            color: var(--secondary);
+            background: #ebf5fb;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 16px;
+        }
+
+        .bag-desc {
+            flex: 1;
+            background: #fff;
+            border: 6px solid var(--ui-border);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .bag-desc-icon {
+            width: 100px;
+            height: 100px;
+            background: #ecf0f1;
+            border-radius: 50%;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 50px;
+        }
+
+        .bag-desc h3 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .bag-desc p {
+            font-size: 18px;
+            color: #555;
+        }
+
+        /* ==========================================================================
+   11. ANIMATIONS & EFFECTS
+   ========================================================================== */
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        @keyframes dropIn {
+            0% {
+                top: -50px;
+                opacity: 0;
+            }
+
+            100% {
+                top: 20px;
+                opacity: 1;
+            }
+        }
+
+        @keyframes idle-anim {
+
+            0%,
+            100% {
+                transform: translateY(0) scaleY(1);
+            }
+
+            50% {
+                transform: translateY(-6px) scaleY(1.03);
+            }
+        }
+
+        @keyframes idle-anim-player {
+
+            0%,
+            100% {
+                transform: scaleX(-1) translateY(0) scaleY(1);
+            }
+
+            50% {
+                transform: scaleX(-1) translateY(-6px) scaleY(1.03);
+            }
+        }
+
+        .anim-idle {
+            animation: idle-anim 2.5s infinite ease-in-out;
+        }
+
+        .anim-idle-player {
+            animation: idle-anim-player 2.5s infinite ease-in-out;
+        }
+
+        /* Attack Lunge */
+        @keyframes attack-player {
+            0% {
+                transform: scaleX(-1) translate(0, 0);
+            }
+
+            20% {
+                transform: scaleX(-1) translate(-30px, 30px);
+            }
+
+            50% {
+                transform: scaleX(-1) translate(100px, -100px) scale(1.15);
+                filter: drop-shadow(0 20px 10px rgba(0, 0, 0, 0.4));
+            }
+
+            100% {
+                transform: scaleX(-1) translate(0, 0);
+            }
+        }
+
+        @keyframes attack-enemy {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            20% {
+                transform: translate(30px, -30px);
+            }
+
+            50% {
+                transform: translate(-100px, 100px) scale(1.15);
+                filter: drop-shadow(0 20px 10px rgba(0, 0, 0, 0.4));
+            }
+
+            100% {
+                transform: translate(0, 0);
+            }
+        }
+
+        .anim-attack-player {
+            animation: attack-player 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .anim-attack-enemy {
+            animation: attack-enemy 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Damage Shake */
+        @keyframes damage-flash {
+            0% {
+                filter: brightness(1) sepia(0);
+                transform: translateX(0);
+            }
+
+            20% {
+                filter: brightness(2) sepia(1) hue-rotate(-50deg) saturate(5);
+                transform: translateX(-15px);
+            }
+
+            40% {
+                transform: translateX(15px);
+            }
+
+            60% {
+                filter: brightness(2) sepia(1) hue-rotate(-50deg) saturate(5);
+                transform: translateX(-15px);
+            }
+
+            80% {
+                transform: translateX(15px);
+            }
+
+            100% {
+                filter: brightness(1) sepia(0);
+                transform: translateX(0);
+            }
+        }
+
+        .anim-damage {
+            animation: damage-flash 0.5s ease;
+        }
+
+        /* Heal Glow */
+        @keyframes heal-glow {
+            0% {
+                filter: drop-shadow(0 0 0px var(--primary));
+                transform: scale(1);
+            }
+
+            50% {
+                filter: drop-shadow(0 0 30px var(--primary)) brightness(1.3);
+                transform: scale(1.05);
+            }
+
+            100% {
+                filter: drop-shadow(0 0 0px var(--primary));
+                transform: scale(1);
+            }
+        }
+
+        .anim-heal {
+            animation: heal-glow 1s ease-in-out;
+        }
+
+        /* Faint Drop */
+        @keyframes faint-drop {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+                filter: grayscale(0);
+            }
+
+            100% {
+                transform: translateY(150px) scale(0.8);
+                opacity: 0;
+                filter: grayscale(1);
+            }
+        }
+
+        .anim-faint {
+            animation: faint-drop 1s forwards ease-in;
+        }
+
+        /* Catch Animation (Eco-Tracker thrown) */
+        @keyframes tracker-throw {
+            0% {
+                left: 150px;
+                bottom: 250px;
+                width: 30px;
+                height: 30px;
+                opacity: 1;
+                transform: rotate(0deg);
+            }
+
+            50% {
+                left: 450px;
+                bottom: 450px;
+                width: 60px;
+                height: 60px;
+                transform: rotate(360deg);
+            }
+
+            100% {
+                left: 700px;
+                bottom: 300px;
+                width: 45px;
+                height: 45px;
+                opacity: 1;
+                transform: rotate(720deg);
+            }
+        }
+
+        @keyframes tracker-shake {
+
+            0%,
+            100% {
+                transform: rotate(0deg) translateX(0);
+            }
+
+            25% {
+                transform: rotate(-20deg) translateX(-10px);
+            }
+
+            75% {
+                transform: rotate(20deg) translateX(10px);
+            }
+        }
+
+        @keyframes tracker-capture {
+            0% {
+                filter: brightness(1);
+            }
+
+            50% {
+                filter: brightness(3) drop-shadow(0 0 30px #fff);
+                transform: scale(1.2);
+            }
+
+            100% {
+                filter: brightness(1);
+                opacity: 0;
+            }
+        }
+
+        #tracker-ball {
+            position: absolute;
+            background: radial-gradient(circle at 30% 30%, #fff 10%, var(--primary) 40%, #145a32 90%);
+            border: 4px solid #111;
+            border-radius: 50%;
+            z-index: 50;
+            display: none;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.5), inset -5px -5px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        #tracker-ball::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #111;
+            transform: translateY(-50%);
+        }
+
+        #tracker-ball::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border: 3px solid #111;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+
+        .anim-tracker-throw {
+            display: block !important;
+            animation: tracker-throw 1s forwards cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .anim-tracker-shake {
+            display: block !important;
+            left: 700px;
+            bottom: 300px;
+            width: 45px;
+            height: 45px;
+            animation: tracker-shake 0.8s ease-in-out infinite;
+        }
+
+        .anim-tracker-capture {
+            display: block !important;
+            left: 700px;
+            bottom: 300px;
+            width: 45px;
+            height: 45px;
+            animation: tracker-capture 1s forwards ease-in;
+        }
+
+        /* Encounter Flash overlay */
+        #encounter-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        @keyframes enc-flash {
+            0% {
+                opacity: 0;
+                background: #fff;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            20% {
+                opacity: 0;
+            }
+
+            30% {
+                opacity: 1;
+                background: #000;
+            }
+
+            40% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .anim-enc-flash {
+            animation: enc-flash 1.5s ease-in-out forwards;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game-bezel">
+        <div id="game-container">
+
+            <svg style="display: none;">
+                <defs>
+                    <g id="svg-kangaroo">
+                        <ellipse cx="50" cy="65" rx="18" ry="30" fill="#D35400" transform="rotate(20 50 65)" />
+                        <path d="M 45 85 Q 15 100 5 95 Q 30 110 55 90 Z" fill="#D35400" />
+                        <path d="M 50 80 Q 70 85 65 100 L 80 100 Q 80 80 65 70 Z" fill="#A04000" />
+                        <path d="M 40 40 Q 55 15 65 25 Q 75 30 65 40 Q 50 50 40 40 Z" fill="#D35400" />
+                        <path d="M 65 25 L 85 25 L 80 35 L 65 35 Z" fill="#D35400" />
+                        <path d="M 65 25 L 55 5 L 75 25 Z" fill="#D35400" />
+                        <path d="M 70 25 L 65 5 L 80 25 Z" fill="#A04000" />
+                        <circle cx="80" cy="28" r="2" fill="#000" />
+                        <circle cx="85" cy="30" r="1.5" fill="#111" />
+                        <path d="M 60 55 Q 75 60 70 70 L 80 70 Q 80 60 70 50" fill="#E67E22" />
+                    </g>
+
+                    <g id="svg-koala">
+                        <rect x="20" y="20" width="20" height="80" fill="#5D4037" />
+                        <ellipse cx="60" cy="60" rx="28" ry="35" fill="#7F8C8D" />
+                        <ellipse cx="65" cy="65" rx="15" ry="25" fill="#ECF0F1" />
+                        <circle cx="60" cy="35" r="24" fill="#7F8C8D" />
+                        <circle cx="35" cy="22" r="14" fill="#7F8C8D" />
+                        <circle cx="35" cy="22" r="7" fill="#FFF" />
+                        <circle cx="85" cy="22" r="14" fill="#7F8C8D" />
+                        <circle cx="85" cy="22" r="7" fill="#FFF" />
+                        <ellipse cx="60" cy="42" rx="10" ry="14" fill="#2C3E50" />
+                        <circle cx="48" cy="32" r="2.5" fill="#000" />
+                        <circle cx="72" cy="32" r="2.5" fill="#000" />
+                        <path d="M 50 50 Q 25 60 40 70" fill="none" stroke="#7F8C8D" stroke-width="10"
+                            stroke-linecap="round" />
+                        <path d="M 55 85 Q 25 90 40 100" fill="none" stroke="#7F8C8D" stroke-width="12"
+                            stroke-linecap="round" />
+                    </g>
+
+                    <g id="svg-platypus">
+                        <ellipse cx="25" cy="65" rx="22" ry="12" fill="#3E2723" transform="rotate(-10 25 65)" />
+                        <path d="M 40 70 L 30 90 L 50 90 Z" fill="#2C3E50" />
+                        <circle cx="45" cy="85" r="2.5" fill="#E74C3C" />
+                        <ellipse cx="65" cy="60" rx="35" ry="18" fill="#5D4037" />
+                        <path d="M 75 70 L 65 90 L 85 90 Z" fill="#2C3E50" />
+                        <circle cx="90" cy="52" r="14" fill="#5D4037" />
+                        <ellipse cx="110" cy="55" rx="18" ry="8" fill="#34495E" />
+                        <path d="M 90 45 Q 95 40 100 45" stroke="#111" stroke-width="2" fill="none" />
+                    </g>
+
+                    <g id="svg-thornydevil">
+                        <path d="M 15 65 Q 5 75 15 85 Q 40 70 30 60" fill="#D35400" />
+                        <ellipse cx="50" cy="60" rx="28" ry="14" fill="#E67E22" />
+                        <polygon points="35,48 40,30 45,48" fill="#A04000" />
+                        <polygon points="45,46 50,25 55,46" fill="#A04000" />
+                        <polygon points="55,48 60,30 65,48" fill="#A04000" />
+                        <polygon points="30,55 25,40 35,55" fill="#A04000" />
+                        <polygon points="70,55 75,40 65,55" fill="#A04000" />
+                        <circle cx="68" cy="45" r="9" fill="#E67E22" />
+                        <polygon points="65,38 68,25 71,38" fill="#A04000" />
+                        <path d="M 75 55 L 95 60 L 78 65 Z" fill="#E67E22" />
+                        <circle cx="82" cy="59" r="1.5" fill="#000" />
+                        <path d="M 40 70 L 35 88 L 48 88 Z" fill="#D35400" />
+                        <path d="M 65 70 L 60 88 L 73 88 Z" fill="#D35400" />
+                    </g>
+
+                    <g id="svg-wombat">
+                        <rect x="25" y="45" width="60" height="40" rx="20" fill="#6E2C00" />
+                        <path d="M 85 55 Q 100 65 85 85" fill="#4E342E" />
+                        <circle cx="30" cy="55" r="20" fill="#6E2C00" />
+                        <ellipse cx="20" cy="57" rx="7" ry="5" fill="#111" />
+                        <circle cx="25" cy="48" r="2.5" fill="#000" />
+                        <path d="M 20 40 L 25 25 L 35 38 Z" fill="#4E342E" />
+                        <path d="M 35 40 L 40 25 L 45 38 Z" fill="#4E342E" />
+                        <rect x="35" y="80" width="12" height="15" fill="#3E2723" rx="4" />
+                        <rect x="70" y="80" width="12" height="15" fill="#3E2723" rx="4" />
+                        <path d="M 35 95 L 30 100 M 40 95 L 35 100 M 45 95 L 40 100" stroke="#ECF0F1"
+                            stroke-width="2" />
+                    </g>
+
+                    <g id="svg-echidna">
+                        <path d="M 20 85 A 40 30 0 0 1 90 85 Z" fill="#3E2723" />
+                        <path d="M 30 70 L 20 35 L 40 60" stroke="#F1C40F" stroke-width="3" fill="none"
+                            stroke-linecap="round" />
+                        <path d="M 45 60 L 40 20 L 55 50" stroke="#F1C40F" stroke-width="3" fill="none"
+                            stroke-linecap="round" />
+                        <path d="M 60 55 L 60 15 L 70 50" stroke="#F1C40F" stroke-width="3" fill="none"
+                            stroke-linecap="round" />
+                        <path d="M 75 60 L 85 25 L 80 65" stroke="#F1C40F" stroke-width="3" fill="none"
+                            stroke-linecap="round" />
+                        <path d="M 20 80 L 5 60 L 25 75" stroke="#F1C40F" stroke-width="3" fill="none"
+                            stroke-linecap="round" />
+                        <path d="M 85 85 L 110 90 L 85 95 Z" fill="#2C3E50" />
+                        <circle cx="85" cy="82" r="2" fill="#000" />
+                        <rect x="35" y="85" width="10" height="10" fill="#111" rx="2" />
+                        <rect x="65" y="85" width="10" height="10" fill="#111" rx="2" />
+                    </g>
+
+                    <g id="svg-cassowary">
+                        <ellipse cx="45" cy="60" rx="28" ry="35" fill="#111" />
+                        <path d="M 55 35 Q 70 10 80 15 Q 65 30 65 55 Z" fill="#2980B9" />
+                        <circle cx="80" cy="15" r="12" fill="#2980B9" />
+                        <path d="M 72 8 Q 80 -15 90 10 Z" fill="#8E44AD" />
+                        <polygon points="90,12 110,22 90,25" fill="#7F8C8D" />
+                        <circle cx="85" cy="18" r="3" fill="#F1C40F" />
+                        <circle cx="85" cy="18" r="1" fill="#000" />
+                        <circle cx="75" cy="35" r="5" fill="#E74C3C" />
+                        <circle cx="80" cy="40" r="4" fill="#E74C3C" />
+                        <rect x="35" y="90" width="8" height="25" fill="#7F8C8D" />
+                        <rect x="55" y="90" width="8" height="25" fill="#7F8C8D" />
+                        <polygon points="43,115 55,115 48,105" fill="#ECF0F1" />
+                        <polygon points="63,115 75,115 68,105" fill="#ECF0F1" />
+                    </g>
+
+                    <g id="svg-dingo">
+                        <path d="M 25 55 Q 5 65 15 80 Q 35 65 30 55 Z" fill="#E67E22" />
+                        <ellipse cx="55" cy="50" rx="30" ry="18" fill="#F39C12" />
+                        <path d="M 70 40 L 95 30 L 100 42 L 80 50 Z" fill="#F39C12" />
+                        <polygon points="80,30 85,10 92,28" fill="#E67E22" />
+                        <polygon points="90,26 102,12 98,32" fill="#E67E22" />
+                        <polygon points="95,35 112,40 100,48" fill="#FDEBD0" />
+                        <circle cx="112" cy="40" r="2.5" fill="#111" />
+                        <circle cx="95" cy="35" r="2" fill="#000" />
+                        <rect x="40" y="65" width="7" height="30" fill="#E67E22" />
+                        <rect x="75" y="65" width="7" height="30" fill="#E67E22" />
+                        <path d="M 40 95 L 45 95 L 47 90 Z" fill="#FDEBD0" />
+                        <path d="M 75 95 L 80 95 L 82 90 Z" fill="#FDEBD0" />
+                    </g>
+
+                    <g id="svg-croc">
+                        <path d="M 5 65 Q 45 40 85 65 Q 45 90 5 65 Z" fill="#27AE60" />
+                        <rect x="55" y="60" width="45" height="15" fill="#2ECC71" />
+                        <polygon points="60,75 65,82 70,75 75,82 80,75 85,82 90,75 95,82 100,75" fill="#FFF" />
+                        <ellipse cx="75" cy="55" rx="7" ry="5" fill="#1E8449" />
+                        <circle cx="75" cy="53" r="2" fill="#F1C40F" />
+                        <circle cx="75" cy="53" r="1" fill="#000" />
+                        <ellipse cx="95" cy="58" rx="3" ry="2" fill="#1E8449" />
+                        <polygon points="25,65 30,55 35,65" fill="#145A32" />
+                        <polygon points="35,65 40,55 45,65" fill="#145A32" />
+                        <polygon points="45,65 50,55 55,65" fill="#145A32" />
+                        <rect x="30" y="75" width="10" height="15" fill="#1E8449" transform="rotate(-20 30 75)" />
+                        <rect x="55" y="75" width="10" height="15" fill="#1E8449" transform="rotate(-20 55 75)" />
+                    </g>
+
+                    <g id="svg-kookaburra">
+                        <ellipse cx="50" cy="55" rx="18" ry="30" fill="#BDC3C7" />
+                        <path d="M 38 45 Q 20 65 25 90 Z" fill="#5D4037" />
+                        <path d="M 45 45 Q 35 65 40 85 Z" fill="#8D6E63" />
+                        <circle cx="50" cy="25" r="15" fill="#ECF0F1" />
+                        <path d="M 45 10 Q 55 5 65 20 Z" fill="#5D4037" />
+                        <polygon points="62,20 100,25 62,32" fill="#3E2723" />
+                        <circle cx="58" cy="22" r="2.5" fill="#000" />
+                        <rect x="42" y="80" width="4" height="20" fill="#7F8C8D" />
+                        <rect x="52" y="80" width="4" height="20" fill="#7F8C8D" />
+                    </g>
+
+                    <g id="svg-bilby">
+                        <ellipse cx="45" cy="65" rx="22" ry="16" fill="#AAB7B8" />
+                        <path d="M 23 65 Q 5 65 5 85 Q 25 85 30 75 Z" fill="#111" />
+                        <circle cx="62" cy="55" r="12" fill="#AAB7B8" />
+                        <polygon points="65,48 95,65 65,68" fill="#AAB7B8" />
+                        <circle cx="95" cy="65" r="2" fill="#E74C3C" />
+                        <ellipse cx="65" cy="52" rx="2" ry="3" fill="#000" />
+                        <path d="M 55 45 Q 40 5 50 0 Q 65 25 68 45 Z" fill="#FADBD8" stroke="#AAB7B8"
+                            stroke-width="2" />
+                        <path d="M 65 45 Q 80 10 90 5 Q 90 30 75 50 Z" fill="#FADBD8" stroke="#AAB7B8"
+                            stroke-width="2" />
+                        <rect x="40" y="80" width="4" height="15" fill="#7F8C8D" />
+                        <rect x="60" y="80" width="4" height="15" fill="#7F8C8D" />
+                    </g>
+
+                    <g id="svg-frilled">
+                        <path d="M 15 85 Q 5 105 30 105 Q 50 85 40 75" fill="#7F8C8D" />
+                        <ellipse cx="55" cy="65" rx="22" ry="12" fill="#95A5A6" transform="rotate(-25 55 65)" />
+                        <ellipse cx="85" cy="45" rx="30" ry="40" fill="#E74C3C" opacity="0.85" />
+                        <ellipse cx="85" cy="45" rx="18" ry="28" fill="#F1C40F" opacity="0.85" />
+                        <path
+                            d="M 85 45 L 85 5 M 85 45 L 85 85 M 85 45 L 55 45 M 85 45 L 115 45 M 85 45 L 60 20 M 85 45 L 110 70 M 85 45 L 110 20 M 85 45 L 60 70"
+                            stroke="#C0392B" stroke-width="2" />
+                        <circle cx="85" cy="45" r="12" fill="#95A5A6" />
+                        <polygon points="90,38 110,45 90,52" fill="#95A5A6" />
+                        <path d="M 98 45 L 105 40 L 98 50 Z" fill="#111" />
+                        <circle cx="88" cy="42" r="2" fill="#000" />
+                        <path d="M 40 75 L 35 100 L 48 100 Z" fill="#7F8C8D" />
+                        <path d="M 65 65 L 70 90 L 80 90 Z" fill="#7F8C8D" />
+                    </g>
+
+                    <g id="svg-tasdevil">
+                        <ellipse cx="25" cy="65" rx="18" ry="8" fill="#111" />
+                        <ellipse cx="60" cy="60" rx="35" ry="22" fill="#111" />
+                        <path d="M 70 55 Q 85 65 75 75" stroke="#FFF" stroke-width="4" fill="none" />
+                        <circle cx="90" cy="50" r="18" fill="#111" />
+                        <path d="M 90 55 L 110 55 L 100 65 Z" fill="#E0E0E0" />
+                        <circle cx="82" cy="35" r="7" fill="#D32F2F" />
+                        <circle cx="98" cy="35" r="7" fill="#D32F2F" />
+                        <circle cx="95" cy="45" r="2.5" fill="#FFF" />
+                        <rect x="40" y="75" width="10" height="20" fill="#111" rx="4" />
+                        <rect x="75" y="75" width="10" height="20" fill="#111" rx="4" />
+                    </g>
+
+                    <g id="svg-sugarglider">
+                        <path d="M 25 35 Q 55 85 85 35 Q 55 60 25 35 Z" fill="#9E9E9E" />
+                        <path d="M 55 65 Q 55 100 80 105" stroke="#757575" stroke-width="8" fill="none"
+                            stroke-linecap="round" />
+                        <ellipse cx="55" cy="40" rx="14" ry="28" fill="#BDBDBD" />
+                        <rect x="54" y="10" width="3" height="55" fill="#212121" />
+                        <circle cx="55" cy="18" r="12" fill="#BDBDBD" />
+                        <circle cx="48" cy="15" r="4.5" fill="#000" />
+                        <circle cx="49" cy="14" r="1.5" fill="#FFF" />
+                        <circle cx="62" cy="15" r="4.5" fill="#000" />
+                        <circle cx="61" cy="14" r="1.5" fill="#FFF" />
+                        <ellipse cx="42" cy="8" rx="4" ry="8" fill="#757575" transform="rotate(-35 42 8)" />
+                        <ellipse cx="68" cy="8" rx="4" ry="8" fill="#757575" transform="rotate(35 68 8)" />
+                        <circle cx="55" cy="25" r="2" fill="#F48FB1" />
+                    </g>
+
+                    <g id="svg-emu">
+                        <rect x="45" y="60" width="5" height="45" fill="#795548" />
+                        <rect x="60" y="60" width="5" height="45" fill="#795548" />
+                        <polygon points="45,105 35,110 50,110" fill="#4E342E" />
+                        <polygon points="60,105 50,110 65,110" fill="#4E342E" />
+                        <ellipse cx="50" cy="50" rx="25" ry="18" fill="#5D4037" />
+                        <ellipse cx="50" cy="50" rx="22" ry="15" fill="#8D6E63" />
+                        <path d="M 65 40 Q 85 10 80 0 Q 70 15 55 50 Z" fill="#795548" />
+                        <circle cx="82" cy="0" r="6" fill="#4E342E" />
+                        <path d="M 87 -2 L 100 0 L 87 2 Z" fill="#212121" />
+                        <circle cx="84" cy="-2" r="1.5" fill="#F1C40F" />
+                    </g>
+
+                    <g id="svg-prof">
+                        <rect x="35" y="50" width="30" height="40" fill="#3498DB" rx="5" />
+                        <path d="M 25 50 L 75 50 L 70 100 L 30 100 Z" fill="none" stroke="#ECF0F1" stroke-width="8" />
+                        <circle cx="50" cy="30" r="18" fill="#F5CBA7" />
+                        <path d="M 25 25 Q 50 5 75 25" fill="#8B4513" />
+                        <path d="M 35 25 Q 50 -5 65 25 Z" fill="#8B4513" />
+                        <circle cx="43" cy="28" r="3" fill="#000" />
+                        <circle cx="57" cy="28" r="3" fill="#000" />
+                        <path d="M 38 28 L 48 28 M 52 28 L 62 28 M 48 28 L 52 28" stroke="#000" stroke-width="1.5" />
+                        <path d="M 45 38 Q 50 43 55 38" fill="none" stroke="#000" stroke-width="2" />
+                        <rect x="35" y="90" width="10" height="25" fill="#34495E" />
+                        <rect x="55" y="90" width="10" height="25" fill="#34495E" />
+                    </g>
+
+                    <g id="svg-player">
+                        <circle cx="20" cy="15" r="12" fill="#F5CBA7" />
+                        <rect x="10" y="25" width="20" height="15" fill="#3498DB" rx="4" />
+                        <path d="M 5 15 Q 20 0 35 15" stroke="#8B4513" stroke-width="3" fill="none" />
+                    </g>
+
+                    <g id="icon-bag">
+                        <rect x="10" y="30" width="80" height="60" rx="10" fill="#E67E22" />
+                        <path d="M 30 30 Q 50 10 70 30" fill="none" stroke="#D35400" stroke-width="8"
+                            stroke-linecap="round" />
+                        <rect x="40" y="45" width="20" height="10" fill="#F1C40F" rx="3" />
+                    </g>
+
+                    <g id="svg-quokka">
+                        <ellipse cx="50" cy="60" rx="28" ry="22" fill="#C68642" />
+                        <circle cx="65" cy="42" r="16" fill="#C68642" />
+                        <circle cx="72" cy="38" r="3" fill="#000" />
+                        <circle cx="72" cy="37" r="1" fill="#FFF" />
+                        <path d="M 68 48 Q 75 52 72 45" fill="none" stroke="#000" stroke-width="1.5" />
+                        <path d="M 78 30 L 85 18 L 88 32 Z" fill="#D4A76A" />
+                        <path d="M 58 32 L 55 18 L 50 30 Z" fill="#D4A76A" />
+                        <ellipse cx="50" cy="65" rx="15" ry="12" fill="#E8D5B7" />
+                        <rect x="35" y="75" width="8" height="15" fill="#A0522D" rx="3" />
+                        <rect x="58" y="75" width="8" height="15" fill="#A0522D" rx="3" />
+                        <path d="M 25 60 Q 10 55 15 70 Q 20 65 25 65" fill="#C68642" />
+                    </g>
+
+                    <g id="svg-dugong">
+                        <ellipse cx="50" cy="55" rx="40" ry="22" fill="#7F8C8D" />
+                        <ellipse cx="50" cy="60" rx="30" ry="15" fill="#BDC3C7" />
+                        <circle cx="80" cy="48" r="14" fill="#7F8C8D" />
+                        <path d="M 88 52 Q 95 58 88 60 Q 82 55 88 52 Z" fill="#95A5A6" />
+                        <circle cx="85" cy="46" r="2" fill="#000" />
+                        <path d="M 5 50 Q 0 40 10 35 Q 5 55 15 55" fill="#7F8C8D" />
+                        <path d="M 5 60 Q 0 70 10 75 Q 5 55 15 55" fill="#7F8C8D" />
+                        <path d="M 35 70 Q 40 80 50 75" fill="none" stroke="#95A5A6" stroke-width="6"
+                            stroke-linecap="round" />
+                        <path d="M 55 70 Q 60 80 65 75" fill="none" stroke="#95A5A6" stroke-width="6"
+                            stroke-linecap="round" />
+                    </g>
+
+                    <g id="svg-lyrebird">
+                        <ellipse cx="50" cy="60" rx="18" ry="25" fill="#5D4037" />
+                        <ellipse cx="50" cy="65" rx="12" ry="18" fill="#8D6E63" />
+                        <circle cx="50" cy="35" r="12" fill="#6D4C41" />
+                        <circle cx="55" cy="33" r="2" fill="#000" />
+                        <polygon points="58,38 70,40 58,42" fill="#3E2723" />
+                        <path d="M 35 50 Q 5 10 15 5" fill="none" stroke="#F1C40F" stroke-width="3" />
+                        <path d="M 38 50 Q 10 15 25 5" fill="none" stroke="#D4A017" stroke-width="2" />
+                        <path d="M 40 50 Q 15 20 30 8" fill="none" stroke="#F1C40F" stroke-width="2" />
+                        <path d="M 42 50 Q 20 25 35 12" fill="none" stroke="#E67E22" stroke-width="2" />
+                        <path d="M 65 50 Q 95 10 85 5" fill="none" stroke="#F1C40F" stroke-width="3" />
+                        <path d="M 62 50 Q 90 15 75 5" fill="none" stroke="#D4A017" stroke-width="2" />
+                        <path d="M 60 50 Q 85 20 70 8" fill="none" stroke="#F1C40F" stroke-width="2" />
+                        <rect x="42" y="82" width="5" height="18" fill="#5D4037" />
+                        <rect x="55" y="82" width="5" height="18" fill="#5D4037" />
+                    </g>
+
+                    <g id="svg-numbat">
+                        <ellipse cx="50" cy="60" rx="32" ry="14" fill="#C0392B" />
+                        <rect x="30" y="52" width="40" height="3" fill="#FFF" opacity="0.6" />
+                        <rect x="25" y="57" width="45" height="3" fill="#FFF" opacity="0.6" />
+                        <rect x="30" y="62" width="40" height="3" fill="#FFF" opacity="0.6" />
+                        <rect x="35" y="67" width="30" height="3" fill="#FFF" opacity="0.6" />
+                        <circle cx="80" cy="55" r="10" fill="#C0392B" />
+                        <polygon points="85,50 100,52 85,58" fill="#C0392B" />
+                        <circle cx="85" cy="50" r="2" fill="#000" />
+                        <path d="M 92 54 L 105 54" stroke="#C0392B" stroke-width="1" />
+                        <path d="M 15 60 Q 5 50 10 70 Q 15 55 25 60" fill="#8B4513" />
+                        <rect x="38" y="72" width="6" height="12" fill="#8B4513" rx="2" />
+                        <rect x="60" y="72" width="6" height="12" fill="#8B4513" rx="2" />
+                    </g>
+
+                    <g id="svg-bullshark">
+                        <ellipse cx="50" cy="55" rx="40" ry="18" fill="#546E7A" />
+                        <polygon points="50,38 58,25 50,42" fill="#546E7A" />
+                        <path d="M 5 55 L 0 40 L 15 50" fill="#546E7A" />
+                        <path d="M 5 55 L 0 70 L 15 60" fill="#546E7A" />
+                        <path d="M 85 50 Q 100 55 85 60 Z" fill="#546E7A" />
+                        <ellipse cx="50" cy="60" rx="30" ry="12" fill="#B0BEC5" />
+                        <circle cx="78" cy="50" r="3" fill="#FFF" />
+                        <circle cx="78" cy="50" r="1.5" fill="#000" />
+                        <path d="M 82 58 L 95 60 L 82 62" fill="#FFF" />
+                        <path d="M 84 59 L 90 60 L 84 61" fill="#FFF" />
+                        <line x1="86" y1="59" x2="88" y2="60" stroke="#000" stroke-width="0.5" />
+                        <line x1="86" y1="61" x2="88" y2="60" stroke="#000" stroke-width="0.5" />
+                    </g>
+
+                    <g id="svg-boat">
+                        <path d="M 5 65 Q 20 80 80 80 L 95 65 Z" fill="#5D4037" />
+                        <rect x="30" y="40" width="5" height="25" fill="#3E2723" />
+                        <polygon points="35,42 70,55 35,60" fill="#ECF0F1" />
+                        <path d="M 15 65 Q 50 55 85 65" fill="none" stroke="#F1C40F" stroke-width="3" />
+                    </g>
+
+                    <g id="svg-possum">
+                        <ellipse cx="50" cy="58" rx="18" ry="20" fill="#6D4C41" />
+                        <circle cx="55" cy="40" r="14" fill="#8D6E63" />
+                        <circle cx="60" cy="37" r="2.5" fill="#000" />
+                        <circle cx="60" cy="36" r="1" fill="#FFF" />
+                        <path d="M 65 30 L 72 20 L 68 30" fill="#D7CCC8" />
+                        <path d="M 45 30 L 38 20 L 42 30" fill="#D7CCC8" />
+                        <ellipse cx="50" cy="62" rx="12" ry="10" fill="#BCAAA4" />
+                        <path d="M 30 55 Q 15 45 10 60 Q 15 65 25 58" fill="#6D4C41" />
+                        <rect x="40" y="75" width="6" height="12" fill="#5D4037" rx="2" />
+                        <rect x="55" y="75" width="6" height="12" fill="#5D4037" rx="2" />
+                    </g>
+
+                    <g id="svg-quoll">
+                        <ellipse cx="50" cy="58" rx="28" ry="16" fill="#8B4513" />
+                        <circle cx="75" cy="52" r="12" fill="#A0522D" />
+                        <polygon points="80,45 90,38 85,48" fill="#D2691E" />
+                        <polygon points="72,44 65,36 70,46" fill="#D2691E" />
+                        <circle cx="80" cy="50" r="2" fill="#000" />
+                        <circle cx="82" cy="55" r="1" fill="#FFC0CB" />
+                        <circle cx="45" cy="54" r="3" fill="#FFF" opacity="0.7" />
+                        <circle cx="55" cy="58" r="2" fill="#FFF" opacity="0.7" />
+                        <circle cx="38" cy="60" r="2.5" fill="#FFF" opacity="0.7" />
+                        <circle cx="60" cy="52" r="2" fill="#FFF" opacity="0.7" />
+                        <circle cx="50" cy="62" r="1.5" fill="#FFF" opacity="0.7" />
+                        <path d="M 22 58 Q 10 50 8 62 Q 12 58 18 60" fill="#8B4513" />
+                        <rect x="38" y="72" width="7" height="10" fill="#6D4C41" rx="2" />
+                        <rect x="58" y="72" width="7" height="10" fill="#6D4C41" rx="2" />
+                    </g>
+
+                    <g id="svg-frog">
+                        <ellipse cx="50" cy="60" rx="25" ry="18" fill="#1B5E20" />
+                        <rect x="30" y="50" width="40" height="5" fill="#F1C40F" rx="2" />
+                        <rect x="28" y="58" width="44" height="5" fill="#F1C40F" rx="2" />
+                        <rect x="32" y="66" width="36" height="5" fill="#F1C40F" rx="2" />
+                        <circle cx="40" cy="42" r="10" fill="#1B5E20" />
+                        <circle cx="60" cy="42" r="10" fill="#1B5E20" />
+                        <circle cx="40" cy="40" r="5" fill="#FFF" />
+                        <circle cx="60" cy="40" r="5" fill="#FFF" />
+                        <circle cx="41" cy="40" r="3" fill="#000" />
+                        <circle cx="61" cy="40" r="3" fill="#000" />
+                        <path d="M 25 75 Q 20 85 30 82 L 35 75" fill="#1B5E20" />
+                        <path d="M 65 75 Q 80 85 70 82 L 65 75" fill="#1B5E20" />
+                    </g>
+
+                    <g id="svg-turtle">
+                        <ellipse cx="50" cy="55" rx="35" ry="25" fill="#795548" />
+                        <ellipse cx="50" cy="55" rx="28" ry="20" fill="#A1887F" />
+                        <path d="M 35 42 L 50 35 L 65 42 L 60 52 L 40 52 Z" fill="#795548" />
+                        <path d="M 50 52 L 50 70" stroke="#795548" stroke-width="2" />
+                        <path d="M 38 50 L 62 50" stroke="#795548" stroke-width="2" />
+                        <circle cx="85" cy="50" r="8" fill="#8D6E63" />
+                        <circle cx="88" cy="48" r="2" fill="#000" />
+                        <path d="M 92 52 L 98 54 L 92 55" fill="#8D6E63" />
+                        <path d="M 20 45 Q 5 40 8 50 Q 15 48 20 50" fill="#8D6E63" />
+                        <path d="M 20 60 Q 5 62 8 55 Q 15 58 20 58" fill="#8D6E63" />
+                        <path d="M 80 62 Q 85 70 78 68" fill="#8D6E63" />
+                        <path d="M 80 45 Q 85 38 78 42" fill="#8D6E63" />
+                        <path d="M 15 55 Q 5 58 8 48" fill="#795548" />
+                    </g>
+                </defs>
+            </svg>
+
+            <div id="screen-overworld" class="screen">
+                <canvas id="map-canvas" width="900" height="650"></canvas>
+                <div id="weather-overlay"></div>
+
+                <div class="map-info-panel">
+                    <h3 style="margin:0; color:var(--primary-dark);" id="map-location-name">Eucalyptus Forest</h3>
+                    <span style="font-size:12px; color:#7f8c8d;" id="map-time-display">Time: Day</span>
+                </div>
+
+                <div id="overworld-ui">
+                    <button class="btn" onclick="Game.openMenu('party')">Research Team</button>
+                    <button class="btn" onclick="Game.openMenu('bag')">Inventory</button>
+                    <button class="btn" onclick="Game.openMenu('ecodex')">Adapto-Dex</button>
+                </div>
+
+                <div class="controls-hint">
+                    Use <b>W, A, S, D</b> to move.<br>Walk in tall grass for battles!<br>Press <b>B</b> near water for
+                    boat!
+                </div>
+
+                <div id="encounter-flash"></div>
+            </div>
+
+            <div id="screen-town" class="screen">
+                <div style="padding:20px; text-align:center;">
+                    <h2 style="color:var(--primary-dark); margin-bottom:5px;">🏘️ Research Base Camp</h2>
+                    <p style="color:#7f8c8d; margin:0 0 15px;">Rest your team and stock up on supplies!</p>
+                </div>
+                <div style="display:flex; gap:20px; padding:0 30px; flex:1; overflow:auto;">
+                    <div
+                        style="flex:1; background:#fff; border:6px solid var(--ui-border); border-radius:12px; padding:25px; display:flex; flex-direction:column; align-items:center;">
+                        <div style="font-size:60px; margin-bottom:10px;">🏥</div>
+                        <h3 style="color:var(--primary); margin-bottom:10px;">Healing Centre</h3>
+                        <p style="color:#555; margin-bottom:20px; text-align:center;">Fully restore all your animals to
+                            max energy. Free of charge!</p>
+                        <button class="btn" onclick="Town.heal()" style="font-size:18px;">Heal All Animals</button>
+                    </div>
+                    <div
+                        style="flex:1.5; background:#fff; border:6px solid var(--ui-border); border-radius:12px; padding:25px;">
+                        <div style="text-align:center; font-size:60px; margin-bottom:10px;">🛒</div>
+                        <h3 style="text-align:center; color:var(--primary); margin-bottom:15px;">Supply Shop</h3>
+                        <div id="shop-items"></div>
+                    </div>
+                </div>
+                <div style="padding:20px; text-align:center;">
+                    <button class="btn" onclick="Town.leave()" style="font-size:18px;">Leave Town</button>
+                </div>
+            </div>
+
+            <div id="screen-title" class="screen active-screen">
+                <div class="title-logo-container">
+                    <svg viewBox="0 0 100 100" width="100%" height="100%">
+                        <use href="#svg-kangaroo"></use>
+                    </svg>
+                </div>
+                <h1>EcoDex Australia</h1>
+                <div class="subtitle">Adapto-Battles | Year 6 Science Edition</div>
+                <button class="btn" style="font-size:24px; padding: 15px 40px;"
+                    onclick="Game.switchScreen('intro')">Press Start</button>
+            </div>
+
+            <div id="screen-intro" class="screen">
+                <div class="prof-container">
+                    <svg class="prof-sprite" viewBox="0 0 100 120">
+                        <use href="#svg-prof"></use>
+                    </svg>
+                </div>
+                <div id="intro-dialog-overlay" onclick="Intro.next()">
+                    <span id="intro-dialog-text"></span>
+                    <span id="intro-dialog-indicator">▼</span>
+                </div>
+            </div>
+
+            <div id="screen-starter" class="screen">
+                <div class="starter-header">
+                    <h2 style="font-size:36px; color:var(--text-dark);">Choose Your Partner!</h2>
+                    <p style="font-size:18px; color:#555;">Select an animal to begin your field research.</p>
+                </div>
+                <div class="starter-grid">
+                    <div class="starter-card" onclick="Game.chooseStarter('Kangaroo')">
+                        <svg viewBox="0 0 100 100">
+                            <use href="#svg-kangaroo"></use>
+                        </svg>
+                        <h3>Red Kangaroo</h3>
+                        <span class="badge" style="background:var(--type-arid)">Arid Biome</span>
+                    </div>
+                    <div class="starter-card" onclick="Game.chooseStarter('Platypus')">
+                        <svg viewBox="0 0 100 100">
+                            <use href="#svg-platypus"></use>
+                        </svg>
+                        <h3>Platypus</h3>
+                        <span class="badge" style="background:var(--type-aquatic)">Aquatic Biome</span>
+                    </div>
+                    <div class="starter-card" onclick="Game.chooseStarter('Koala')">
+                        <svg viewBox="0 0 100 100">
+                            <use href="#svg-koala"></use>
+                        </svg>
+                        <h3>Koala</h3>
+                        <span class="badge" style="background:var(--type-forest)">Forest Biome</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="screen-battle" class="screen">
+                <div id="battle-bg" class="battle-bg bg-normal"></div>
+
+                <div class="battle-platform platform-enemy"></div>
+                <div class="battle-platform platform-player"></div>
+
+                <div id="enemy-sprite" class="sprite-container anim-idle">
+                    <svg id="enemy-svg-use" viewBox="0 0 100 100"></svg>
+                </div>
+                <div id="player-sprite" class="sprite-container anim-idle-player">
+                    <svg id="player-svg-use" viewBox="0 0 100 100"></svg>
+                </div>
+
+                <div id="tracker-ball"></div>
+
+                <div id="enemy-hud" class="hud">
+                    <div class="hud-header">
+                        <span id="enemy-name">Wild Animal</span>
+                        <span>Lv <span id="enemy-lvl">5</span></span>
+                    </div>
+                    <div class="hp-bar-container">
+                        <div id="enemy-hp-bar" class="hp-bar"></div>
+                    </div>
+                    <div class="status-tray" id="enemy-status-tray"></div>
+                </div>
+
+                <div id="player-hud" class="hud">
+                    <div class="hud-header">
+                        <span id="player-name">My Animal</span>
+                        <span>Lv <span id="player-lvl">5</span></span>
+                    </div>
+                    <div class="hp-bar-container">
+                        <div id="player-hp-bar" class="hp-bar"></div>
+                    </div>
+                    <div class="hp-text" id="player-hp-text">20/20</div>
+                    <div class="status-tray" id="player-status-tray"></div>
+                </div>
+
+                <div class="battle-ui-panel">
+                    <div id="battle-dialog-box" onclick="Battle.advanceDialog()">
+                        <span id="battle-dialog-text">A wild animal appeared!</span>
+                        <span id="battle-dialog-indicator" style="display:none;">▼</span>
+                    </div>
+                    <div id="battle-menu">
+                        <button class="battle-btn" onclick="Battle.showMoves()">Adaptations</button>
+                        <button class="battle-btn" onclick="Game.openMenu('bag', true)">Bag</button>
+                        <button class="battle-btn" onclick="Game.openMenu('party', true)">Team</button>
+                        <button class="battle-btn" onclick="Battle.flee()" style="color:var(--accent);">Flee</button>
+                    </div>
+                </div>
+
+                <div id="moves-menu">
+                    <div class="moves-grid" id="moves-grid-container"></div>
+                    <div class="moves-cancel" onclick="Battle.hideMoves()">Cancel</div>
+                </div>
+
+                <div id="science-fact-popup">
+                    <h3
+                        style="color:var(--primary-dark); border-bottom:3px solid var(--primary); padding-bottom:8px; margin-bottom:12px; font-size:22px;">
+                        Science Fact Logged!</h3>
+                    <p id="science-fact-text" style="font-size:18px; color:var(--text-dark);"></p>
+                    <div style="text-align:center; margin-top:20px;">
+                        <button class="btn"
+                            onclick="document.getElementById('science-fact-popup').style.display='none'; Battle.resumeAfterFact();">Fascinating!</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="quiz-overlay">
+                <div class="quiz-box">
+                    <h2>Eco-Tracker Authorization</h2>
+                    <p class="quiz-desc">Demonstrate your knowledge of this animal's adaptations to safely attach a
+                        tracker.</p>
+                    <div class="quiz-q" id="quiz-question">Question text goes here?</div>
+                    <div class="quiz-options" id="quiz-options-container">
+                    </div>
+                </div>
+            </div>
+
+            <div id="screen-ecodex" class="screen menu-screen">
+                <div class="menu-header">
+                    <h2>Adapto-Dex Database</h2>
+                    <button class="btn" onclick="Game.closeMenu()">Close Dex</button>
+                </div>
+                <div class="ecodex-layout">
+                    <div class="ecodex-list" id="ecodex-list"></div>
+                    <div class="ecodex-details" id="ecodex-details">
+                        <div style="text-align:center; margin-top:150px; color:#95a5a6;">
+                            <svg viewBox="0 0 100 100" width="80" height="80"
+                                style="margin-bottom:20px; filter:grayscale(1); opacity:0.5;">
+                                <use href="#svg-kangaroo"></use>
+                            </svg>
+                            <h3>Select a logged animal to view its adaptation data.</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="screen-party" class="screen menu-screen">
+                <div class="menu-header">
+                    <h2>Research Team</h2>
+                    <button class="btn" onclick="Game.closeMenu()">Close Team</button>
+                </div>
+                <div class="party-grid" id="party-grid"></div>
+            </div>
+
+            <div id="screen-bag" class="screen menu-screen">
+                <div class="menu-header">
+                    <h2>Inventory Bag</h2>
+                    <button class="btn" onclick="Game.closeMenu()">Close Bag</button>
+                </div>
+                <div class="bag-layout">
+                    <div class="bag-list" id="bag-list"></div>
+                    <div class="bag-desc">
+                        <div class="bag-desc-icon">
+                            <svg viewBox="0 0 100 100" width="80" height="80">
+                                <use href="#icon-bag"></use>
+                            </svg>
+                        </div>
+                        <h3 id="item-desc-title">Select an Item</h3>
+                        <p id="item-desc-text">Hover over or click an item in your bag to see its description and
+                            effects.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="toast-notification">Notification</div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ==========================================================================
+         * JAVASCRIPT GAME ENGINE: AUSSIE ADAPTO-BATTLES
+         * Aligned with Year 6 Science: Biological Sciences (Adaptations)
+         * ==========================================================================
+         */
+
+        /* --------------------------------------------------------------------------
+           1. AUDIO SYNTHESIZER (Web Audio API)
+           Provides retro sound effects without needing external files.
+        -------------------------------------------------------------------------- */
+        class AudioEngine {
+            constructor() { this.ctx = null; }
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+
+            playTone(freq, type, duration, vol = 0.1) {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            // SFX Library
+            step() { this.init(); this.playTone(150, 'triangle', 0.05, 0.05); }
+            select() { this.init(); this.playTone(600, 'sine', 0.1, 0.1); }
+            hit() { this.init(); this.playTone(100, 'sawtooth', 0.2, 0.2); setTimeout(() => this.playTone(80, 'square', 0.2, 0.2), 50); }
+            heal() { this.init(); this.playTone(400, 'triangle', 0.1, 0.1); setTimeout(() => this.playTone(600, 'triangle', 0.3, 0.1), 100); }
+            encounter() { this.init(); this.playTone(800, 'square', 0.1, 0.1); setTimeout(() => this.playTone(1200, 'square', 0.3, 0.1), 150); }
+            faint() { this.init(); this.playTone(200, 'sawtooth', 0.3, 0.2); setTimeout(() => this.playTone(150, 'sawtooth', 0.5, 0.2), 200); }
+            success() { this.init();[400, 500, 600, 800].forEach((f, i) => setTimeout(() => this.playTone(f, 'square', 0.2, 0.1), i * 150)); }
+            error() { this.init(); this.playTone(200, 'sawtooth', 0.2, 0.2); setTimeout(() => this.playTone(150, 'sawtooth', 0.3, 0.2), 150); }
+        }
+        const SFX = new AudioEngine();
+
+        /* --------------------------------------------------------------------------
+           2. PARTICLE ENGINE
+           Generates temporary DOM elements for visual flair during battles.
+        -------------------------------------------------------------------------- */
+        class ParticleEngine {
+            static spawn(elementId, color, count, type = 'burst') {
+                const el = document.getElementById(elementId);
+                if (!el) return;
+                const rect = el.getBoundingClientRect();
+                const parentRect = document.getElementById('screen-battle').getBoundingClientRect();
+
+                // Calculate center relative to the battle screen
+                const cx = (rect.left - parentRect.left) + rect.width / 2;
+                const cy = (rect.top - parentRect.top) + rect.height / 2;
+
+                for (let i = 0; i < count; i++) {
+                    const p = document.createElement('div');
+                    p.className = 'particle';
+                    p.style.backgroundColor = color;
+                    p.style.width = Math.random() * 12 + 6 + 'px';
+                    p.style.height = p.style.width;
+                    p.style.left = cx + 'px';
+                    p.style.top = cy + 'px';
+                    document.getElementById('screen-battle').appendChild(p);
+
+                    if (type === 'burst') {
+                        const angle = Math.random() * Math.PI * 2;
+                        const speed = Math.random() * 100 + 40;
+                        const tx = Math.cos(angle) * speed;
+                        const ty = Math.sin(angle) * speed;
+
+                        p.animate([
+                            { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                            { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                        ], { duration: 500 + Math.random() * 500, easing: 'cubic-bezier(0, .9, .57, 1)' });
+                    } else if (type === 'float') {
+                        const tx = (Math.random() - 0.5) * 50;
+                        const ty = -(Math.random() * 100 + 50);
+                        p.animate([
+                            { transform: 'translate(0,0) scale(0)', opacity: 0 },
+                            { transform: `translate(${tx / 2}px, ${ty / 2}px) scale(1)`, opacity: 1, offset: 0.5 },
+                            { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                        ], { duration: 1000 + Math.random() * 1000, easing: 'ease-in-out' });
+                    }
+
+                    setTimeout(() => p.remove(), 2000);
+                }
+            }
+        }
+
+        /* --------------------------------------------------------------------------
+           3. TYPE EFFECTIVENESS (Biome Matrix)
+           Rock-Paper-Scissors style logic based on environmental advantages.
+        -------------------------------------------------------------------------- */
+        const TYPE_CHART = {
+            "Forest": { strong: "Aquatic", weak: "Arid", text: "Forest roots absorb Water!" },
+            "Aquatic": { strong: "Arid", weak: "Forest", text: "Water erodes the Arid sand!" },
+            "Arid": { strong: "Bushland", weak: "Aquatic", text: "Arid heat dries out the Bushland!" },
+            "Bushland": { strong: "Forest", weak: "Arid", text: "Bushland scrub overtakes the Forest!" },
+            "Normal": { strong: null, weak: null, text: "" }
+        };
+
+        /* --------------------------------------------------------------------------
+           4. DATABASE: MOVES & ADAPTATIONS
+           Detailed, scientifically accurate moves based on Year 6 curriculum.
+        -------------------------------------------------------------------------- */
+        const MOVE_DB = {
+            // Kangaroo
+            "Tendon Bounce": { name: "Tendon Bounce", type: "Normal", category: "Physiological", power: 40, acc: 100, effect: null, fact: "Physiological: Large elastic Achilles tendons store energy when landing, propelling the next hop efficiently." },
+            "Forearm Lick": { name: "Forearm Lick", type: "Normal", category: "Behavioral", power: 0, heal: 35, acc: 100, effect: "buff_def", fact: "Behavioral: Kangaroos lick their forearms where blood vessels sit near the skin. Evaporating saliva dramatically cools their blood." },
+            "Muscular Tail": { name: "Muscular Tail", type: "Normal", category: "Structural", power: 55, acc: 90, effect: null, fact: "Structural: A thick, muscular tail acts as a fifth limb, providing immense balance and allowing powerful forward kicks." },
+            "Diapause": { name: "Diapause", type: "Normal", category: "Physiological", power: 0, heal: 50, acc: 100, effect: "buff_def", fact: "Physiological: Embryonic diapause allows females to pause embryo development during severe drought until environmental conditions improve." },
+
+            // Koala
+            "Two-Thumb Grip": { name: "Two-Thumb Grip", type: "Normal", category: "Structural", power: 45, acc: 100, effect: null, fact: "Structural: Having two opposable thumbs on their front paws provides a vice-like grip on smooth, vertical eucalyptus branches." },
+            "Toxic Digest": { name: "Toxic Digest", type: "Forest", category: "Physiological", power: 60, acc: 90, effect: null, fact: "Physiological: An elongated caecum containing specific gut bacteria allows them to safely break down highly toxic eucalyptus oils." },
+            "20-Hour Sleep": { name: "20-Hour Sleep", type: "Normal", category: "Behavioral", power: 0, heal: 45, acc: 100, effect: null, fact: "Behavioral: Sleeps up to 20 hours a day to conserve energy, as their exclusive eucalyptus diet provides very little nutrition." },
+
+            // Platypus
+            "Electro-Hunt": { name: "Electro-Hunt", type: "Aquatic", category: "Physiological", power: 65, acc: 100, effect: null, fact: "Physiological: The bill is packed with electroreceptors that detect tiny electrical impulses generated by the muscles of prey hidden in mud." },
+            "Venom Spur": { name: "Venom Spur", type: "Aquatic", category: "Structural", power: 75, acc: 80, effect: "debuff_atk", fact: "Structural/Physiological: Males possess a hollow spur on their hind leg connected to a venom gland, used primarily for defense and competition." },
+            "Waterproof Coat": { name: "Waterproof Coat", type: "Normal", category: "Structural", power: 0, heal: 0, buff: "def", acc: 100, effect: "buff_def", fact: "Structural: Extremely dense, double-layered fur traps a layer of air next to the skin, keeping it perfectly dry and warm in freezing rivers." },
+
+            // Thorny Devil
+            "Capillary Drink": { name: "Capillary Drink", type: "Normal", category: "Physiological", power: 0, heal: 40, acc: 100, effect: null, fact: "Physiological: Hygroscopic grooves between its spikes draw condensed dew or damp sand moisture against gravity directly to its mouth." },
+            "False Head": { name: "False Head", type: "Normal", category: "Structural", power: 0, heal: 0, buff: "def", acc: 100, effect: "buff_def", fact: "Structural: When threatened, it presents a spiky, fatty knob on its neck to predators while tucking its real head safely between its front legs." },
+            "Freeze Walk": { name: "Freeze Walk", type: "Arid", category: "Behavioral", power: 40, acc: 100, effect: "buff_spd", fact: "Behavioral: Walks with a jerky, stop-start, freezing motion to camouflage itself as a leaf blowing in the wind, avoiding predator detection." },
+            "Spiky Armor": { name: "Spiky Armor", type: "Normal", category: "Structural", power: 35, acc: 100, effect: null, fact: "Structural: Entirely covered in sharp, conical keratin spines, making it incredibly difficult for snakes or birds to swallow." },
+
+            // Wombat
+            "Cartilage Shield": { name: "Cartilage Shield", type: "Normal", category: "Structural", power: 60, acc: 95, effect: "buff_def", fact: "Structural: The rump consists of heavily toughened cartilage. They dive into burrows and use this shield to block entrances and crush predators." },
+            "Deep Burrow": { name: "Deep Burrow", type: "Forest", category: "Behavioral", power: 0, heal: 20, acc: 100, effect: "buff_def", fact: "Behavioral: Digs extensive underground tunnel networks to maintain a stable, cool temperature and escape devastating bushfires." },
+            "Cubic Scat": { name: "Cubic Scat", type: "Normal", category: "Physiological", power: 30, acc: 100, effect: "debuff_spd", fact: "Physiological: An incredibly slow digestive system extracts maximum water, resulting in dry, cube-shaped scat that won't roll off territory marking rocks." },
+
+            // Echidna
+            "Spine Curl": { name: "Spine Curl", type: "Normal", category: "Behavioral", power: 0, heal: 0, acc: 100, effect: "buff_def", fact: "Behavioral: When threatened on hard ground, it rolls into a tight ball, protecting its soft underbelly and exposing only sharp keratin spines." },
+            "Sticky Tongue": { name: "Sticky Tongue", type: "Normal", category: "Structural", power: 45, acc: 95, effect: null, fact: "Structural: Lacking teeth, it uses a rapid, sticky 18cm long tongue to quickly collect ants and termites from narrow crevices." },
+            "Torpor": { name: "Torpor", type: "Normal", category: "Physiological", power: 0, heal: 35, acc: 100, effect: "buff_def", fact: "Physiological: Lowers its body temperature and metabolism significantly (torpor) to survive periods of extreme cold or post-bushfire food scarcity." },
+
+            // Cassowary
+            "Dagger Claw": { name: "Dagger Claw", type: "Normal", category: "Structural", power: 85, acc: 75, effect: null, fact: "Structural: The inner toe of each foot is equipped with a lethal, dagger-like spike up to 12cm long, used to deliver devastating defensive kicks." },
+            "Casque Ram": { name: "Casque Ram", type: "Normal", category: "Structural", power: 55, acc: 90, effect: null, fact: "Structural: A large, keratinous helmet (casque) on its head protects its skull as it sprints full speed through dense, thorny rainforest vines." },
+            "Seed Dispersal": { name: "Seed Dispersal", type: "Forest", category: "Behavioral", power: 45, acc: 100, heal: 20, effect: null, fact: "Behavioral: Eats large rainforest fruits whole. The seeds pass through unharmed, making them vital ecosystem 'gardeners' for forest regeneration." },
+
+            // Dingo
+            "Pack Hunt": { name: "Pack Hunt", type: "Normal", category: "Behavioral", power: 60, acc: 95, effect: "buff_atk", fact: "Behavioral: Highly social, intelligent carnivores that coordinate in packs to take down prey much larger than themselves, like adult kangaroos." },
+            "Flexible Wrists": { name: "Flexible Wrists", type: "Normal", category: "Structural", power: 45, acc: 100, effect: null, fact: "Structural: Unlike domestic dogs, dingoes possess rotary wrists, allowing them to manipulate objects, open doors, and even climb fences or trees." },
+
+            // Crocodile
+            "Death Roll": { name: "Death Roll", type: "Aquatic", category: "Behavioral", power: 95, acc: 70, effect: null, fact: "Behavioral: Because they cannot chew, they grab large prey and violently spin underwater to disorient it and tear off manageable chunks of meat." },
+            "Salt Glands": { name: "Salt Glands", type: "Aquatic", category: "Physiological", power: 0, heal: 45, acc: 100, effect: null, fact: "Physiological: Specialized lingual (tongue) salt glands excrete excess salt from their bodies, allowing them to survive and hunt in highly saline oceans." },
+            "Stealth Eyes": { name: "Stealth Eyes", type: "Normal", category: "Structural", power: 40, acc: 100, effect: "buff_atk", fact: "Structural: Eyes and nostrils are positioned on the very top of the skull, allowing the massive body to remain completely hidden underwater while hunting." },
+
+            // Kookaburra
+            "Laughing Call": { name: "Laughing Call", type: "Normal", category: "Behavioral", power: 0, heal: 0, acc: 100, effect: "debuff_atk", fact: "Behavioral: Emits a loud, echoing laugh at dawn and dusk to establish territory boundaries and warn rival family groups to stay away." },
+            "Drop Catch": { name: "Drop Catch", type: "Normal", category: "Behavioral", power: 55, acc: 95, effect: null, fact: "Behavioral: Sits motionless on a high branch scanning the ground, then drops silently to snatch venomous snakes or lizards behind the head." },
+
+            // Bilby
+            "Radiator Ears": { name: "Radiator Ears", type: "Normal", category: "Structural", power: 0, heal: 0, acc: 100, effect: "buff_def", fact: "Structural: Enormous, hairless ears provide excellent hearing and act like radiators, releasing excess body heat to stay cool in the hot desert." },
+            "Concentrate Urine": { name: "Concentrate Urine", type: "Arid", category: "Physiological", power: 0, heal: 35, acc: 100, effect: null, fact: "Physiological: Highly efficient kidneys extract maximum water from waste. They rarely need to drink, getting moisture entirely from seeds and insects." },
+
+            // Frilled Lizard
+            "Neck Frill Flare": { name: "Neck Frill Flare", type: "Normal", category: "Structural", power: 0, heal: 0, acc: 100, effect: "debuff_atk", fact: "Structural: A large flap of skin supported by long cartilage spines unfurls around its neck to make the lizard appear much larger to predators." },
+            "Bipedal Sprint": { name: "Bipedal Sprint", type: "Normal", category: "Behavioral", power: 50, acc: 95, effect: "buff_spd", fact: "Behavioral: When the frill display fails, it turns and sprints rapidly on its two hind legs (bipedal locomotion) to reach the safety of the nearest tree." },
+
+            // Tasmanian Devil
+            "Bone Crush Jaw": { name: "Bone Crush Jaw", type: "Normal", category: "Structural", power: 70, acc: 85, effect: null, fact: "Structural: Possesses one of the strongest bite forces relative to body mass of any land predator, allowing it to completely consume bones and fur." },
+            "Fat Tail Storage": { name: "Fat Tail Storage", type: "Normal", category: "Physiological", power: 0, heal: 45, acc: 100, effect: null, fact: "Physiological: A healthy devil stores excess body fat in its tail to draw upon for energy during times when scavenging yields no food." },
+
+            // Sugar Glider
+            "Patagium Glide": { name: "Patagium Glide", type: "Forest", category: "Structural", power: 45, acc: 100, effect: "buff_spd", fact: "Structural: A membrane of skin (patagium) stretching from wrists to ankles acts like a parachute, allowing it to glide up to 50 meters between trees." },
+            "Huddle Warmth": { name: "Huddle Warmth", type: "Normal", category: "Behavioral", power: 0, heal: 30, acc: 100, effect: "buff_def", fact: "Behavioral: Highly social; groups of gliders huddle tightly together inside tree hollows during cold winter nights to share and conserve body heat." },
+
+            // Emu
+            "Endurance Legs": { name: "Endurance Legs", type: "Normal", category: "Structural", power: 60, acc: 95, effect: null, fact: "Structural: Very long, strong legs let them run at 50 km/h and kick hard enough to break bones." },
+            "Nasal Condenser": { name: "Nasal Condenser", type: "Arid", category: "Physiological", power: 0, heal: 40, acc: 100, effect: null, fact: "Physiological: Folded passages inside the nose cool the air they breathe out, saving water from every breath." },
+            "Double Feathers": { name: "Double Feathers", type: "Normal", category: "Structural", power: 0, heal: 0, acc: 100, effect: "buff_def", fact: "Structural: Each feather shaft splits into two, trapping air and keeping the emu warm in cold nights and cool in hot days." },
+
+            // Quokka
+            "Happy Smile": { name: "Happy Smile", type: "Normal", category: "Structural", power: 0, heal: 0, acc: 100, effect: "debuff_atk", fact: "Structural: The quokka's mouth shape makes it look like it's smiling. This is just how its jaw is built, not a real smile!" },
+            "Island Survivor": { name: "Island Survivor", type: "Normal", category: "Behavioral", power: 35, acc: 100, effect: null, fact: "Behavioral: Quokkas survive on Rottnest Island by eating tough, dry plants that other animals can't digest." },
+            "Joey Toss": { name: "Joey Toss", type: "Normal", category: "Behavioral", power: 50, acc: 85, effect: null, fact: "Behavioral: When chased by a predator, a mother quokka may drop her joey from her pouch. The joey wiggles and distracts the predator while mum escapes." },
+            "Night Grazer": { name: "Night Grazer", type: "Normal", category: "Behavioral", power: 0, heal: 30, acc: 100, effect: "buff_spd", fact: "Behavioral: Quokkas feed at night to avoid the hot sun, saving energy and water during the day." },
+
+            // Dugong
+            "Seagrass Munch": { name: "Seagrass Munch", type: "Aquatic", category: "Behavioral", power: 0, heal: 45, acc: 100, effect: null, fact: "Behavioral: Dugongs eat only seagrass. They graze the ocean floor like underwater cows, eating up to 40 kg per day." },
+            "Thick Skin": { name: "Thick Skin", type: "Normal", category: "Structural", power: 0, heal: 0, acc: 100, effect: "buff_def", fact: "Structural: Dugongs have very thick skin (2-3 cm) that protects them from scrapes on coral and bites from sharks." },
+            "Tail Fluke": { name: "Tail Fluke", type: "Aquatic", category: "Structural", power: 50, acc: 95, effect: null, fact: "Structural: Like a whale, the dugong has a flat tail fluke that pushes it through the water with strong up-and-down strokes." },
+            "Breath Hold": { name: "Breath Hold", type: "Normal", category: "Physiological", power: 0, heal: 25, acc: 100, effect: "buff_def", fact: "Physiological: Dugongs can hold their breath for up to 6 minutes while diving to find seagrass beds on the ocean floor." },
+
+            // Lyrebird
+            "Sound Copy": { name: "Sound Copy", type: "Forest", category: "Behavioral", power: 55, acc: 100, effect: "debuff_atk", fact: "Behavioral: Lyrebirds can copy almost any sound — chainsaws, camera clicks, car alarms, and other bird calls — to confuse predators and attract mates." },
+            "Tail Dance": { name: "Tail Dance", type: "Normal", category: "Behavioral", power: 0, heal: 0, acc: 100, effect: "buff_atk", fact: "Behavioral: Males fan their beautiful tail feathers over their body and dance to impress females. The better the dance, the more mates they get." },
+            "Forest Scratch": { name: "Forest Scratch", type: "Forest", category: "Structural", power: 45, acc: 95, effect: null, fact: "Structural: Their strong legs and claws dig through leaf litter on the forest floor to find insects, worms, and spiders to eat." },
+            "Camouflage Feathers": { name: "Camouflage Feathers", type: "Normal", category: "Structural", power: 0, heal: 0, acc: 100, effect: "buff_def", fact: "Structural: Female lyrebirds have brown feathers that blend in perfectly with the forest floor, hiding them from eagles and foxes." },
+
+            // Numbat
+            "Long Tongue": { name: "Long Tongue", type: "Normal", category: "Structural", power: 40, acc: 100, effect: null, fact: "Structural: The numbat has a sticky tongue up to 10 cm long that flicks in and out to catch termites from tiny holes." },
+            "Termite Feast": { name: "Termite Feast", type: "Bushland", category: "Behavioral", power: 0, heal: 35, acc: 100, effect: null, fact: "Behavioral: Numbats eat up to 20,000 termites every single day! They are one of the only marsupials active during daytime." },
+            "Stripe Hide": { name: "Stripe Hide", type: "Normal", category: "Structural", power: 0, heal: 0, acc: 100, effect: "buff_def", fact: "Structural: White stripes across the body break up the numbat's outline, making it harder for predators like hawks to spot it." },
+            "Log Shelter": { name: "Log Shelter", type: "Bushland", category: "Behavioral", power: 30, acc: 100, effect: "buff_def", fact: "Behavioral: Numbats sleep in hollow logs at night. Their flat skull lets them squeeze into very tight spaces to hide from foxes." },
+
+            // Bull Shark
+            "Freshwater Adapt": { name: "Freshwater Adapt", type: "Aquatic", category: "Physiological", power: 0, heal: 35, acc: 100, effect: "buff_def", fact: "Physiological: Bull sharks can swim in both salt water AND fresh water. Special kidneys adjust how much salt they keep in their body." },
+            "Ambush Bite": { name: "Ambush Bite", type: "Aquatic", category: "Behavioral", power: 90, acc: 75, effect: null, fact: "Behavioral: Bull sharks hunt in murky, shallow water where prey can't see them coming. They strike fast with one powerful bite." },
+            "Electroreception": { name: "Electroreception", type: "Aquatic", category: "Physiological", power: 60, acc: 100, effect: null, fact: "Physiological: Tiny pores on their snout (ampullae of Lorenzini) detect the electric fields made by the muscles of hiding prey." },
+            "Thick Hide": { name: "Thick Hide", type: "Normal", category: "Structural", power: 0, heal: 0, acc: 100, effect: "buff_def", fact: "Structural: Bull sharks have very tough, sandpaper-like skin made of tiny tooth-like scales called dermal denticles." },
+
+            // Leadbeater's Possum (Critically Endangered)
+            "Hollow Nest": { name: "Hollow Nest", type: "Forest", category: "Behavioral", power: 0, heal: 35, acc: 100, effect: "buff_def", fact: "Behavioral: Leadbeater's possums live only in old hollow trees in mountain ash forests. When these trees are cut down, they have nowhere to live." },
+            "Bark Strip": { name: "Bark Strip", type: "Forest", category: "Structural", power: 40, acc: 100, effect: null, fact: "Structural: Their sharp lower teeth are specially shaped to strip bark off trees to reach the sweet sap and insects underneath." },
+            "Colony Call": { name: "Colony Call", type: "Normal", category: "Behavioral", power: 0, heal: 0, acc: 100, effect: "buff_atk", fact: "Behavioral: These possums live in family groups of up to 12 and communicate with high-pitched calls to stay together in the dark forest." },
+            "Night Leap": { name: "Night Leap", type: "Normal", category: "Structural", power: 50, acc: 90, effect: "buff_spd", fact: "Structural: Long, strong back legs and a long tail for balance let them leap between tree branches in complete darkness." },
+
+            // Northern Quoll (Endangered)
+            "Scent Mark": { name: "Scent Mark", type: "Bushland", category: "Behavioral", power: 35, acc: 100, effect: "debuff_spd", fact: "Behavioral: Quolls mark their territory with strong-smelling droppings placed on rocks. This tells other quolls to stay away." },
+            "Tree Climb": { name: "Tree Climb", type: "Normal", category: "Structural", power: 45, acc: 95, effect: null, fact: "Structural: Unlike many ground marsupials, quolls have rough foot pads and sharp claws that let them climb trees to hunt and escape predators." },
+            "Night Vision": { name: "Night Vision", type: "Normal", category: "Physiological", power: 55, acc: 100, effect: null, fact: "Physiological: Huge eyes with lots of light-sensitive cells let them see clearly in almost total darkness to hunt insects and small animals." },
+            "Pouch Carry": { name: "Pouch Carry", type: "Normal", category: "Structural", power: 0, heal: 30, acc: 100, effect: "buff_def", fact: "Structural: Mother quolls carry up to 8 tiny babies in a rear-facing pouch, protecting them while she hunts and climbs." },
+
+            // Corroboree Frog (Critically Endangered)
+            "Poison Skin": { name: "Poison Skin", type: "Normal", category: "Physiological", power: 60, acc: 100, effect: "debuff_atk", fact: "Physiological: This frog MAKES its own poison (most frogs get theirs from food). Bright yellow stripes warn predators: 'Don't eat me!'" },
+            "Alpine Freeze": { name: "Alpine Freeze", type: "Normal", category: "Physiological", power: 0, heal: 0, acc: 100, effect: "buff_def", fact: "Physiological: These frogs survive freezing mountain winters by hiding under logs and slowing their body down almost completely." },
+            "Moss Nest": { name: "Moss Nest", type: "Forest", category: "Behavioral", power: 0, heal: 40, acc: 100, effect: null, fact: "Behavioral: Males guard eggs in mossy nests for months. When rain floods the nest, tadpoles wash into pools to grow up." },
+            "Warning Flash": { name: "Warning Flash", type: "Normal", category: "Structural", power: 40, acc: 100, effect: "debuff_atk", fact: "Structural: Bright yellow and black stripes are a warning signal called aposematism — telling predators this animal is dangerous to eat." },
+
+            // Hawksbill Turtle (Critically Endangered)
+            "Shell Shield": { name: "Shell Shield", type: "Aquatic", category: "Structural", power: 0, heal: 0, acc: 100, effect: "buff_def", fact: "Structural: The beautiful overlapping shell plates (scutes) form a strong shield that protects the turtle from sharks and rocks." },
+            "Sponge Diet": { name: "Sponge Diet", type: "Aquatic", category: "Behavioral", power: 45, acc: 100, effect: null, fact: "Behavioral: Hawksbill turtles eat sea sponges that are toxic to most animals. This stops sponges from taking over coral reefs!" },
+            "Magnetic Nav": { name: "Magnetic Nav", type: "Normal", category: "Physiological", power: 0, heal: 30, acc: 100, effect: "buff_spd", fact: "Physiological: These turtles can sense Earth's magnetic field to navigate thousands of kilometres across the ocean back to the same beach where they hatched." },
+            "Flipper Dash": { name: "Flipper Dash", type: "Aquatic", category: "Structural", power: 55, acc: 90, effect: null, fact: "Structural: Powerful front flippers work like wings underwater, letting the turtle 'fly' through the water at speeds up to 24 km/h." }
+        };
+
+        /* --------------------------------------------------------------------------
+           5. DATABASE: ANIMALS & TRIVIA QUIZZES
+        -------------------------------------------------------------------------- */
+        const ANIMAL_DB = {
+            "Kangaroo": { name: "Red Kangaroo", type: "Arid", hp: 65, atk: 15, def: 12, spd: 22, moves: ["Tendon Bounce", "Forearm Lick", "Muscular Tail", "Diapause"], svg: "svg-kangaroo", desc: "The biggest marsupial in the world. Built to survive the hot, dry outback. Its hopping saves lots of energy." },
+            "Koala": { name: "Koala", type: "Forest", hp: 60, atk: 12, def: 16, spd: 8, moves: ["Two-Thumb Grip", "Toxic Digest", "20-Hour Sleep"], svg: "svg-koala", desc: "A tree-living marsupial that eats poisonous eucalyptus leaves. Sleeps most of the day to save energy." },
+            "Platypus": { name: "Platypus", type: "Aquatic", hp: 55, atk: 18, def: 14, spd: 15, moves: ["Electro-Hunt", "Venom Spur", "Waterproof Coat"], svg: "svg-platypus", desc: "A strange egg-laying mammal with a duck-like bill, beaver tail, and venomous spurs. One of a kind!" },
+            "Thorny Devil": { name: "Thorny Devil", type: "Arid", hp: 50, atk: 10, def: 28, spd: 6, moves: ["Capillary Drink", "False Head", "Freeze Walk", "Spiky Armor"], svg: "svg-thornydevil", desc: "A small spiky desert lizard. It can drink water through its skin and has a fake head to trick predators!" },
+            "Wombat": { name: "Wombat", type: "Forest", hp: 75, atk: 16, def: 24, spd: 8, moves: ["Cartilage Shield", "Deep Burrow", "Cubic Scat"], svg: "svg-wombat", desc: "A strong, stocky burrower built like a little tank. Famous for digging tunnels and cube-shaped poo!" },
+            "Echidna": { name: "Echidna", type: "Bushland", hp: 55, atk: 14, def: 25, spd: 7, moves: ["Spine Curl", "Sticky Tongue", "Torpor"], svg: "svg-echidna", desc: "A spiny egg-laying mammal that eats ants and termites. Rolls into a spiky ball when scared." },
+            "Cassowary": { name: "Cassowary", type: "Forest", hp: 70, atk: 28, def: 14, spd: 20, moves: ["Dagger Claw", "Casque Ram", "Seed Dispersal"], svg: "svg-cassowary", desc: "A huge, dangerous flightless bird with a helmet on its head and razor-sharp claws on its feet." },
+            "Dingo": { name: "Dingo", type: "Arid", hp: 60, atk: 20, def: 12, spd: 24, moves: ["Pack Hunt", "Flexible Wrists"], svg: "svg-dingo", desc: "Australia's top land predator. Smart, social wild dogs that hunt in packs and can even climb fences!" },
+            "Crocodile": { name: "Saltwater Croc", type: "Aquatic", hp: 85, atk: 26, def: 20, spd: 12, moves: ["Death Roll", "Salt Glands", "Stealth Eyes"], svg: "svg-croc", desc: "The biggest reptile alive. An armoured hunter that hides underwater and attacks with a powerful bite." },
+            "Kookaburra": { name: "Kookaburra", type: "Bushland", hp: 50, atk: 18, def: 10, spd: 16, moves: ["Laughing Call", "Drop Catch"], svg: "svg-kookaburra", desc: "A big kingfisher bird with a call that sounds like loud laughter. It drops from branches to catch snakes!" },
+            "Bilby": { name: "Bilby", type: "Arid", hp: 45, atk: 10, def: 12, spd: 18, moves: ["Radiator Ears", "Concentrate Urine"], svg: "svg-bilby", desc: "A small night-active desert animal with huge ears that let out body heat. Almost never needs to drink water." },
+            "Frilled Lizard": { name: "Frilled Lizard", type: "Forest", hp: 50, atk: 15, def: 10, spd: 26, moves: ["Neck Frill Flare", "Bipedal Sprint"], svg: "svg-frilled", desc: "A lizard that opens a big frill around its neck to scare predators. If that fails, it runs away on two legs!" },
+            "Tasmanian Devil": { name: "Tasmanian Devil", type: "Bushland", hp: 65, atk: 24, def: 16, spd: 14, moves: ["Bone Crush Jaw", "Fat Tail Storage"], svg: "svg-tasdevil", desc: "The biggest meat-eating marsupial. Has a super strong bite that can crunch through bones!" },
+            "Sugar Glider": { name: "Sugar Glider", type: "Forest", hp: 40, atk: 12, def: 8, spd: 28, moves: ["Patagium Glide", "Huddle Warmth"], svg: "svg-sugarglider", desc: "A tiny possum that glides between trees using skin flaps like a parachute. Loves sweet tree sap!" },
+            "Emu": { name: "Emu", type: "Arid", hp: 70, atk: 22, def: 14, spd: 25, moves: ["Endurance Legs", "Nasal Condenser", "Double Feathers"], svg: "svg-emu", desc: "Australia's tallest bird. Runs fast across the plains and saves water by collecting moisture from its own breath." },
+            "Quokka": { name: "Quokka", type: "Forest", hp: 45, atk: 10, def: 14, spd: 20, moves: ["Happy Smile", "Island Survivor", "Joey Toss", "Night Grazer"], svg: "svg-quokka", desc: "A small, friendly-looking marsupial that lives on Rottnest Island. Often called the world's happiest animal!" },
+            "Dugong": { name: "Dugong", type: "Aquatic", hp: 80, atk: 12, def: 22, spd: 10, moves: ["Seagrass Munch", "Thick Skin", "Tail Fluke", "Breath Hold"], svg: "svg-dugong", desc: "A gentle sea mammal that eats seagrass on the ocean floor. Like an underwater cow! Related to manatees." },
+            "Lyrebird": { name: "Superb Lyrebird", type: "Forest", hp: 50, atk: 16, def: 12, spd: 18, moves: ["Sound Copy", "Tail Dance", "Forest Scratch", "Camouflage Feathers"], svg: "svg-lyrebird", desc: "A forest bird that can copy almost any sound it hears — even chainsaws and camera clicks! Amazing tail feathers." },
+            "Numbat": { name: "Numbat", type: "Bushland", hp: 40, atk: 14, def: 10, spd: 22, moves: ["Long Tongue", "Termite Feast", "Stripe Hide", "Log Shelter"], svg: "svg-numbat", desc: "A striped marsupial that eats 20,000 termites a day with its long sticky tongue. Active during the day, unlike most marsupials." },
+            "Bull Shark": { name: "Bull Shark", type: "Aquatic", hp: 90, atk: 30, def: 18, spd: 20, moves: ["Freshwater Adapt", "Ambush Bite", "Electroreception", "Thick Hide"], svg: "svg-bullshark", desc: "A rare and dangerous shark that can swim in rivers AND the ocean! One of the few sharks that survives in fresh water." },
+            "Leadbeaters Possum": { name: "Leadbeater's Possum", type: "Forest", hp: 35, atk: 12, def: 10, spd: 24, moves: ["Hollow Nest", "Bark Strip", "Colony Call", "Night Leap"], svg: "svg-possum", desc: "⚠️ CRITICALLY ENDANGERED. A tiny possum that only lives in one small part of Victoria's mountain ash forests. Less than 1,500 left in the wild!", rare: true },
+            "Northern Quoll": { name: "Northern Quoll", type: "Bushland", hp: 45, atk: 20, def: 10, spd: 24, moves: ["Scent Mark", "Tree Climb", "Night Vision", "Pouch Carry"], svg: "svg-quoll", desc: "⚠️ ENDANGERED. A spotted marsupial predator. Dying out because they eat poisonous cane toads that don't belong in Australia.", rare: true },
+            "Corroboree Frog": { name: "Corroboree Frog", type: "Forest", hp: 30, atk: 18, def: 14, spd: 10, moves: ["Poison Skin", "Alpine Freeze", "Moss Nest", "Warning Flash"], svg: "svg-frog", desc: "⚠️ CRITICALLY ENDANGERED. A tiny bright yellow and black frog from the snowy mountains. Fewer than 50 adults left in the wild!", rare: true },
+            "Hawksbill Turtle": { name: "Hawksbill Turtle", type: "Aquatic", hp: 70, atk: 14, def: 26, spd: 12, moves: ["Shell Shield", "Sponge Diet", "Magnetic Nav", "Flipper Dash"], svg: "svg-turtle", desc: "⚠️ CRITICALLY ENDANGERED. A beautiful sea turtle hunted for its shell. Keeps coral reefs healthy by eating toxic sponges.", rare: true }
+        };
+
+        const QUIZ_DB = {
+            "Kangaroo": { q: "It's 45°C outside. What does the Kangaroo DO to cool down?", opts: ["Pants like a dog", "Licks its forearms", "Sheds its fur", "Drinks cactus juice"], ans: 1 },
+            "Koala": { q: "Eucalyptus leaves are poisonous! How does the Koala eat them safely?", opts: ["Only eats the bark", "Special gut bacteria break down the poison", "Heats leaves in the sun", "Spits out the bad parts"], ans: 1 },
+            "Platypus": { q: "The platypus hunts with its eyes closed underwater. How does it find food?", opts: ["Uses sonar like a bat", "Feels around blindly", "Sensors in its bill detect electricity", "Opens its mouth and waits"], ans: 2 },
+            "Thorny Devil": { q: "There's no water in the desert. How does the Thorny Devil drink?", opts: ["Sucks water from air", "Grooves in its skin pull water to its mouth", "Digs deep wells", "It never needs water"], ans: 1 },
+            "Wombat": { q: "The wombat digs a lot. How does mum protect her baby from dirt?", opts: ["Covers the pouch with leaves", "Her pouch opens backwards", "The baby holds its breath", "She digs with back legs only"], ans: 1 },
+            "Echidna": { q: "A predator is coming! What does the Echidna DO to protect itself?", opts: ["Runs away fast", "Digs straight down into the ground", "Screams loudly", "Spits poison"], ans: 1 },
+            "Cassowary": { q: "The cassowary runs through thorny vines. What protects its head?", opts: ["A coconut shell", "A hard helmet called a casque", "It covers its face with wings", "It cuts vines with its beak"], ans: 1 },
+            "Dingo": { q: "What body part lets Dingoes grab things and climb better than pet dogs?", opts: ["Thumbs on their paws", "A tail that can grip", "Wrists that can rotate", "Extra long claws"], ans: 2 },
+            "Crocodile": { q: "How does the Saltwater Croc survive in salty ocean water?", opts: ["It avoids drinking", "Glands on its tongue get rid of extra salt", "It filters salt through lungs", "Its scales block salt"], ans: 1 },
+            "Kookaburra": { q: "Why does the Kookaburra make its famous 'laughing' sound?", opts: ["To attract bugs", "To mark its territory", "Because it's happy", "To cool its throat"], ans: 1 },
+            "Bilby": { q: "The Bilby's big ears help it hear AND do what else?", opts: ["Dig faster", "See in the dark", "Release body heat to stay cool", "Smell food better"], ans: 2 },
+            "Frilled Lizard": { q: "If scaring predators with its frill doesn't work, what does the lizard do?", opts: ["Plays dead", "Runs away on two legs", "Drops its tail", "Bites hard"], ans: 1 },
+            "Tasmanian Devil": { q: "When the Devil can't find food for days, where does it get energy?", opts: ["Fat saved in its tail", "Water in its stomach", "Sunlight through its fur", "It hibernates"], ans: 0 },
+            "Sugar Glider": { q: "How does the Sugar Glider move between trees without touching the ground?", opts: ["Builds tiny bridges", "Swings on branches", "Glides using skin flaps like a parachute", "Bounces on its tail"], ans: 2 },
+            "Emu": { q: "How does the Emu save water in the dry plains?", opts: ["Stores water in a hump", "Its nose captures water from the air it breathes out", "Never breathes through its nose", "Drinks its own sweat"], ans: 1 },
+            "Quokka": { q: "Why does the Quokka look like it's always smiling?", opts: ["It's always happy", "It's trying to scare predators", "Its jaw is shaped that way naturally", "It's showing its teeth to eat"], ans: 2 },
+            "Dugong": { q: "The Dugong eats only one type of food. What is it?", opts: ["Coral", "Seagrass", "Small fish", "Jellyfish"], ans: 1 },
+            "Lyrebird": { q: "What amazing thing can the Lyrebird do with sounds?", opts: ["Sing underwater", "Copy almost any sound it hears", "Make sounds only dogs can hear", "Talk like a human"], ans: 1 },
+            "Numbat": { q: "How many termites does a Numbat eat each day?", opts: ["About 200", "About 2,000", "About 20,000", "About 200,000"], ans: 2 },
+            "Bull Shark": { q: "What makes the Bull Shark special compared to most other sharks?", opts: ["It can fly out of water", "It can swim in fresh water like rivers", "It only eats plants", "It glows in the dark"], ans: 1 },
+            "Leadbeaters Possum": { q: "Why is the Leadbeater's Possum critically endangered?", opts: ["People hunt them for fur", "Their tree homes are being cut down", "They can't find food", "They are too slow"], ans: 1 },
+            "Northern Quoll": { q: "What introduced animal is killing Northern Quolls?", opts: ["Rabbits", "Cats", "Poisonous cane toads they try to eat", "Foxes"], ans: 2 },
+            "Corroboree Frog": { q: "What makes the Corroboree Frog different from most other poisonous frogs?", opts: ["It's the biggest frog", "It makes its OWN poison instead of getting it from food", "It can fly", "It lives in the ocean"], ans: 1 },
+            "Hawksbill Turtle": { q: "How does the Hawksbill Turtle find its way across the ocean?", opts: ["It follows other turtles", "It uses the stars", "It senses the Earth's magnetic field", "It smells the beach"], ans: 2 }
+        };
+
+        /* --------------------------------------------------------------------------
+           6. STATE MANAGEMENT
+        -------------------------------------------------------------------------- */
+        const State = {
+            party: [],
+            ecodex: [],
+            inventory: {
+                "Eco-Tracker": { qty: 5, desc: "A tracking device. Use it in battle to scan and catch an animal for your team.", effect: "catch" },
+                "Energy Pack": { qty: 10, desc: "A nutrition gel. Restores 40 HP (Energy) to an animal.", effect: "heal", value: 40 }
+            },
+            enemy: null,
+            activeAnimalIndex: 0,
+            timeOfDay: 'Day',
+            inBoat: false,
+            coins: 100
+        };
+
+        /* --------------------------------------------------------------------------
+           7. OVERWORLD CANVAS ENGINE
+           Handles rendering a tiled map, player movement, and encounter logic.
+        -------------------------------------------------------------------------- */
+        const Engine = {
+            canvas: document.getElementById('map-canvas'),
+            ctx: document.getElementById('map-canvas').getContext('2d'),
+            TILE_SIZE: 48,
+            COLS: 60,
+            ROWS: 60,
+            map: [],
+            keys: { w: false, a: false, s: false, d: false },
+            player: { x: 30, y: 30, px: 30 * 48, py: 30 * 48, speed: 4, moving: false, frame: 0 },
+            camera: { x: 0, y: 0, w: 900, h: 650 },
+            active: false,
+            stepCount: 0,
+
+            init() {
+                this.generateMap();
+                window.addEventListener('keydown', e => this.handleKey(e.key.toLowerCase(), true));
+                window.addEventListener('keyup', e => this.handleKey(e.key.toLowerCase(), false));
+                requestAnimationFrame((t) => this.loop(t));
+
+                // Setup Day/Night cycle timer
+                setInterval(() => {
+                    if (!this.active) return;
+                    State.timeOfDay = State.timeOfDay === 'Day' ? 'Night' : 'Day';
+                    document.getElementById('map-time-display').innerText = `Time: ${State.timeOfDay}`;
+                    if (State.timeOfDay === 'Night') {
+                        document.getElementById('weather-overlay').classList.add('weather-night');
+                        Game.showToast("Night has fallen. Nocturnal animals are active.");
+                    } else {
+                        document.getElementById('weather-overlay').classList.remove('weather-night');
+                        Game.showToast("The sun rises. Diurnal animals are active.");
+                    }
+                }, 60000); // 1 minute cycle
+            },
+
+            handleKey(k, isDown) {
+                if (k === 'w' || k === 'arrowup') this.keys.w = isDown;
+                if (k === 'a' || k === 'arrowleft') this.keys.a = isDown;
+                if (k === 's' || k === 'arrowdown') this.keys.s = isDown;
+                if (k === 'd' || k === 'arrowright') this.keys.d = isDown;
+                if (k === 'b' && isDown && this.active && !this.player.moving) this.toggleBoat();
+            },
+
+            generateMap() {
+                // Procedurally generate biomes
+                for (let r = 0; r < this.ROWS; r++) {
+                    let row = [];
+                    for (let c = 0; c < this.COLS; c++) {
+                        let tileType = 0; // 0: Grass, 1: Tall Grass, 2: Tree, 3: Water, 4: Sand, 5: Sand Tall, 6: Bush, 7: Bush Tall
+
+                        // Top Left: Arid
+                        if (r < 30 && c < 30) {
+                            tileType = Math.random() < 0.05 ? 2 : (Math.random() < 0.3 ? 5 : 4);
+                        }
+                        // Top Right: Forest
+                        else if (r < 30 && c >= 30) {
+                            tileType = Math.random() < 0.2 ? 2 : (Math.random() < 0.4 ? 1 : 0);
+                        }
+                        // Bottom Left: Bushland
+                        else if (r >= 30 && c < 30) {
+                            tileType = Math.random() < 0.1 ? 2 : (Math.random() < 0.3 ? 7 : 6);
+                        }
+                        // Bottom Right: Aquatic/Coast
+                        else {
+                            if (r > 45 || c > 45) tileType = 3;
+                            else if (Math.random() < 0.1) tileType = 3;
+                            else tileType = Math.random() < 0.3 ? 1 : 0;
+                        }
+
+                        // Clear starting area
+                        if (Math.abs(r - 30) < 3 && Math.abs(c - 30) < 3) tileType = 0;
+
+                        // Place town near start (tiles 8=path, 9=building)
+                        if (r >= 26 && r <= 28 && c >= 26 && c <= 28) tileType = 8; // path
+                        if (r === 27 && c === 27) tileType = 9; // building center
+                        if ((r === 26 && c === 27) || (r === 28 && c === 27)) tileType = 9;
+                        if ((r === 27 && c === 26) || (r === 27 && c === 28)) tileType = 9;
+
+                        row.push(tileType);
+                    }
+                    this.map.push(row);
+                }
+            },
+
+            isSolid(x, y) {
+                if (x < 0 || y < 0 || x >= this.COLS || y >= this.ROWS) return true;
+                const t = this.map[y][x];
+                if (t === 2) return true; // Trees always solid
+                if (t === 3) return !State.inBoat; // Water solid only when NOT in boat
+                if (t === 9) return false; // Buildings are walkable (trigger town)
+                return false;
+            },
+
+            isNearWater(x, y) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        const nx = x + dx, ny = y + dy;
+                        if (nx >= 0 && ny >= 0 && nx < this.COLS && ny < this.ROWS && this.map[ny][nx] === 3) return true;
+                    }
+                }
+                return false;
+            },
+
+            toggleBoat() {
+                if (State.inBoat) {
+                    // Exiting boat — only if current tile is NOT water
+                    const t = this.map[this.player.y][this.player.x];
+                    if (t === 3) {
+                        Game.showToast("Sail to land first!");
+                        return;
+                    }
+                    State.inBoat = false;
+                    SFX.select();
+                    Game.showToast("You got off the boat.");
+                } else {
+                    // Entering boat — must be near water
+                    if (this.isNearWater(this.player.x, this.player.y)) {
+                        State.inBoat = true;
+                        SFX.select();
+                        Game.showToast("You got on the boat! Sail the waters!");
+                    } else {
+                        Game.showToast("No water nearby. Move closer to the coast!");
+                    }
+                }
+            },
+
+            updateLocationText(x, y) {
+                let name = "Open Plains";
+                if (this.map[y] && this.map[y][x] === 8 || this.map[y] && this.map[y][x] === 9) name = "Research Base Camp";
+                else if (y < 30 && x < 30) name = "Red Sand Desert (Arid)";
+                else if (y < 30 && x >= 30) name = "Eucalyptus Forest (Forest)";
+                else if (y >= 30 && x < 30) name = "Scrub Bushland (Bushland)";
+                else name = "Billabong Coast (Aquatic)";
+                document.getElementById('map-location-name').innerText = name;
+            },
+
+            checkEncounter(x, y) {
+                const t = this.map[y][x];
+
+                // Water encounters when in boat
+                if (State.inBoat && t === 3) {
+                    if (Math.random() < 0.08) {
+                        this.active = false;
+                        this.keys = { w: false, a: false, s: false, d: false };
+                        Game.startEncounter('Aquatic', true); // true = water encounter
+                        return;
+                    }
+                }
+
+                // Land encounters in tall grass
+                if (t === 1 || t === 5 || t === 7) {
+                    if (Math.random() < 0.12) {
+                        this.active = false;
+                        this.keys = { w: false, a: false, s: false, d: false };
+
+                        let biome = "Normal";
+                        if (y < 30 && x < 30) biome = "Arid";
+                        else if (y < 30 && x >= 30) biome = "Forest";
+                        else if (y >= 30 && x < 30) biome = "Bushland";
+                        else biome = "Aquatic";
+
+                        Game.startEncounter(biome, false);
+                    }
+                }
+            },
+
+            loop(timestamp) {
+                if (this.active) {
+                    this.update();
+                    this.draw();
+                }
+                requestAnimationFrame((t) => this.loop(t));
+            },
+
+            update() {
+                if (!this.player.moving) {
+                    let dx = 0, dy = 0;
+                    if (this.keys.w) dy = -1;
+                    else if (this.keys.s) dy = 1;
+                    else if (this.keys.a) dx = -1;
+                    else if (this.keys.d) dx = 1;
+
+                    if (dx !== 0 || dy !== 0) {
+                        let nx = this.player.x + dx;
+                        let ny = this.player.y + dy;
+                        if (!this.isSolid(nx, ny)) {
+                            this.player.x = nx;
+                            this.player.y = ny;
+                            this.player.moving = true;
+                            this.updateLocationText(nx, ny);
+                            this.stepCount++;
+                            if (this.stepCount % 2 === 0) SFX.step();
+                        } else {
+                            SFX.error(); // Bump wall
+                            this.keys = { w: false, a: false, s: false, d: false };
+                        }
+                    }
+                } else {
+                    // Smooth movement interpolation
+                    let targetX = this.player.x * this.TILE_SIZE;
+                    let targetY = this.player.y * this.TILE_SIZE;
+
+                    if (this.player.px < targetX) this.player.px += this.player.speed;
+                    if (this.player.px > targetX) this.player.px -= this.player.speed;
+                    if (this.player.py < targetY) this.player.py += this.player.speed;
+                    if (this.player.py > targetY) this.player.py -= this.player.speed;
+
+                    this.player.frame++;
+
+                    if (Math.abs(this.player.px - targetX) < this.player.speed && Math.abs(this.player.py - targetY) < this.player.speed) {
+                        this.player.px = targetX;
+                        this.player.py = targetY;
+                        this.player.moving = false;
+                        this.checkEncounter(this.player.x, this.player.y);
+                        // Check town entry
+                        if (this.map[this.player.y][this.player.x] === 9) {
+                            this.active = false;
+                            this.keys = { w: false, a: false, s: false, d: false };
+                            Town.enter();
+                        }
+                    }
+                }
+
+                // Camera follow (Centered)
+                this.camera.x = this.player.px - this.camera.w / 2 + this.TILE_SIZE / 2;
+                this.camera.y = this.player.py - this.camera.h / 2 + this.TILE_SIZE / 2;
+            },
+
+            draw() {
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                this.ctx.save();
+                this.ctx.translate(-this.camera.x, -this.camera.y);
+
+                // Render only visible tiles
+                const startC = Math.max(0, Math.floor(this.camera.x / this.TILE_SIZE));
+                const endC = Math.min(this.COLS, startC + Math.ceil(this.camera.w / this.TILE_SIZE) + 1);
+                const startR = Math.max(0, Math.floor(this.camera.y / this.TILE_SIZE));
+                const endR = Math.min(this.ROWS, startR + Math.ceil(this.camera.h / this.TILE_SIZE) + 1);
+
+                for (let r = startR; r < endR; r++) {
+                    for (let c = startC; c < endC; c++) {
+                        const t = this.map[r][c];
+                        const x = c * this.TILE_SIZE;
+                        const y = r * this.TILE_SIZE;
+
+                        // Base Tile Colors
+                        if (t === 0 || t === 1) this.ctx.fillStyle = '#2ecc71'; // Grass
+                        else if (t === 2) this.ctx.fillStyle = '#1e8449'; // Tree Base
+                        else if (t === 3) this.ctx.fillStyle = '#3498db'; // Water
+                        else if (t === 4 || t === 5) this.ctx.fillStyle = '#f39c12'; // Sand
+                        else if (t === 6 || t === 7) this.ctx.fillStyle = '#9b59b6'; // Bush dirt
+                        else if (t === 8) this.ctx.fillStyle = '#bdc3c7'; // Town path
+                        else if (t === 9) this.ctx.fillStyle = '#95a5a6'; // Building floor
+
+                        this.ctx.fillRect(x, y, this.TILE_SIZE, this.TILE_SIZE);
+
+                        // Tile Decorations
+                        if (t === 1 || t === 5 || t === 7) { // Tall Grass
+                            this.ctx.fillStyle = 'rgba(0,0,0,0.15)';
+                            this.ctx.fillRect(x + 10, y + 10, 6, 12);
+                            this.ctx.fillRect(x + 30, y + 15, 6, 15);
+                            this.ctx.fillRect(x + 20, y + 25, 6, 10);
+                        }
+                        if (t === 2) { // Tree
+                            this.ctx.fillStyle = '#5D4037'; // Trunk
+                            this.ctx.fillRect(x + 16, y + 24, 16, 24);
+                            this.ctx.fillStyle = '#145A32'; // Leaves
+                            this.ctx.beginPath();
+                            this.ctx.arc(x + 24, y + 16, 22, 0, Math.PI * 2);
+                            this.ctx.fill();
+                            this.ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                            this.ctx.beginPath();
+                            this.ctx.arc(x + 20, y + 12, 10, 0, Math.PI * 2);
+                            this.ctx.fill();
+                        }
+                        if (t === 3) { // Water wave
+                            this.ctx.strokeStyle = '#a8dadc';
+                            this.ctx.lineWidth = 2;
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(x + 10, y + 24);
+                            this.ctx.quadraticCurveTo(x + 24, y + 16, x + 38, y + 24);
+                            this.ctx.stroke();
+                        }
+                        if (t === 8) { // Town path stones
+                            this.ctx.fillStyle = '#aab7b8';
+                            this.ctx.fillRect(x + 2, y + 2, 20, 20);
+                            this.ctx.fillRect(x + 24, y + 24, 20, 20);
+                        }
+                        if (t === 9) { // Building
+                            // Walls
+                            this.ctx.fillStyle = '#ecf0f1';
+                            this.ctx.fillRect(x + 4, y + 14, 40, 30);
+                            // Roof
+                            this.ctx.fillStyle = '#e74c3c';
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(x, y + 16);
+                            this.ctx.lineTo(x + 24, y + 2);
+                            this.ctx.lineTo(x + 48, y + 16);
+                            this.ctx.fill();
+                            // Door
+                            this.ctx.fillStyle = '#8B4513';
+                            this.ctx.fillRect(x + 18, y + 28, 12, 16);
+                        }
+                    }
+                }
+
+                // Draw Player (Researcher) or Boat
+                const px = this.player.px;
+                const py = this.player.py;
+                const bob = this.player.moving ? Math.sin(this.player.frame * 0.5) * 3 : 0;
+
+                if (State.inBoat) {
+                    // Draw boat hull
+                    this.ctx.fillStyle = '#5D4037';
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(px + 4, py + 38);
+                    this.ctx.quadraticCurveTo(px + 24, py + 48, px + 44, py + 38);
+                    this.ctx.lineTo(px + 40, py + 30);
+                    this.ctx.lineTo(px + 8, py + 30);
+                    this.ctx.fill();
+                    // Sail
+                    this.ctx.fillStyle = '#ECF0F1';
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(px + 24, py + 8 + bob);
+                    this.ctx.lineTo(px + 38, py + 25 + bob);
+                    this.ctx.lineTo(px + 24, py + 28 + bob);
+                    this.ctx.fill();
+                    // Mast
+                    this.ctx.strokeStyle = '#3E2723';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(px + 24, py + 5 + bob);
+                    this.ctx.lineTo(px + 24, py + 30);
+                    this.ctx.stroke();
+                    // Researcher on boat
+                    this.ctx.fillStyle = '#F5CBA7';
+                    this.ctx.beginPath(); this.ctx.arc(px + 24, py + 14 + bob, 8, 0, Math.PI * 2); this.ctx.fill();
+                    this.ctx.fillStyle = '#3498DB';
+                    this.ctx.fillRect(px + 18, py + 22 + bob, 12, 8);
+                } else {
+                    this.ctx.fillStyle = '#F5CBA7'; // Head
+                    this.ctx.beginPath(); this.ctx.arc(px + 24, py + 16 + bob, 12, 0, Math.PI * 2); this.ctx.fill();
+                    this.ctx.fillStyle = '#3498DB'; // Body
+                    this.ctx.fillRect(px + 14, py + 28 + bob, 20, 18);
+                    this.ctx.fillStyle = '#8B4513'; // Hat
+                    this.ctx.beginPath(); this.ctx.ellipse(px + 24, py + 8 + bob, 18, 6, 0, 0, Math.PI * 2); this.ctx.fill();
+                    this.ctx.beginPath(); this.ctx.arc(px + 24, py + 4 + bob, 10, Math.PI, 0); this.ctx.fill();
+                }
+
+                this.ctx.restore();
+            }
+        };
+
+        /* --------------------------------------------------------------------------
+           7b. TOWN SYSTEM
+        -------------------------------------------------------------------------- */
+        const Town = {
+            SHOP_ITEMS: [
+                { name: 'Eco-Tracker', cost: 30, desc: 'Catch an animal in battle.', effect: 'catch' },
+                { name: 'Energy Pack', cost: 20, desc: 'Restores 40 HP.', effect: 'heal', value: 40 },
+                { name: 'Super Pack', cost: 50, desc: 'Restores 100 HP.', effect: 'heal', value: 100 }
+            ],
+
+            enter() {
+                SFX.success();
+                this.renderShop();
+                Game.switchScreen('town');
+            },
+
+            leave() {
+                SFX.select();
+                // Move player away from building tile so they don't re-enter
+                Engine.player.x = 30;
+                Engine.player.y = 30;
+                Engine.player.px = 30 * Engine.TILE_SIZE;
+                Engine.player.py = 30 * Engine.TILE_SIZE;
+                Game.switchScreen('overworld');
+            },
+
+            heal() {
+                SFX.success();
+                State.party.forEach(a => { a.hp = a.maxHp; });
+                Game.showToast('All animals healed to full energy!');
+            },
+
+            buy(index) {
+                const item = this.SHOP_ITEMS[index];
+                if (State.coins < item.cost) {
+                    SFX.error();
+                    Game.showToast('Not enough coins!');
+                    return;
+                }
+                State.coins -= item.cost;
+                SFX.success();
+                if (State.inventory[item.name]) {
+                    State.inventory[item.name].qty++;
+                } else {
+                    State.inventory[item.name] = { qty: 1, desc: item.desc, effect: item.effect, value: item.value || 0 };
+                }
+                Game.showToast(`Bought ${item.name}! (${State.coins} coins left)`);
+                this.renderShop();
+            },
+
+            renderShop() {
+                const el = document.getElementById('shop-items');
+                let html = `<div style="text-align:center; margin-bottom:15px; font-size:18px; font-weight:bold; color:var(--accent);">💰 Your coins: ${State.coins}</div>`;
+                this.SHOP_ITEMS.forEach((item, i) => {
+                    html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee;">
+                        <div>
+                            <strong>${item.name}</strong>
+                            <div style="font-size:13px; color:#777;">${item.desc}</div>
+                        </div>
+                        <button class="btn" onclick="Town.buy(${i})" style="font-size:14px; padding:6px 15px;">${item.cost} 💰</button>
+                    </div>`;
+                });
+                el.innerHTML = html;
+            }
+        };
+
+        /* --------------------------------------------------------------------------
+           8. GAME FLOW & UI CONTROLLER
+        -------------------------------------------------------------------------- */
+        const Game = {
+            lastScreen: 'overworld',
+
+            init() {
+                Engine.init();
+                this.switchScreen('title');
+            },
+
+            switchScreen(name) {
+                const target = document.getElementById('screen-' + name);
+                if (!target) {
+                    console.warn('switchScreen: no element found for "screen-' + name + '", falling back to overworld');
+                    name = 'overworld';
+                    return this.switchScreen(name);
+                }
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+                target.classList.add('active-screen');
+
+                if (name === 'overworld') Engine.active = true;
+                else Engine.active = false;
+            },
+
+            openMenu(name, fromBattle = false) {
+                SFX.select();
+                this.lastScreen = fromBattle ? 'battle' : 'overworld';
+                this.switchScreen(name);
+                if (name === 'party') UI.renderParty();
+                if (name === 'ecodex') UI.renderEcoDex();
+                if (name === 'bag') UI.renderBag();
+            },
+
+            closeMenu() {
+                SFX.select();
+                this.switchScreen(this.lastScreen);
+            },
+
+            showToast(msg) {
+                const toast = document.getElementById('toast-notification');
+                toast.innerText = msg;
+                toast.classList.add('toast-visible');
+                SFX.select();
+                setTimeout(() => toast.classList.remove('toast-visible'), 4000);
+            },
+
+            createAnimal(name, level = 5) {
+                const base = ANIMAL_DB[name];
+                return {
+                    id: name,
+                    name: base.name,
+                    type: base.type,
+                    level: level,
+                    maxHp: base.hp + (level * 3),
+                    hp: base.hp + (level * 3),
+                    atk: base.atk + Math.floor(level / 1.5),
+                    def: base.def + Math.floor(level / 1.5),
+                    spd: base.spd + Math.floor(level / 1.5),
+                    moves: [...base.moves],
+                    svg: base.svg,
+                    exp: 0,
+                    maxExp: level * 15
+                };
+            },
+
+            chooseStarter(name) {
+                SFX.success();
+                State.party.push(this.createAnimal(name, 5));
+                State.ecodex.push(name);
+
+                Intro.textLines = [
+                    `Great choice! The ${ANIMAL_DB[name].name} is awesome.`,
+                    "Your job is to explore four different biomes in the reserve.",
+                    "Use W, A, S, D to walk around the map.",
+                    "Walk in tall grass or sand to find wild animals.",
+                    "Press B near water to get in a boat and explore the ocean!",
+                    "Study their adaptations, answer quizzes, and fill your EcoDex.",
+                    "Good luck, Researcher!"
+                ];
+                Intro.lineIndex = 0;
+                this.switchScreen('intro');
+                Intro.next();
+            },
+
+            startEncounter(biome, isWaterEncounter = false) {
+                SFX.encounter();
+                const flash = document.getElementById('encounter-flash');
+                flash.classList.add('anim-enc-flash');
+
+                setTimeout(() => {
+                    let pool;
+                    if (isWaterEncounter) {
+                        // Water encounters: aquatic animals only
+                        pool = Object.keys(ANIMAL_DB).filter(k => ANIMAL_DB[k].type === 'Aquatic' && !ANIMAL_DB[k].rare && k !== 'Bull Shark');
+                        // Rare water encounters
+                        const rareRoll = Math.random();
+                        if (rareRoll < 0.15) {
+                            pool = ['Bull Shark'];
+                            Game.showToast('\u26a0\ufe0f Something BIG is in the water...');
+                        } else if (rareRoll < 0.25) {
+                            pool = ['Hawksbill Turtle'];
+                            Game.showToast('\u2728 A rare endangered species appeared!');
+                        }
+                    } else {
+                        // Land encounters: filter by biome + normals, factor in night time
+                        pool = Object.keys(ANIMAL_DB).filter(k => {
+                            if (k === 'Bull Shark') return false; // Bull Shark only from water
+                            if (ANIMAL_DB[k].rare) return false; // Rare animals handled separately
+                            if (State.timeOfDay === 'Night' && (k === 'Sugar Glider' || k === 'Bilby' || k === 'Tasmanian Devil')) return true;
+                            return ANIMAL_DB[k].type === biome || ANIMAL_DB[k].type === 'Normal';
+                        });
+                        // 5% chance for a rare/endangered species from this biome!
+                        if (Math.random() < 0.25) {
+                            const rarePool = Object.keys(ANIMAL_DB).filter(k => ANIMAL_DB[k].rare && ANIMAL_DB[k].type === biome);
+                            if (rarePool.length > 0) {
+                                pool = rarePool;
+                                setTimeout(() => Game.showToast('\u2728 A rare endangered species appeared!'), 600);
+                            }
+                        }
+                    }
+                    if (pool.length === 0) pool = Object.keys(ANIMAL_DB).filter(k => k !== 'Bull Shark' && !ANIMAL_DB[k].rare);
+
+                    const enemyName = pool[Math.floor(Math.random() * pool.length)];
+
+                    // Match level roughly to active party member
+                    const pLevel = State.party[State.activeAnimalIndex].level;
+                    let eLevel = pLevel + Math.floor(Math.random() * 4) - 2;
+                    if (eLevel < 1) eLevel = 1;
+
+                    State.enemy = this.createAnimal(enemyName, eLevel);
+
+                    setTimeout(() => {
+                        flash.classList.remove('anim-enc-flash');
+                        Battle.init(biome);
+                    }, 500); // Wait for black part of flash
+                }, 500);
+            }
+        };
+
+        /* --------------------------------------------------------------------------
+           9. INTRO DIALOG SYSTEM
+        -------------------------------------------------------------------------- */
+        const Intro = {
+            textLines: [
+                "Welcome to the Australian Eco-Reserve!",
+                "I'm Professor Eucalyptus.",
+                "Your job is to learn how animals survive using ADAPTATIONS.",
+                "Structural adaptations = body parts (like claws or fur).",
+                "Behavioral adaptations = things animals DO (like digging or hiding).",
+                "Physiological adaptations = things that happen INSIDE the body (like digestion).",
+                "Let's pick your first animal partner!"
+            ],
+            lineIndex: 0,
+            isTyping: false,
+
+            next() {
+                if (this.isTyping) return;
+                SFX.select();
+                if (this.lineIndex >= this.textLines.length) {
+                    if (State.party.length === 0) Game.switchScreen('starter');
+                    else Game.switchScreen('overworld');
+                    return;
+                }
+
+                const text = this.textLines[this.lineIndex];
+                this.lineIndex++;
+                this.isTyping = true;
+
+                const box = document.getElementById('intro-dialog-text');
+                box.innerHTML = '';
+                document.getElementById('intro-dialog-indicator').style.display = 'none';
+
+                let i = 0;
+                const type = setInterval(() => {
+                    box.innerHTML += text.charAt(i);
+                    i++;
+                    if (i % 3 === 0) SFX.step();
+                    if (i >= text.length) {
+                        clearInterval(type);
+                        this.isTyping = false;
+                        document.getElementById('intro-dialog-indicator').style.display = 'block';
+                    }
+                }, 30);
+            }
+        };
+
+        /* --------------------------------------------------------------------------
+           10. BATTLE ENGINE
+           Handles turn-based logic, stat calculations, and animations.
+        -------------------------------------------------------------------------- */
+        const Battle = {
+            dialogQueue: [],
+            isTyping: false,
+            modifiers: { pAtk: 1, pDef: 1, pSpd: 1, eAtk: 1, eDef: 1, eSpd: 1 },
+
+            init(biome) {
+                Game.switchScreen('battle');
+
+                // Reset Modifiers
+                this.modifiers = { pAtk: 1, pDef: 1, pSpd: 1, eAtk: 1, eDef: 1, eSpd: 1 };
+
+                // Setup BG
+                document.getElementById('battle-bg').className = `battle-bg bg-${biome.toLowerCase()}`;
+
+                this.updateUI();
+
+                document.getElementById('enemy-sprite').className = 'sprite-container';
+                document.getElementById('enemy-sprite').style.display = ''; // Reset after capture hide
+                document.getElementById('player-sprite').className = 'sprite-container';
+                const tracker = document.getElementById('tracker-ball');
+                tracker.className = ''; // Reset tracker display
+                tracker.style.display = ''; // Reset inline display from failed capture
+
+                // Slide in animation
+                document.getElementById('enemy-sprite').style.transform = 'translateX(300px)';
+                document.getElementById('player-sprite').style.transform = 'scaleX(-1) translateX(-300px)';
+
+                setTimeout(() => {
+                    document.getElementById('enemy-sprite').style.transition = 'transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                    document.getElementById('player-sprite').style.transition = 'transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                    document.getElementById('enemy-sprite').style.transform = 'translateX(0)';
+                    document.getElementById('player-sprite').style.transform = 'scaleX(-1) translateX(0)';
+
+                    setTimeout(() => {
+                        document.getElementById('enemy-sprite').style.transition = '';
+                        document.getElementById('player-sprite').style.transition = '';
+                        document.getElementById('enemy-sprite').className = 'sprite-container anim-idle';
+                        document.getElementById('player-sprite').className = 'sprite-container anim-idle-player';
+
+                        this.queueDialog(`A wild ${State.enemy.name} appeared!`, () => {
+                            this.showMainBox();
+                        });
+                    }, 1000);
+                }, 100);
+            },
+
+            updateUI() {
+                const p = State.party[State.activeAnimalIndex];
+                const e = State.enemy;
+
+                document.getElementById('player-name').innerText = p.name;
+                document.getElementById('player-lvl').innerText = p.level;
+                document.getElementById('player-hp-text').innerText = `${Math.ceil(p.hp)}/${p.maxHp}`;
+                document.getElementById('player-hp-bar').style.width = `${(p.hp / p.maxHp) * 100}%`;
+                document.getElementById('player-hp-bar').style.background = this.getHpColor(p.hp, p.maxHp);
+                document.getElementById('player-svg-use').innerHTML = `<use href="#${p.svg}"></use>`;
+
+                if (e) {
+                    document.getElementById('enemy-name').innerText = e.name;
+                    document.getElementById('enemy-lvl').innerText = e.level;
+                    document.getElementById('enemy-hp-bar').style.width = `${(e.hp / e.maxHp) * 100}%`;
+                    document.getElementById('enemy-hp-bar').style.background = this.getHpColor(e.hp, e.maxHp);
+                    document.getElementById('enemy-svg-use').innerHTML = `<use href="#${e.svg}"></use>`;
+                }
+
+                // Render Status Trays
+                this.renderStatusTray('player', this.modifiers.pAtk, this.modifiers.pDef, this.modifiers.pSpd);
+                this.renderStatusTray('enemy', this.modifiers.eAtk, this.modifiers.eDef, this.modifiers.eSpd);
+            },
+
+            renderStatusTray(target, atk, def, spd) {
+                const tray = document.getElementById(`${target}-status-tray`);
+                tray.innerHTML = '';
+                if (atk > 1) tray.innerHTML += `<span class="status-icon status-buff">ATK ↑</span>`;
+                if (atk < 1) tray.innerHTML += `<span class="status-icon status-debuff">ATK ↓</span>`;
+                if (def > 1) tray.innerHTML += `<span class="status-icon status-buff">DEF ↑</span>`;
+                if (def < 1) tray.innerHTML += `<span class="status-icon status-debuff">DEF ↓</span>`;
+                if (spd > 1) tray.innerHTML += `<span class="status-icon status-buff">SPD ↑</span>`;
+                if (spd < 1) tray.innerHTML += `<span class="status-icon status-debuff">SPD ↓</span>`;
+            },
+
+            getHpColor(hp, max) {
+                const pct = hp / max;
+                if (pct > 0.5) return 'var(--primary)';
+                if (pct > 0.2) return 'var(--warning)';
+                return 'var(--accent)';
+            },
+
+            queueDialog(text, callback) {
+                this.dialogQueue.push({ text, callback });
+                if (!this.isTyping) this.playNextDialog();
+            },
+
+            playNextDialog() {
+                if (this.dialogQueue.length === 0) return;
+                this.isTyping = true;
+                const current = this.dialogQueue.shift();
+
+                const box = document.getElementById('battle-dialog-text');
+                const ind = document.getElementById('battle-dialog-indicator');
+                box.innerHTML = '';
+                ind.style.display = 'none';
+
+                // Hide menus during dialog
+                document.getElementById('battle-menu').style.display = 'none';
+                document.getElementById('moves-menu').style.display = 'none';
+
+                let i = 0;
+                const type = setInterval(() => {
+                    box.innerHTML += current.text.charAt(i);
+                    i++;
+                    if (i % 3 === 0) SFX.step();
+                    if (i >= current.text.length) {
+                        clearInterval(type);
+                        this.isTyping = false;
+                        ind.style.display = 'block';
+                        this.currentCallback = current.callback;
+                    }
+                }, 25);
+            },
+
+            advanceDialog() {
+                if (this.isTyping) return;
+                SFX.select();
+                if (this.currentCallback) {
+                    const cb = this.currentCallback;
+                    this.currentCallback = null;
+                    cb();
+                } else if (this.dialogQueue.length > 0) {
+                    this.playNextDialog();
+                }
+            },
+
+            showMainBox() {
+                document.getElementById('battle-dialog-text').innerHTML = `What will ${State.party[State.activeAnimalIndex].name} do?`;
+                document.getElementById('battle-dialog-indicator').style.display = 'none';
+                document.getElementById('battle-menu').style.display = 'grid';
+            },
+
+            showMoves() {
+                SFX.select();
+                const p = State.party[State.activeAnimalIndex];
+                const container = document.getElementById('moves-grid-container');
+                container.innerHTML = '';
+
+                p.moves.forEach(mName => {
+                    const move = MOVE_DB[mName];
+                    const btn = document.createElement('button');
+                    btn.className = 'move-btn';
+
+                    let catClass = 'cat-str';
+                    if (move.category === 'Behavioral') catClass = 'cat-beh';
+                    if (move.category === 'Physiological') catClass = 'cat-phy';
+
+                    // Get Type color for dot
+                    let typeColor = 'var(--type-normal)';
+                    if (move.type === 'Arid') typeColor = 'var(--type-arid)';
+                    if (move.type === 'Forest') typeColor = 'var(--type-forest)';
+                    if (move.type === 'Aquatic') typeColor = 'var(--type-aquatic)';
+                    if (move.type === 'Bushland') typeColor = 'var(--type-bushland)';
+
+                    btn.innerHTML = `
+                <div class="move-type-icon" style="background:${typeColor};" title="${move.type} Type"></div>
+                ${move.name}
+                <span class="move-cat ${catClass}">${move.category}</span>
+            `;
+                    btn.onclick = () => this.executeTurn(move);
+                    container.appendChild(btn);
+                });
+
+                document.getElementById('battle-menu').style.display = 'none';
+                document.getElementById('moves-menu').style.display = 'block';
+            },
+
+            hideMoves() {
+                SFX.select();
+                document.getElementById('moves-menu').style.display = 'none';
+                document.getElementById('battle-menu').style.display = 'grid';
+            },
+
+            executeTurn(playerMove) {
+                this.hideMoves();
+                document.getElementById('battle-menu').style.display = 'none';
+
+                const p = State.party[State.activeAnimalIndex];
+                const e = State.enemy;
+                const eMoveName = e.moves[Math.floor(Math.random() * e.moves.length)];
+                const eMove = MOVE_DB[eMoveName];
+
+                // Speed check for order, applying modifiers
+                const pTrueSpd = p.spd * this.modifiers.pSpd;
+                const eTrueSpd = e.spd * this.modifiers.eSpd;
+
+                let first = { attacker: p, defender: e, move: playerMove, isPlayer: true };
+                let second = { attacker: e, defender: p, move: eMove, isPlayer: false };
+
+                if (eTrueSpd > pTrueSpd) {
+                    first = { attacker: e, defender: p, move: eMove, isPlayer: false };
+                    second = { attacker: p, defender: e, move: playerMove, isPlayer: true };
+                }
+
+                this.processAction(first, () => {
+                    if (first.defender.hp > 0) {
+                        this.processAction(second, () => {
+                            if (second.defender.hp > 0) {
+                                this.showMainBox();
+                            } else {
+                                this.handleFaint(second.defender, !second.isPlayer);
+                            }
+                        });
+                    } else {
+                        this.handleFaint(first.defender, !first.isPlayer);
+                    }
+                });
+            },
+
+            processAction(action, callback) {
+                const { attacker, defender, move, isPlayer } = action;
+                const attSprite = isPlayer ? 'player-sprite' : 'enemy-sprite';
+                const defSprite = isPlayer ? 'enemy-sprite' : 'player-sprite';
+
+                this.queueDialog(`${attacker.name} used ${move.name}!`, () => {
+
+                    // Accuracy Check
+                    if (Math.random() * 100 > move.acc) {
+                        this.queueDialog("But it missed the target!", callback);
+                        return;
+                    }
+
+                    // Attack Animation
+                    const el = document.getElementById(attSprite);
+                    el.classList.add(isPlayer ? 'anim-attack-player' : 'anim-attack-enemy');
+
+                    setTimeout(() => {
+                        el.classList.remove('anim-attack-player', 'anim-attack-enemy');
+
+                        // Damage Calculation
+                        if (move.power > 0) {
+                            SFX.hit();
+                            ParticleEngine.spawn(defSprite, '#e74c3c', 15, 'burst');
+
+                            const atkStat = attacker.atk * (isPlayer ? this.modifiers.pAtk : this.modifiers.eAtk);
+                            const defStat = defender.def * (isPlayer ? this.modifiers.eDef : this.modifiers.pDef);
+
+                            let dmg = Math.floor(((2 * attacker.level / 5 + 2) * move.power * (atkStat / defStat)) / 50) + 2;
+
+                            // Same Type Attack Bonus (STAB)
+                            if (move.type === attacker.type) dmg = Math.floor(dmg * 1.5);
+
+                            // Type Effectiveness Matrix
+                            let mult = 1;
+                            let typeText = "";
+                            if (TYPE_CHART[move.type] && TYPE_CHART[move.type].strong === defender.type) {
+                                mult = 1.5; typeText = "It's highly effective! " + TYPE_CHART[move.type].text;
+                            }
+                            if (TYPE_CHART[move.type] && TYPE_CHART[move.type].weak === defender.type) {
+                                mult = 0.5; typeText = "It's not very effective... " + TYPE_CHART[move.type].text;
+                            }
+
+                            dmg = Math.floor(dmg * mult);
+                            defender.hp -= dmg;
+                            if (defender.hp < 0) defender.hp = 0;
+
+                            // Def Animation
+                            const defEl = document.getElementById(defSprite);
+                            defEl.classList.add('anim-damage');
+                            setTimeout(() => defEl.classList.remove('anim-damage'), 500);
+
+                            this.updateUI();
+
+                            if (mult !== 1) {
+                                this.queueDialog(typeText, () => this.applySecondaryEffects(action, callback));
+                                return;
+                            }
+                        }
+
+                        // Heal Calculation
+                        if (move.heal) {
+                            SFX.heal();
+                            ParticleEngine.spawn(attSprite, '#2ecc71', 15, 'float');
+                            el.classList.add('anim-heal');
+                            setTimeout(() => el.classList.remove('anim-heal'), 1000);
+
+                            attacker.hp += move.heal;
+                            if (attacker.hp > attacker.maxHp) attacker.hp = attacker.maxHp;
+                            this.updateUI();
+                            this.queueDialog("Energy was restored!", () => this.applySecondaryEffects(action, callback));
+                            return;
+                        }
+
+                        this.applySecondaryEffects(action, callback);
+
+                    }, 500); // Wait for attack lunge to connect
+                });
+            },
+
+            applySecondaryEffects(action, callback) {
+                const { attacker, defender, move, isPlayer } = action;
+
+                if (move.effect) {
+                    SFX.heal(); // Generic buff sound
+                    let statText = "";
+                    if (move.effect === 'buff_def') {
+                        if (isPlayer) this.modifiers.pDef += 0.5; else this.modifiers.eDef += 0.5;
+                        statText = `${attacker.name}'s Defense rose!`;
+                    }
+                    if (move.effect === 'buff_atk') {
+                        if (isPlayer) this.modifiers.pAtk += 0.5; else this.modifiers.eAtk += 0.5;
+                        statText = `${attacker.name}'s Attack rose!`;
+                    }
+                    if (move.effect === 'buff_spd') {
+                        if (isPlayer) this.modifiers.pSpd += 0.5; else this.modifiers.eSpd += 0.5;
+                        statText = `${attacker.name}'s Speed rose!`;
+                    }
+                    if (move.effect === 'debuff_atk') {
+                        if (isPlayer) this.modifiers.eAtk = Math.max(0.5, this.modifiers.eAtk - 0.5);
+                        else this.modifiers.pAtk = Math.max(0.5, this.modifiers.pAtk - 0.5);
+                        statText = `${defender.name}'s Attack fell!`;
+                    }
+                    if (move.effect === 'debuff_spd') {
+                        if (isPlayer) this.modifiers.eSpd = Math.max(0.5, this.modifiers.eSpd - 0.5);
+                        else this.modifiers.pSpd = Math.max(0.5, this.modifiers.pSpd - 0.5);
+                        statText = `${defender.name}'s Speed fell!`;
+                    }
+
+                    this.updateUI();
+                    this.queueDialog(statText, () => this.showFactPopup(move, callback));
+                } else {
+                    this.showFactPopup(move, callback);
+                }
+            },
+
+            showFactPopup(move, callback) {
+                document.getElementById('science-fact-text').innerHTML = `<strong>${move.name}</strong><br><br>${move.fact}`;
+                document.getElementById('science-fact-popup').style.display = 'block';
+                this.factCallback = callback;
+            },
+
+            resumeAfterFact() {
+                SFX.select();
+                if (this.factCallback) {
+                    const cb = this.factCallback;
+                    this.factCallback = null;
+                    cb();
+                }
+            },
+
+            handleFaint(animal, isPlayerAnimal) {
+                SFX.faint();
+                const spriteId = isPlayerAnimal ? 'player-sprite' : 'enemy-sprite';
+                document.getElementById(spriteId).classList.add('anim-faint');
+
+                this.queueDialog(`${animal.name} is exhausted and can no longer fight!`, () => {
+                    setTimeout(() => {
+                        document.getElementById(spriteId).classList.remove('anim-faint');
+
+                        if (isPlayerAnimal) {
+                            // Check for remaining team members
+                            const aliveIdx = State.party.findIndex(a => a.hp > 0);
+                            if (aliveIdx !== -1) {
+                                State.activeAnimalIndex = aliveIdx;
+                                this.updateUI();
+                                this.queueDialog(`Go, ${State.party[aliveIdx].name}!`, () => this.showMainBox());
+                            } else {
+                                this.queueDialog("Your entire research team is exhausted. Retreating to base camp to recover...", () => {
+                                    State.party.forEach(a => { a.hp = a.maxHp; }); // Auto heal
+                                    Game.switchScreen('overworld');
+                                });
+                            }
+                        } else {
+                            // Won Battle
+                            SFX.success();
+                            const coinReward = 10 + State.enemy.level * 2 + (ANIMAL_DB[State.enemy.id] && ANIMAL_DB[State.enemy.id].rare ? 50 : 0);
+                            State.coins += coinReward;
+                            this.queueDialog(`Battle won! You earned ${coinReward} coins!`, () => {
+                                const p = State.party[State.activeAnimalIndex];
+                                const expGained = State.enemy.level * 10;
+                                p.exp += expGained;
+
+                                this.queueDialog(`${p.name} gained ${expGained} EXP!`, () => {
+                                    if (p.exp >= p.maxExp) {
+                                        p.level++;
+                                        p.exp = 0;
+                                        p.maxExp = p.level * 15;
+                                        p.maxHp += 3; p.hp += 3;
+                                        p.atk += 1; p.def += 1; p.spd += 1;
+                                        SFX.success();
+                                        this.queueDialog(`${p.name} grew to Level ${p.level}! Stats went up.`, () => {
+                                            Game.switchScreen('overworld');
+                                        });
+                                    } else {
+                                        Game.switchScreen('overworld');
+                                    }
+                                });
+                            });
+                        }
+                    }, 1000);
+                });
+            },
+
+            flee() {
+                SFX.select();
+                document.getElementById('battle-menu').style.display = 'none';
+                this.queueDialog("You safely retreated from the wild animal.", () => {
+                    Game.switchScreen('overworld');
+                });
+            },
+
+            // Triggered from Bag Menu during battle
+            useItem(itemName) {
+                Game.closeMenu();
+                const item = State.inventory[itemName];
+
+                if (item.qty <= 0) return;
+                item.qty--;
+
+                if (item.effect === 'catch') {
+                    this.queueDialog("You prepare to throw an Eco-Tracker to log the animal!", () => {
+                        // Launch Quiz for capture
+                        QuizSystem.start(State.enemy.id);
+                    });
+                }
+                else if (item.effect === 'heal') {
+                    const p = State.party[State.activeAnimalIndex];
+                    p.hp += item.value;
+                    if (p.hp > p.maxHp) p.hp = p.maxHp;
+                    this.updateUI();
+                    SFX.heal();
+                    ParticleEngine.spawn('player-sprite', '#2ecc71', 15, 'float');
+
+                    this.queueDialog(`Used ${itemName}! Restored Energy.`, () => {
+                        // Enemy gets a turn
+                        const eMoveName = State.enemy.moves[Math.floor(Math.random() * State.enemy.moves.length)];
+                        this.processAction({ attacker: State.enemy, defender: p, move: MOVE_DB[eMoveName], isPlayer: false }, () => {
+                            if (p.hp > 0) this.showMainBox();
+                            else this.handleFaint(p, true);
+                        });
+                    });
+                }
+            }
+        };
+
+        /* --------------------------------------------------------------------------
+           11. QUIZ / CAPTURE SYSTEM
+        -------------------------------------------------------------------------- */
+        const QuizSystem = {
+            start(animalId) {
+                document.getElementById('quiz-overlay').style.display = 'flex';
+                const qData = QUIZ_DB[animalId];
+                document.getElementById('quiz-question').innerText = qData.q;
+
+                const cont = document.getElementById('quiz-options-container');
+                cont.innerHTML = '';
+
+                qData.opts.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'quiz-btn';
+                    btn.innerText = opt;
+                    btn.onclick = () => this.evaluate(idx, qData.ans);
+                    cont.appendChild(btn);
+                });
+            },
+
+            evaluate(selectedIdx, correctIdx) {
+                document.getElementById('quiz-overlay').style.display = 'none';
+
+                if (selectedIdx === correctIdx) {
+                    // Success
+                    const tracker = document.getElementById('tracker-ball');
+                    tracker.classList.add('anim-tracker-throw');
+                    SFX.encounter(); // Throw sound
+
+                    setTimeout(() => {
+                        tracker.classList.remove('anim-tracker-throw');
+                        tracker.classList.add('anim-tracker-shake');
+
+                        setTimeout(() => {
+                            tracker.classList.remove('anim-tracker-shake');
+
+                            // HP based catch math. Lower HP = higher chance. Max chance 90%.
+                            const hpFactor = ((State.enemy.maxHp - State.enemy.hp) / State.enemy.maxHp);
+                            const catchRate = 0.4 + (hpFactor * 0.5); // base 40% + up to 50%
+
+                            if (Math.random() < catchRate) {
+                                tracker.classList.add('anim-tracker-capture');
+                                document.getElementById('enemy-sprite').style.display = 'none';
+                                SFX.success();
+
+                                setTimeout(() => {
+                                    tracker.classList.remove('anim-tracker-capture');
+                                    Battle.queueDialog(`Success! ${State.enemy.name} data securely logged!`, () => {
+                                        // Add to Dex
+                                        if (!State.ecodex.includes(State.enemy.id)) {
+                                            State.ecodex.push(State.enemy.id);
+                                            Game.showToast("New Adapto-Dex entry unlocked!");
+                                        }
+                                        // Add to Party if space
+                                        if (State.party.length < 6) {
+                                            State.party.push(JSON.parse(JSON.stringify(State.enemy)));
+                                            Battle.queueDialog(`${State.enemy.name} joined your research team!`, () => {
+                                                document.getElementById('enemy-sprite').style.display = 'block';
+                                                Game.switchScreen('overworld');
+                                            });
+                                        } else {
+                                            Battle.queueDialog(`Team is full. Data sent to PC.`, () => {
+                                                document.getElementById('enemy-sprite').style.display = 'block';
+                                                Game.switchScreen('overworld');
+                                            });
+                                        }
+                                    });
+                                }, 1000);
+
+                            } else {
+                                // Broke free
+                                tracker.style.display = 'none';
+                                SFX.error();
+                                const eSprite = document.getElementById('enemy-sprite');
+                                eSprite.style.filter = 'brightness(2) drop-shadow(0 0 20px #e74c3c)';
+                                setTimeout(() => eSprite.style.filter = '', 500);
+
+                                Battle.queueDialog("Oh no! The animal broke free from the tracker!", () => {
+                                    // Enemy gets a free turn
+                                    const eMoveName = State.enemy.moves[Math.floor(Math.random() * State.enemy.moves.length)];
+                                    Battle.processAction({ attacker: State.enemy, defender: State.party[State.activeAnimalIndex], move: MOVE_DB[eMoveName], isPlayer: false }, () => {
+                                        if (State.party[State.activeAnimalIndex].hp > 0) Battle.showMainBox();
+                                        else Battle.handleFaint(State.party[State.activeAnimalIndex], true);
+                                    });
+                                });
+                            }
+                        }, 1500); // Wait for shakes
+                    }, 1000); // Wait for throw
+
+                } else {
+                    // Failed Quiz
+                    SFX.error();
+                    Battle.queueDialog("Incorrect adaptation knowledge! The tracker failed to deploy.", () => {
+                        // Enemy gets a free turn
+                        const eMoveName = State.enemy.moves[Math.floor(Math.random() * State.enemy.moves.length)];
+                        Battle.processAction({ attacker: State.enemy, defender: State.party[State.activeAnimalIndex], move: MOVE_DB[eMoveName], isPlayer: false }, () => {
+                            if (State.party[State.activeAnimalIndex].hp > 0) Battle.showMainBox();
+                            else Battle.handleFaint(State.party[State.activeAnimalIndex], true);
+                        });
+                    });
+                }
+            }
+        };
+
+        /* --------------------------------------------------------------------------
+           12. UI RENDERING (EcoDex, Party, Bag)
+        -------------------------------------------------------------------------- */
+        const UI = {
+            renderParty() {
+                const grid = document.getElementById('party-grid');
+                grid.innerHTML = '';
+                State.party.forEach((anim, i) => {
+                    const div = document.createElement('div');
+                    div.className = `party-card ${i === State.activeAnimalIndex ? 'active-member' : ''} ${anim.hp <= 0 ? 'fainted' : ''}`;
+
+                    div.innerHTML = `
+                <svg viewBox="0 0 100 100"><use href="#${anim.svg}"></use></svg>
+                <div class="party-info">
+                    <h3>${anim.name}</h3>
+                    <div class="party-lvl">Level ${anim.level} | ${anim.type} Biome</div>
+                    <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; margin-bottom:2px;">
+                        <span>HP</span><span>${Math.ceil(anim.hp)}/${anim.maxHp}</span>
+                    </div>
+                    <div style="width:100%; height:8px; background:#bdc3c7; border-radius:4px; overflow:hidden;">
+                        <div style="width:${(anim.hp / anim.maxHp) * 100}%; height:100%; background:${anim.hp > 0 ? 'var(--primary)' : 'var(--accent)'};"></div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:10px; margin-top:5px; color:#7f8c8d;">
+                        <span>EXP</span><span>${anim.exp}/${anim.maxExp}</span>
+                    </div>
+                </div>
+            `;
+
+                    div.onclick = () => {
+                        if (anim.hp > 0) {
+                            SFX.select();
+                            State.activeAnimalIndex = i;
+                            this.renderParty();
+                            if (Game.lastScreen === 'battle') {
+                                Game.closeMenu();
+                                Battle.updateUI();
+                                Battle.queueDialog(`Go, ${anim.name}!`, () => Battle.showMainBox());
+                            }
+                        } else {
+                            SFX.error();
+                            Game.showToast('This animal is exhausted and needs to rest!');
+                        }
+                    };
+                    grid.appendChild(div);
+                });
+            },
+
+            renderEcoDex() {
+                const list = document.getElementById('ecodex-list');
+                list.innerHTML = '';
+
+                Object.keys(ANIMAL_DB).forEach(key => {
+                    const animal = ANIMAL_DB[key];
+                    const isUnlocked = State.ecodex.includes(key);
+                    const div = document.createElement('div');
+
+                    div.className = `ecodex-item ${isUnlocked ? '' : 'locked'}`;
+                    div.innerHTML = isUnlocked ? `
+                <svg viewBox="0 0 100 100"><use href="#${animal.svg}"></use></svg>
+                <span>${animal.name}</span>
+            ` : `
+                <div style="width:60px; height:60px; background:#bdc3c7; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:24px; color:#fff; font-weight:bold; margin-bottom:10px;">?</div>
+                <span>Undiscovered</span>
+            `;
+
+                    if (isUnlocked) {
+                        div.onclick = () => {
+                            SFX.select();
+                            this.showEcoDexDetails(animal);
+                        };
+                    } else {
+                        div.onclick = () => SFX.error();
+                    }
+                    list.appendChild(div);
+                });
+            },
+
+            showEcoDexDetails(animal) {
+                const details = document.getElementById('ecodex-details');
+
+                let typeColor = 'var(--type-normal)';
+                if (animal.type === 'Arid') typeColor = 'var(--type-arid)';
+                if (animal.type === 'Forest') typeColor = 'var(--type-forest)';
+                if (animal.type === 'Aquatic') typeColor = 'var(--type-aquatic)';
+                if (animal.type === 'Bushland') typeColor = 'var(--type-bushland)';
+
+                let adaptHtml = animal.moves.map(mName => {
+                    const move = MOVE_DB[mName];
+                    let catClass = 'adapt-str';
+                    if (move.category === 'Behavioral') catClass = 'adapt-beh';
+                    if (move.category === 'Physiological') catClass = 'adapt-phy';
+
+                    return `
+                <div class="adapt-item ${catClass}">
+                    <div class="adapt-item-head">
+                        <strong>${move.name}</strong>
+                        <span class="badge" style="background:var(--cat-${move.category.toLowerCase()});">${move.category}</span>
+                    </div>
+                    <p style="margin:0; font-size:15px; color:#444;">${move.fact}</p>
+                </div>
+            `;
+                }).join('');
+
+                details.innerHTML = `
+            <div class="details-top">
+                <div class="details-svg">
+                    <svg viewBox="0 0 100 100"><use href="#${animal.svg}"></use></svg>
+                </div>
+                <div class="details-info">
+                    <h2>${animal.name}</h2>
+                    <span class="badge biome-tag" style="background:${typeColor};">${animal.type} Biome</span>
+                    <p>${animal.desc}</p>
+                    <div style="margin-top:10px; font-size:14px; font-weight:bold; color:#7f8c8d;">
+                        Base Stats: HP ${animal.hp} | ATK ${animal.atk} | DEF ${animal.def} | SPD ${animal.spd}
+                    </div>
+                </div>
+            </div>
+            <div class="adaptations-list">
+                <h3>Documented Scientific Adaptations</h3>
+                ${adaptHtml}
+            </div>
+        `;
+            },
+
+            renderBag() {
+                const list = document.getElementById('bag-list');
+                list.innerHTML = '';
+
+                Object.keys(State.inventory).forEach(key => {
+                    const item = State.inventory[key];
+                    const div = document.createElement('div');
+                    div.className = 'bag-item';
+                    div.innerHTML = `<span>${key}</span> <span class="qty">x${item.qty}</span>`;
+
+                    div.onmouseover = () => {
+                        document.getElementById('item-desc-title').innerText = key;
+                        document.getElementById('item-desc-text').innerText = item.desc;
+                    };
+
+                    div.onclick = () => {
+                        SFX.select();
+                        if (Game.lastScreen === 'battle') {
+                            if (item.qty > 0) Battle.useItem(key);
+                            else Game.showToast("You don't have any left!");
+                        } else {
+                            if (item.effect === 'heal') {
+                                const p = State.party[State.activeAnimalIndex];
+                                if (p.hp < p.maxHp && item.qty > 0) {
+                                    p.hp += item.value;
+                                    if (p.hp > p.maxHp) p.hp = p.maxHp;
+                                    item.qty--;
+                                    SFX.heal();
+                                    Game.showToast(`${p.name} recovered energy!`);
+                                    this.renderBag();
+                                } else if (item.qty <= 0) {
+                                    Game.showToast("You are out of Energy Packs.");
+                                } else {
+                                    Game.showToast(`${p.name} is already at full energy.`);
+                                }
+                            } else {
+                                Game.showToast("You can only use Eco-Trackers in battle.");
+                            }
+                        }
+                    };
+                    list.appendChild(div);
+                });
+            }
+        };
+
+        /* --------------------------------------------------------------------------
+           START APPLICATION
+        -------------------------------------------------------------------------- */
+        window.onload = () => {
+            Game.init();
+        };
+
+    </script>
+</body>
+
+</html>

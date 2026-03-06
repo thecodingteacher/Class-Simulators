@@ -1185,7 +1185,8 @@
       }
       parseBlock() {
         while (this.peek().type === 'NEWLINE') this.consume();
-        this.expect('INDENT'); let stmts = [];
+        if (this.peek().type !== 'INDENT') throw new Error(`Syntax Error: Expected indented block, got '${this.peek().value}'`);
+        this.consume(); let stmts = [];
         while (this.peek().type !== 'DEDENT' && this.peek().type !== 'EOF') { if (this.peek().type === 'NEWLINE') { this.consume(); continue; } stmts.push(this.parseStatement()); }
         if (this.peek().type === 'DEDENT') this.consume(); return stmts;
       }

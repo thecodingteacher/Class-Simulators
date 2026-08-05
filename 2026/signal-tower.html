@@ -74,12 +74,12 @@
 
     <div class="grid">
       <div class="cell"><b>Runtime</b><p>About 25 minutes. Eight stations, each taught, then practised, then tested together.</p></div>
-      <div class="cell"><b>Moving</b><p>Push the thumbstick to walk, or point at the floor and pull the trigger to jump there.</p></div>
+      <div class="cell"><b>Moving</b><p>Thumbstick or trackpad to walk. Point at the floor and pull the trigger to jump there.</p></div>
       <div class="cell"><b>Carrying</b><p>Pull the trigger on a message to pick it up, then walk it to a tower and drop it off.</p></div>
     </div>
 
     <button class="go" id="begin">Enter the plaza</button>
-    <span style="margin-left:14px;font-size:12px;color:var(--dim)">opens fullscreen &mdash; press <kbd>F</kbd> any time to toggle</span>
+    <span id="xrNote" style="margin-left:14px;font-size:12px;color:var(--dim)">opens fullscreen &mdash; press <kbd>F</kbd> any time to toggle</span>
 
     <div class="opts">
       <label><input type="checkbox" id="optVoice" checked> Spoken narration</label>
@@ -120,8 +120,8 @@
         geometry="primitive: ring; radiusInner: 0.007; radiusOuter: 0.011; segmentsTheta: 32"
         material="color: #5ef2d6; shader: flat; opacity: 0.9; depthTest: false"></a-entity>
     </a-entity>
-    <a-entity id="handL" laser-controls="hand: left"  raycaster="objects: .clickable; far: 24" line="color: #5ef2d6; opacity: 0.85"></a-entity>
-    <a-entity id="handR" laser-controls="hand: right" raycaster="objects: .clickable; far: 24" line="color: #5ef2d6; opacity: 0.85"></a-entity>
+    <a-entity id="handL" hand-ray="hand: left"></a-entity>
+    <a-entity id="handR" hand-ray="hand: right"></a-entity>
   </a-entity>
 
 
@@ -537,8 +537,12 @@ AFRAME.registerComponent('stick-move', {
     var p = this.el.object3D.position;
     p.x += (fwd.x * -y + right.x * x) * step;
     p.z += (fwd.z * -y + right.z * x) * step;
-    var d = Math.sqrt(p.x * p.x + p.z * p.z);
-    if (d > PLAZA_LIMIT) { p.x = p.x / d * PLAZA_LIMIT; p.z = p.z / d * PLAZA_LIMIT; }
+    var h = headPos();
+    var d = Math.sqrt(h.x * h.x + h.z * h.z);
+    if (d > PLAZA_LIMIT) {
+      p.x -= (h.x - h.x / d * PLAZA_LIMIT);
+      p.z -= (h.z - h.z / d * PLAZA_LIMIT);
+    }
   }
 });
 
@@ -551,7 +555,7 @@ AFRAME.registerComponent('soft-follow', {
     cam.object3D.getWorldDirection(d); d.y = 0;
     if (d.lengthSq() < 0.0001) return;
     d.normalize();
-    var rp = rig.object3D.position;
+    var rp = headPos();
     var p = this.el.object3D.position;
     var k = Math.min(1, (dt / 1000) * 1.6);
     p.x += ((rp.x - d.x * this.data.dist) - p.x) * k;
@@ -569,32 +573,40 @@ function fadeMove(x, z) {
   setTimeout(function () {
     var d = Math.sqrt(x * x + z * z);
     if (d > PLAZA_LIMIT) { x = x / d * PLAZA_LIMIT; z = z / d * PLAZA_LIMIT; }
-    rig.object3D.position.x = x; rig.object3D.position.z = z;
+    var h = headPos(), rp = rig.object3D.position;
+    rig.object3D.position.x = x - (h.x - rp.x);
+    rig.object3D.position.z = z - (h.z - rp.z);
     f.setAttribute('animation__out', 'property: material.opacity; to: 0; dur: 220; easing: easeOutQuad');
     setTimeout(function () { rm(f); }, 260);
   }, 150);
 }
 
+var _hp = new AFRAME.THREE.Vector3();
+function headPos() {
+  var cam = document.getElementById('cam');
+  cam.object3D.getWorldPosition(_hp);
+  return _hp;
+}
 function playerFront(dist, y) {
-  var rig = document.getElementById('rig'), cam = document.getElementById('cam');
+  var cam = document.getElementById('cam');
   var d = new AFRAME.THREE.Vector3();
   cam.object3D.getWorldDirection(d); d.y = 0;
   if (d.lengthSq() < 0.0001) d.set(0, 0, 1);
   d.normalize();
-  var p = rig.object3D.position;
+  var p = headPos();
   return { x: p.x - d.x * (dist || 1.5), y: (y === undefined ? 1.45 : y), z: p.z - d.z * (dist || 1.5) };
 }
 function distToTower(id) {
   var t = TOWER[id]; if (!t) return 999;
-  var p = document.getElementById('rig').object3D.position;
+  var p = headPos();
   return Math.sqrt((p.x - t.x) * (p.x - t.x) + (p.z - t.z) * (p.z - t.z));
 }
 
 /* put an existing bench item down wherever the player is standing */
 function atPlayer(el, dist, y) {
   var p = playerFront(dist || 1.5, y === undefined ? 1.3 : y);
-  var rig = document.getElementById('rig').object3D.position;
-  var yaw = Math.atan2(rig.x - p.x, rig.z - p.z) * 180 / Math.PI;
+  var h = headPos();
+  var yaw = Math.atan2(h.x - p.x, h.z - p.z) * 180 / Math.PI;
   el.setAttribute('position', p.x + ' ' + p.y + ' ' + p.z);
   el.setAttribute('rotation', '0 ' + yaw + ' 0');
   return el;
@@ -683,6 +695,92 @@ AFRAME.registerComponent('delivery-watch', {
     }
   }
 });
+/* ============================================================
+   CONTROLLERS
+   Built to work on any WebXR headset, including ones whose
+   controller profile A-Frame does not recognise (Vive XR Elite).
+   Three independent paths to a click:
+     1. the controller component's own button events
+     2. every button event name we know of, wired to the cursor
+     3. the raw WebXR 'select' event straight off the session
+   ============================================================ */
+
+var DOWN_EVENTS = ['triggerdown', 'gripdown', 'trackpaddown', 'thumbstickdown',
+  'abuttondown', 'bbuttondown', 'xbuttondown', 'ybuttondown', 'menudown',
+  'surfacedown', 'selectstart', 'squeezestart', 'pointerdown'];
+var UP_EVENTS = ['triggerup', 'gripup', 'trackpadup', 'thumbstickup',
+  'abuttonup', 'bbuttonup', 'xbuttonup', 'ybuttonup', 'menuup',
+  'surfaceup', 'selectend', 'squeezeend', 'pointerup'];
+
+AFRAME.registerComponent('hand-ray', {
+  schema: { hand: { default: 'right' } },
+  init: function () {
+    var el = this.el, hand = this.data.hand, self = this;
+
+    // Known profiles get a proper model and mapping...
+    el.setAttribute('laser-controls', { hand: hand });
+    // ...unknown ones (Vive XR Elite among them) fall back to the generic
+    // WebXR controller so the entity is still tracked and still fires buttons.
+    setTimeout(function () {
+      if (!el.components['tracked-controls'] && !el.components['tracked-controls-webxr']) {
+        el.setAttribute('generic-tracked-controller-controls', { hand: hand });
+      }
+    }, 700);
+
+    el.setAttribute('raycaster', {
+      objects: '.clickable', far: 30, showLine: true,
+      lineColor: '#5ef2d6', lineOpacity: 0.9, interval: 40
+    });
+    el.setAttribute('cursor', {
+      fuse: false, rayOrigin: 'entity',
+      downEvents: DOWN_EVENTS, upEvents: UP_EVENTS
+    });
+
+    // a visible tip so you can see where you are pointing
+    var tip = document.createElement('a-sphere');
+    tip.setAttribute('radius', 0.012);
+    tip.setAttribute('position', '0 0 -0.06');
+    tip.setAttribute('material', 'color: #5ef2d6; shader: flat; opacity: 0.9');
+    el.appendChild(tip);
+
+    el.addEventListener('controllerconnected', function () { self.el.setAttribute('visible', true); });
+  }
+});
+
+/* ---------- last-resort click: the raw WebXR select event ---------- */
+var LAST_CLICK = 0;
+
+function xrSelectFallback() {
+  if (Date.now() - LAST_CLICK < 350) return;   // the cursor already handled it
+  var ids = ['handR', 'handL', 'reticle'];
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (!el || !el.components || !el.components.raycaster) continue;
+    var hits = el.components.raycaster.intersectedEls;
+    if (hits && hits.length) {
+      LAST_CLICK = Date.now();
+      hits[0].emit('click', null, false);
+      return;
+    }
+  }
+}
+
+function wireXRSession(scene) {
+  var session = scene.renderer && scene.renderer.xr && scene.renderer.xr.getSession
+    ? scene.renderer.xr.getSession() : null;
+  if (!session) return;
+  session.addEventListener('select', xrSelectFallback);
+  session.addEventListener('squeeze', xrSelectFallback);
+}
+
+/* ---------- can this device do VR at all? ---------- */
+var XR_OK = false;
+function probeXR(cb) {
+  if (!navigator.xr || !navigator.xr.isSessionSupported) { cb(false); return; }
+  navigator.xr.isSessionSupported('immersive-vr').then(function (ok) {
+    XR_OK = !!ok; cb(XR_OK);
+  }).catch(function () { cb(false); });
+}
 /* ============================================================
    STATION CONTENT — walk-and-deliver version
    Tier 1 = guided, tier 2 = unprompted.
@@ -1462,17 +1560,15 @@ function boot() {
   rig.setAttribute('stick-move', '');
   rig.setAttribute('delivery-watch', '');
   var scene = document.getElementById('scene');
+  // remember when a real click landed, so the WebXR fallback does not double-fire
+  scene.addEventListener('click', function () { LAST_CLICK = Date.now(); });
   scene.addEventListener('enter-vr', function () {
-    var r = document.getElementById('reticle');
-    if (r) { r.setAttribute('visible', false); r.removeAttribute('raycaster'); r.removeAttribute('cursor'); }
+    wireXRSession(scene);
+    prompt('You are in VR.',
+      'Point with either controller and squeeze the trigger. Push the thumbstick to walk. If a controller is not tracking, look straight at a thing and pull the trigger.');
   });
   scene.addEventListener('exit-vr', function () {
-    var r = document.getElementById('reticle');
-    if (r) {
-      r.setAttribute('visible', true);
-      r.setAttribute('cursor', 'fuse: false; rayOrigin: entity');
-      r.setAttribute('raycaster', 'objects: .clickable; far: 30');
-    }
+    prompt('Back on the flat screen.', 'Click once to take the mouse, then W A S D to walk.');
   });
   syncToggles();
   drawProgress();
@@ -1511,6 +1607,14 @@ document.addEventListener('DOMContentLoaded', function () {
     return;
   }
 
+  probeXR(function (ok) {
+    if (!ok) return;
+    var b = document.getElementById('begin');
+    if (b) b.textContent = 'Enter the plaza in VR';
+    var n = document.getElementById('xrNote');
+    if (n) n.textContent = 'headset detected \u2014 this will open straight into VR';
+  });
+
   var tv = document.getElementById('tgVoice'), ts = document.getElementById('tgSfx');
   if (tv) tv.addEventListener('click', function () { setVoice(!OPT.voice); });
   if (ts) ts.addEventListener('click', function () { setSfx(!OPT.sfx); });
@@ -1520,7 +1624,13 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('begin').addEventListener('click', function () {
     audio();
     if (actx && actx.state === 'suspended') actx.resume();
-    enterFullscreen();          // this click is the user gesture the browser requires
+    var scene0 = document.getElementById('scene');
+    if (XR_OK && scene0 && scene0.enterVR) {
+      // must happen synchronously inside the click for the browser to allow it
+      try { scene0.enterVR(); } catch (err) { enterFullscreen(); }
+    } else {
+      enterFullscreen();      // this click is the user gesture the browser requires
+    }
     shell.classList.add('gone');
     document.getElementById('hud').classList.add('on');
     var scene = document.getElementById('scene');

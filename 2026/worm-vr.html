@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Under the Garden v0.85 — a worm's survey of the soil</title>
+<title>Under the Garden v0.9 — a worm's survey of the soil</title>
 <style>
 :root{
   --soil-o:#241505; --soil-a:#3d2811; --soil-b:#6f4517; --soil-c:#c89346;
@@ -189,7 +189,7 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 <body>
 <div id="stage"></div>
 
-<div id="brand"><h2>Under the Garden</h2><p>v0.85 · soil survey · you are the worm</p></div>
+<div id="brand"><h2>Under the Garden</h2><p>v0.9 · soil survey · you are the worm</p></div>
 
 <div id="gauge" class="hidden">
   <div class="col" id="gcol"></div>
@@ -235,7 +235,7 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 
 <div id="boot"><div class="in">
   <h1>Under the Garden</h1>
-  <div class="sub">v0.85 · Soil survey · plot 4</div>
+  <div class="sub">v0.9 · Soil survey · plot 4</div>
   <div id="bar"><i></i></div>
   <div class="say">Waking the worm</div>
   <div class="err" id="bootErr" style="display:none"></div>
@@ -2193,7 +2193,7 @@ let vrSize=0;
 let WORLD_PER_METRE=VR_SIZES[0].s;
 const rig=new THREE.Group(); rig.add(wormCam); scene.add(rig);
 let xrOn=false, vrYaw=0, snapCool=0, vrPanel=null, vrPanelTex=null, vrPanelCtx=null;
-let vrShowNotes=false, vrPanelT=0, vrSmoothTurn=false, vrHeight=0;
+let vrShowNotes=true, vrPanelT=0, vrSmoothTurn=false, vrHeight=0;
 const vrBtnPrev={};
 const _xrDir=new THREE.Vector3(), _rigTarget=new THREE.Vector3();
 
@@ -2267,7 +2267,7 @@ function drawVRPanel(){
   // status strip: version, fps, size, live stick values, any caught error
   g.font='15px "Courier New",monospace';
   g.fillStyle='#c0ab86';
-  g.fillText('v0.85  '+(typeof FPS!=='undefined'?FPS:'?')+' fps  '
+  g.fillText('v0.9  '+(typeof FPS!=='undefined'?FPS:'?')+' fps  '
     +VR_SIZES[vrSize].k+'  L '+INP.side.toFixed(1)+','+INP.fwd.toFixed(1)
     +'  '+(vrSmoothTurn?'smooth':'snap'),22,H-52);
   if(typeof LASTERR!=='undefined'&&LASTERR){
@@ -2311,90 +2311,69 @@ function drawVRPanel(){
    Two slim bars in eye space: score and objective across the top,
    context prompt, controls and vitals along the bottom. Head-locked
    but thin and at 1 m, so it reads as a visor, not a billboard.    */
-let hudTop=null, hudBot=null, hudTopCtx=null, hudBotCtx=null,
-    hudTopTex=null, hudBotTex=null, hudT=0, lastAward=null;
+let hudBot=null, hudBotCtx=null, hudBotTex=null, hudT=0, lastAward=null;
 function mkHudPlane(w,h,y){
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
   const tex=new THREE.CanvasTexture(cv); tex.colorSpace=THREE.SRGBColorSpace;
-  const m=new THREE.Mesh(new THREE.PlaneGeometry(w/900,h/900),
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w/760,h/760),
     new THREE.MeshBasicMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false}));
   m.position.set(0,y,-1.0); m.renderOrder=45; m.visible=false;
   wormCam.add(m);
   return {mesh:m,ctx:cv.getContext('2d'),tex,W:w,H:h};
 }
-{
-  const t=mkHudPlane(880,120, 0.40); hudTop=t.mesh; hudTopCtx=t.ctx; hudTopTex=t.tex;
-  const b=mkHudPlane(880,190,-0.40); hudBot=b.mesh; hudBotCtx=b.ctx; hudBotTex=b.tex;
-}
+{ const b=mkHudPlane(880,210,-0.36); hudBot=b.mesh; hudBotCtx=b.ctx; hudBotTex=b.tex; }
 function plate(g,x,y,w,h){
-  g.fillStyle='rgba(26,15,5,0.78)'; g.fillRect(x,y,w,h);
+  g.fillStyle='rgba(26,15,5,0.80)'; g.fillRect(x,y,w,h);
   g.strokeStyle='#c89346'; g.lineWidth=3; g.strokeRect(x+1,y+1,w-2,h-2);
 }
+/* the bar earns its place: prompt, danger, award, or thirst \u2014 or nothing */
+function hudContent(){
+  const H=hazardAt&&hazardAt();
+  const danger=H&&!(PL.burrow||PL.dig)&&invuln<=0;
+  const label=contextLabel();
+  const award=window.__award&&window.__award.t>0;
+  const dry=PL.moist<0.42;
+  if(!(label||danger||award||dry)) return null;
+  return {label,danger:danger?H:null,award,dry};
+}
 function drawHUD(){
-  { // ---- top: points · leaves · objective ----
-    const g=hudTopCtx, W=880, H=120;
-    g.clearRect(0,0,W,H);
-    plate(g,0,0,W,H);
-    g.textBaseline='top';
-    g.fillStyle='#dca956'; g.font='bold 44px "Bookman Old Style",Georgia,serif';
-    g.fillText(SCORE.pts.toLocaleString(),22,16);
-    g.font='15px "Courier New",monospace'; g.fillStyle='#c0ab86';
-    g.fillText('POINTS',24,66);
-    g.fillText(SCORE.leaves+'/'+leaves.length+' LEAVES',24,88);
-    lastAward=window.__award||lastAward;
-    if(lastAward&&lastAward.t>0){
-      g.fillStyle='#91bb3d'; g.font='bold 30px "Bookman Old Style",Georgia,serif';
-      g.fillText('+'+lastAward.n,190,24);
-    }
-    let got=0,next=null;
-    NOTES.forEach(n=>{ if(n.got)got++; else if(!next)next=n; });
-    g.fillStyle='#91bb3d'; g.font='13px "Courier New",monospace';
-    g.fillText('OBJECTIVE  '+got+'/'+NOTES.length,300,16);
-    g.fillStyle='#efe0c0'; g.font='19px "Trebuchet MS",sans-serif';
-    wrapText(g,next?next.hint:'All notes ticked. Stand in the rain.',300,38,W-320,24,H-14);
-    hudTopTex.needsUpdate=true;
+  const g=hudBotCtx, W=880, H=210;
+  g.clearRect(0,0,W,H);
+  const c=hudContent();
+  if(!c){ hudBotTex.needsUpdate=true; return; }
+  plate(g,0,0,W,H);
+  g.textBaseline='top';
+  let y=18;
+  if(c.danger){
+    g.fillStyle='#f0704a'; g.font='bold 40px "Trebuchet MS",sans-serif';
+    g.fillText('\u26a0 '+c.danger.name.toUpperCase()+' \u2014 DIG!',22,y); y+=54;
   }
-  { // ---- bottom: context prompt · controls · vitals ----
-    const g=hudBotCtx, W=880, H=190;
-    g.clearRect(0,0,W,H);
-    plate(g,0,0,W,H);
-    g.textBaseline='top';
-    const label=contextLabel();
-    if(label){
-      g.fillStyle='#20140a'; g.fillRect(20,16,52,40);
-      g.fillStyle='#dca956'; g.strokeStyle='#dca956'; g.lineWidth=2; g.strokeRect(20,16,52,40);
-      g.font='bold 26px "Courier New",monospace'; g.fillText('B',37,23);
-      g.fillStyle='#efe0c0'; g.font='bold 26px "Trebuchet MS",sans-serif';
-      g.fillText(label,88,22);
-    }else{
-      g.fillStyle='#8a7250'; g.font='20px "Trebuchet MS",sans-serif';
-      g.fillText('crawl with the left stick \u2014 look where you want to go',22,24);
-    }
-    g.fillStyle='#c0ab86'; g.font='15px "Courier New",monospace';
-    g.fillText((PL.burrow||PL.dig)
-      ? 'GRIP hold: eat it wider   A: rain   X: notebook'
-      : 'A: rain   X: notebook   GRIP: dig in   sticks: size / turn',22,70);
-    // vitals
-    const surf=heightAt(PL.pos.x,PL.pos.z), d=surf-PL.pos.y;
-    g.fillText((d>2?Math.round(d)+' CM DOWN \u00b7 '+horizonKey(PL.pos.y):'SURFACE')
-      +'   \u00b7   '+String(WX.mode||'fine').toUpperCase(),22,100);
-    g.fillStyle='#160d04'; g.fillRect(22,128,W-44,20);
-    g.fillStyle=PL.moist<0.4?'#c86a34':'#10aaa9';
-    g.fillRect(24,130,(W-48)*PL.moist,16);
-    g.fillStyle='#efe0c0'; g.font='13px "Trebuchet MS",sans-serif';
-    g.fillText('skin moisture '+Math.round(PL.moist*100)+'%',28,130);
-    g.fillStyle='#c0ab86'; g.font='13px "Courier New",monospace';
-    g.fillText('v0.85  '+(typeof FPS!=='undefined'?FPS:'?')+' fps  '+VR_SIZES[vrSize].k
-      +(typeof LASTERR!=='undefined'&&LASTERR?'  ERR '+LASTERR.slice(0,30):''),22,160);
-    hudBotTex.needsUpdate=true;
+  if(c.label){
+    g.fillStyle='#20140a'; g.fillRect(20,y,72,56);
+    g.strokeStyle='#dca956'; g.lineWidth=3; g.strokeRect(20,y,72,56);
+    g.fillStyle='#dca956'; g.font='bold 40px "Courier New",monospace'; g.fillText('B',43,y+8);
+    g.fillStyle='#efe0c0'; g.font='bold 40px "Trebuchet MS",sans-serif';
+    g.fillText(c.label,108,y+6); y+=68;
   }
+  if(c.award){
+    g.fillStyle='#91bb3d'; g.font='bold 38px "Bookman Old Style",Georgia,serif';
+    g.fillText('+'+window.__award.n+'   \u00b7   '+SCORE.pts.toLocaleString()+' pts',22,y); y+=50;
+  }
+  if(c.dry){
+    g.fillStyle='#160d04'; g.fillRect(22,y+6,W-44,26);
+    g.fillStyle='#c86a34'; g.fillRect(24,y+8,(W-48)*PL.moist,22);
+    g.fillStyle='#efe0c0'; g.font='bold 20px "Trebuchet MS",sans-serif';
+    g.fillText('DRYING OUT \u2014 find shade or dig',30,y+8); y+=40;
+  }
+  hudBotTex.needsUpdate=true;
 }
 function updateHUD(dt){
-  if(!xrOn){ if(hudTop){hudTop.visible=false; hudBot.visible=false;} return; }
-  hudTop.visible=true; hudBot.visible=true;
+  if(!xrOn){ if(hudBot)hudBot.visible=false; return; }
+  const c=hudContent();
+  hudBot.visible=!!c&&!mapOn;
   if(window.__award&&window.__award.t>0) window.__award.t-=dt;
   hudT+=dt;
-  if(hudT>0.20){ hudT=0; drawHUD(); }
+  if(hudT>0.18){ hudT=0; if(hudBot.visible) drawHUD(); }
 }
 
 const ctrls=[];
@@ -2468,7 +2447,7 @@ function enterVR(){
     elScore.classList.remove('hidden'); elObj.classList.remove('hidden');
   }catch(e){}
   showCard('Headset on','Mouse view \u2014 grass at shoulder height',
-    'One button does the work: B (or trigger) reads, collects, digs in, enters and leaves burrows — the prompt on your visor always says what it will do. Hold GRIP underground to eat the tunnel wider. A calls the rain, X flips your wrist notebook, stick clicks change size and turning.','','');
+    'B does the work \u2014 the prompt always says what. Y hurries. X opens the island map: three marked areas hold things that hunt worms, and going underground is how you escape them. A calls the rain. Hold grip underground to widen a tunnel.','','');
 }
 function exitVR(){
   xrOn=false;
@@ -2510,10 +2489,13 @@ function pollXR(dt){
     }
     // X: wrist notebook · A: rain · B/Y: widen · stick clicks: size / turn style
     if(bt[4]&&edge(h+'a',bt[4].pressed)){
-      if(h==='l'){ vrShowNotes=!vrShowNotes; drawVRPanel(); }
-      else toggleRain();
+      if(h==='l') toggleMap();               // X: the island map
+      else toggleRain();                     // A: rain
     }
-    if(bt[5]&&edge(h+'b',bt[5].pressed)) contextAction();
+    if(bt[5]){
+      if(h==='r'){ if(edge('rb',bt[5].pressed)) contextAction(); }   // B: do the thing
+      else if(bt[5].pressed) sprint=true;                            // Y: hold to hurry
+    }
     if(bt[3]&&edge(h+'stick',bt[3].pressed)){
       if(h==='r'){ vrSmoothTurn=!vrSmoothTurn;
         vrCardTitle='Turning: '+(vrSmoothTurn?'smooth':'snap');
@@ -2851,6 +2833,290 @@ function undergroundCam(dist,out){
   }
   out.copy(pts[0]); return out;
 }
+/* ================= hazards =================
+   Three patches of ground where something hunts worms. All of them
+   only matter on the surface: underground you are safe, which is the
+   whole reason worms live down there.                               */
+const HAZARDS=[
+ {id:'bird', name:'Blackbird ground', x:60,  z:-40,  r:75, visited:false,
+  note:{tag:'Danger', title:'The early bird',
+   body:'Blackbirds and magpies hunt worms by sight and by feel, cocking their head to watch for the tip of a tail. A tug-of-war with a worm is a real fight: the worm grips its burrow with every bristle it has. The bird usually wins. Rule of the surface: never linger in the open.',
+   hint:'Open ground near the topsoil. Something is watching it from above.'}},
+ {id:'centipede', name:'Centipede hollow', x:-171, z:-138, r:75, visited:false,
+  note:{tag:'Danger', title:'Fangs in the litter',
+   body:'Centipedes hunt through the same leaf litter worms feed in. The front pair of legs has evolved into venom claws, and a big centipede takes worms much larger than itself. Unlike the bird, it can follow you into loose litter \u2014 only a proper burrow is safe.',
+   hint:'Something with far too many legs lives in the leaf litter.'}},
+ {id:'mower', name:'The mowing strip', x:236, z:-136, r:80, visited:false,
+  note:{tag:'Danger', title:'The loudest predator',
+   body:'The most dangerous animal in a garden is the person mowing it. Mowers, spades and boots kill more worms than every bird combined, and the vibration alone sends worms deep. If the ground starts roaring, do what real worms do: go down and wait.',
+   hint:'On mowing day, part of the garden roars.'}},
+];
+HAZARDS.forEach(H=>NOTES.push({id:'haz:'+H.id,tag:H.note.tag,title:H.note.title,
+  body:H.note.body,hint:H.note.hint,got:false}));
+
+let SPAWN_P=PL.pos.clone(), invuln=0, hazVisitT=0;
+
+function respawn(msg,body){
+  PL.burrow=null;
+  if(PL.dig){ PL.dig=null; digFace.visible=false; headLamp.visible=false; }
+  PL.pos.copy(SPAWN_P);
+  PL.trail.length=0;
+  for(let i=0;i<RINGS;i++) PL.trail.push(PL.pos.clone().add(new THREE.Vector3(0,0,i*.5)));
+  PL.moist=1; invuln=3;
+  SND.play('death');
+  toast(msg,body+' No points lost \u2014 back at the start, wiser.');
+}
+
+/* ---- the centipede: segmented, low, fast, and it chases ---- */
+const centi={rings:20};
+{
+  const geo=buildWormGeo(centi.rings,SIDES,lin(0x5a1c10),lin(0xa8442a),lin(0x7a2c1a),lin(0xc06040));
+  centi.mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true}));
+  centi.mesh.castShadow=true; scene.add(centi.mesh); centi.geo=geo;
+  centi.pts=[]; for(let i=0;i<centi.rings;i++)centi.pts.push(new THREE.Vector3());
+  const H=HAZARDS[1];
+  centi.x=H.x; centi.z=H.z; centi.a=0; centi.trail=[];
+  for(let i=0;i<80;i++)centi.trail.push(new THREE.Vector3(H.x,heightAt(H.x,H.z)+1.2,H.z));
+  // legs: instanced spikes along the flanks
+  const legGeo=P.cone(0.5,4.5,4);
+  centi.legs=new THREE.InstancedMesh(legGeo,
+    new THREE.MeshLambertMaterial({color:0x6a2416}),centi.rings*2);
+  scene.add(centi.legs);
+}
+function updateCentipede(dt,t){
+  const H=HAZARDS[1];
+  const inZone=Math.hypot(PL.pos.x-H.x,PL.pos.z-H.z)<H.r;
+  const surf=!(PL.burrow||PL.dig);
+  const hunting=inZone&&surf&&invuln<=0;
+  let tx,tz,spd;
+  if(hunting){ tx=PL.pos.x; tz=PL.pos.z; spd=31; }
+  else{ centi.a+=dt*0.5;
+    tx=H.x+Math.cos(centi.a)*42; tz=H.z+Math.sin(centi.a*0.8)*42; spd=15; }
+  const dx=tx-centi.x, dz=tz-centi.z, d=Math.hypot(dx,dz);
+  if(d>1){ centi.x+=dx/d*spd*dt; centi.z+=dz/d*spd*dt; }
+  const hy=heightAt(centi.x,centi.z)+1.2;
+  const head=centi.trail[0];
+  if(head.distanceTo(_v3.set(centi.x,hy,centi.z))>0.5){
+    centi.trail.unshift(new THREE.Vector3(centi.x,hy,centi.z));
+    if(centi.trail.length>80)centi.trail.length=80;
+  }else head.set(centi.x,hy,centi.z);
+  spineFromTrail(centi.trail,centi.pts,1.6,centi.rings,1e9);
+  shapeWorm(centi.geo,centi.pts,1.5,centi.rings,SIDES,t*14);
+  // legs bristle outward from each segment
+  let li=0;
+  for(let i=2;i<centi.rings;i+=1){
+    const p=centi.pts[i], q=centi.pts[Math.max(0,i-1)];
+    const ang=Math.atan2(p.x-q.x,p.z-q.z);
+    for(const side of [-1,1]){
+      _m4.compose(_v3.set(p.x+Math.cos(ang)*2.2*side,p.y-0.4,p.z-Math.sin(ang)*2.2*side),
+        _q.setFromEuler(new THREE.Euler(0,ang,side*1.9+Math.sin(t*16+i)*0.5)),
+        new THREE.Vector3(1,1,1));
+      if(li<centi.legs.count) centi.legs.setMatrixAt(li++,_m4);
+    }
+  }
+  centi.legs.instanceMatrix.needsUpdate=true;
+  if(hunting&&Math.hypot(PL.pos.x-centi.x,PL.pos.z-centi.z)<9){
+    respawn('Caught by the centipede','Venom claws in the litter \u2014 it happens to real worms every day.');
+  }
+}
+
+/* ---- the blackbird: circles high, then commits to a dive ---- */
+const bird={state:'circle',t:0,pos:new THREE.Vector3(),dive:new THREE.Vector3(),watch:0};
+{
+  const ps=[
+    {g:P.sph(6,9,7),c:lin(0x1c1c22),m:mat4(0,0,0,0,0,0,1.6,1,1)},
+    {g:P.cone(2.4,7,6),c:lin(0xd8a020),m:mat4(11,0,0,0,0,-Math.PI/2)},
+    {g:P.sph(3.4,8,6),c:lin(0x1c1c22),m:mat4(7.5,2.5,0)},
+  ];
+  bird.body=new THREE.Mesh(mergeParts(ps),new THREE.MeshLambertMaterial({vertexColors:true}));
+  bird.body.castShadow=true;
+  bird.wL=new THREE.Mesh(blade(16,9,2,4),new THREE.MeshLambertMaterial({color:0x24242c,side:THREE.DoubleSide}));
+  bird.wR=bird.wL.clone();
+  bird.wL.rotation.z=Math.PI/2; bird.wR.rotation.z=Math.PI/2;
+  bird.body.add(bird.wL); bird.body.add(bird.wR);
+  bird.wL.position.set(0,1,4); bird.wR.position.set(0,1,-4); bird.wR.scale.z=-1;
+  scene.add(bird.body);
+  bird.shadow=new THREE.Mesh(new THREE.CircleGeometry(7,14),
+    new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.3}));
+  bird.shadow.rotation.x=-Math.PI/2; scene.add(bird.shadow);
+}
+function updateBird(dt,t){
+  const H=HAZARDS[0];
+  const inZone=Math.hypot(PL.pos.x-H.x,PL.pos.z-H.z)<H.r;
+  const surf=!(PL.burrow||PL.dig);
+  bird.t+=dt;
+  const flap=Math.sin(t*(bird.state==='dive'?4:11))*0.9;
+  bird.wL.rotation.x=flap; bird.wR.rotation.x=-flap;
+  if(bird.state==='circle'){
+    const a=t*0.55;
+    bird.pos.set(H.x+Math.cos(a)*70, heightAt(H.x,H.z)+64+Math.sin(t*0.9)*6, H.z+Math.sin(a)*70);
+    if(inZone&&surf&&invuln<=0){ bird.watch+=dt;
+      if(bird.watch>1.6){ bird.state='dive'; bird.t=0; bird.dive.copy(PL.pos);
+        SND.play('danger'); }
+    } else bird.watch=Math.max(0,bird.watch-dt*2);
+  }else if(bird.state==='dive'){
+    bird.dive.lerp(PL.pos,Math.min(1,dt*2.2));           // tracks, imperfectly
+    const k=Math.min(1,bird.t/1.1);
+    bird.pos.lerp(_v3.set(bird.dive.x,bird.dive.y+2,bird.dive.z),k*k*dt*14);
+    if(bird.t>1.35||bird.pos.distanceTo(PL.pos)<10){
+      if(surf&&invuln<=0&&bird.pos.distanceTo(PL.pos)<12)
+        respawn('The blackbird got you','It watched you cross the open ground, and it only needed one pass.');
+      bird.state='climb'; bird.t=0;
+    }
+  }else{ // climb back out
+    bird.pos.y+=dt*55;
+    if(bird.t>1.6){ bird.state='circle'; bird.watch=0; }
+  }
+  bird.body.position.copy(bird.pos);
+  bird.body.lookAt(bird.state==='dive'?PL.pos:_v3.set(H.x,bird.pos.y,H.z));
+  const gy=heightAt(bird.pos.x,bird.pos.z);
+  bird.shadow.position.set(bird.pos.x,gy+0.6,bird.pos.z);
+  bird.shadow.material.opacity=clamp(0.5-(bird.pos.y-gy)/220,0.06,0.5);
+}
+
+/* ---- the mower: patrols a strip, roaring ---- */
+const mower={dir:1,x:0};
+{
+  const ps=[
+    {g:P.box(26,10,18),c:lin(0xb03020),m:mat4(0,9,0)},
+    {g:P.box(10,6,12),c:lin(0x2a2a2e),m:mat4(-14,15,0)},
+    {g:P.cyl(4,4,3,10),c:lin(0x1c1c1c),m:mat4( 9,4, 9,Math.PI/2,0,0)},
+    {g:P.cyl(4,4,3,10),c:lin(0x1c1c1c),m:mat4( 9,4,-9,Math.PI/2,0,0)},
+    {g:P.cyl(4,4,3,10),c:lin(0x1c1c1c),m:mat4(-9,4, 9,Math.PI/2,0,0)},
+    {g:P.cyl(4,4,3,10),c:lin(0x1c1c1c),m:mat4(-9,4,-9,Math.PI/2,0,0)},
+    {g:P.cyl(1.2,1.2,26,6),c:lin(0x3a3a3e),m:mat4(-20,22,0,0,0,0.6)},
+  ];
+  mower.mesh=new THREE.Mesh(mergeParts(ps),new THREE.MeshLambertMaterial({vertexColors:true}));
+  mower.mesh.castShadow=true; scene.add(mower.mesh);
+  const H=HAZARDS[2];
+  mower.cx=H.x; mower.cz=H.z; mower.x=-60; mower.lane=0;
+}
+function updateMower(dt,t){
+  const H=HAZARDS[2];
+  mower.x+=mower.dir*44*dt;
+  if(Math.abs(mower.x)>62){ mower.dir*=-1; mower.lane=(mower.lane+1)%4; }
+  const wx=H.x+mower.x, wz=H.z+(mower.lane-1.5)*26;
+  mower.mesh.position.set(wx,heightAt(wx,wz),wz);
+  mower.mesh.rotation.y=mower.dir>0?Math.PI/2:-Math.PI/2;
+  mower.mesh.position.y+=Math.sin(t*37)*0.4;             // engine judder
+  const d=Math.hypot(PL.pos.x-wx,PL.pos.z-wz);
+  if(d<130&&!(PL.burrow||PL.dig)) SND.play('mower');
+  if(d<15&&!(PL.burrow||PL.dig)&&invuln<=0)
+    respawn('The mower','The loudest predator in any garden. Real worms feel it coming through the ground and dive.');
+}
+
+function hazardAt(){
+  for(const H of HAZARDS)
+    if(Math.hypot(PL.pos.x-H.x,PL.pos.z-H.z)<H.r) return H;
+  return null;
+}
+function updateHazards(dt,t){
+  if(invuln>0) invuln-=dt;
+  updateCentipede(dt,t); updateBird(dt,t); updateMower(dt,t);
+  const H=hazardAt();
+  if(H&&!(PL.burrow||PL.dig)){
+    hazVisitT+=dt;
+    if(hazVisitT>0.6&&!H.visited){
+      H.visited=true; unlock('haz:'+H.id); addPoints(150);
+    }
+  }else hazVisitT=0;
+}
+
+/* ================= the island map =================
+   Toggled with X in the headset: the whole plot from above, your own
+   position, every marked area, and whether you have survived it.    */
+let mapPlane=null, mapCtx=null, mapTex=null, mapOn=false, mapBase=null, mapT=0;
+const MAPW=560;
+function world2map(x,z){ return [ (x/ (R*1.12) *0.5+0.5)*MAPW, (z/(R*1.12)*0.5+0.5)*MAPW ]; }
+function buildMapBase(){
+  mapBase=document.createElement('canvas'); mapBase.width=mapBase.height=MAPW;
+  const g=mapBase.getContext('2d');
+  const N=100;
+  const cell=MAPW/N;
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){
+    const x=(i/(N-1)-0.5)*2*R*1.12, z=(j/(N-1)-0.5)*2*R*1.12;
+    const h=heightAt(x,z);
+    let c;
+    if(h<-30)c='#0a5a86'; else if(h<0)c='#0f8f9a'; else if(h<8)c='#d9b268';
+    else{
+      const Z=ZONES[zoneIndexAt(x,z)];
+      c=['#4a5f1e','#55671f','#6d5a2a','#9a7434','#6b5518','#7a5c1e'][Z.i];
+      if(h<60)c='#7a5a2c';                                // the pit
+    }
+    g.fillStyle=c; g.fillRect(i*cell,j*cell,cell+1,cell+1);
+  }
+}
+function buildMap(){
+  const cv=document.createElement('canvas'); cv.width=cv.height=MAPW;
+  mapCtx=cv.getContext('2d');
+  mapTex=new THREE.CanvasTexture(cv); mapTex.colorSpace=THREE.SRGBColorSpace;
+  mapPlane=new THREE.Mesh(new THREE.PlaneGeometry(0.72,0.72),
+    new THREE.MeshBasicMaterial({map:mapTex,transparent:true,depthTest:false,depthWrite:false}));
+  mapPlane.position.set(0,0.02,-1.05); mapPlane.renderOrder=48; mapPlane.visible=false;
+  wormCam.add(mapPlane);
+  buildMapBase();
+}
+buildMap();
+function drawMap(){
+  const g=mapCtx;
+  g.clearRect(0,0,MAPW,MAPW);
+  g.drawImage(mapBase,0,0);
+  g.strokeStyle='#c89346'; g.lineWidth=6; g.strokeRect(3,3,MAPW-6,MAPW-6);
+  // burrow mouths
+  g.fillStyle='#2a1808';
+  for(const b of burrows) for(const m of b.mouths){
+    const [px,pz]=world2map(m.p.x,m.p.z);
+    g.beginPath(); g.arc(px,pz,4,0,Math.PI*2); g.fill();
+  }
+  // the barren patch
+  { const [px,pz]=world2map(BARREN.x,BARREN.z);
+    g.strokeStyle=BARREN.heal>=1?'#91bb3d':'#e0cfa2'; g.lineWidth=3;
+    g.beginPath(); g.arc(px,pz,BARREN.r/(R*1.12)*0.5*MAPW,0,Math.PI*2); g.stroke();
+    g.fillStyle=g.strokeStyle; g.font='bold 15px "Trebuchet MS",sans-serif'; g.textAlign='center';
+    g.fillText(BARREN.heal>=1?'\u2713 healed':'hardpan '+Math.round(BARREN.heal*100)+'%',px,pz-BARREN.r/(R*1.12)*0.5*MAPW-6); }
+  // hazard areas, ticked when survived
+  g.font='bold 16px "Trebuchet MS",sans-serif';
+  for(const H of HAZARDS){
+    const [px,pz]=world2map(H.x,H.z);
+    const rr=H.r/(R*1.12)*0.5*MAPW;
+    g.strokeStyle=H.visited?'#91bb3d':'#e05a3a'; g.lineWidth=3;
+    g.setLineDash(H.visited?[]:[7,5]);
+    g.beginPath(); g.arc(px,pz,rr,0,Math.PI*2); g.stroke(); g.setLineDash([]);
+    g.fillStyle=H.visited?'#91bb3d':'#f0b0a0';
+    g.fillText((H.visited?'\u2713 ':'\u26a0 ')+H.name,px,pz-rr-6);
+  }
+  // you
+  { const [px,pz]=world2map(PL.pos.x,PL.pos.z);
+    g.fillStyle='#ffb27a'; g.strokeStyle='#20140a'; g.lineWidth=2.5;
+    g.beginPath(); g.arc(px,pz,8,0,Math.PI*2); g.fill(); g.stroke();
+    const a=PL.yaw;
+    g.beginPath(); g.moveTo(px,pz);
+    g.lineTo(px-Math.sin(a)*17,pz-Math.cos(a)*17);
+    g.strokeStyle='#ffb27a'; g.lineWidth=4; g.stroke();
+    g.fillStyle='#f4e3bd'; g.font='bold 14px "Courier New",monospace';
+    g.fillText('YOU',px,pz+24); }
+  // header
+  g.textAlign='left';
+  g.fillStyle='rgba(26,15,5,0.82)'; g.fillRect(10,10,238,54);
+  g.fillStyle='#dca956'; g.font='bold 21px "Bookman Old Style",Georgia,serif';
+  g.fillText('Survey plot 4',20,32);
+  g.fillStyle='#c0ab86'; g.font='14px "Courier New",monospace';
+  let got=0; NOTES.forEach(n=>{if(n.got)got++;});
+  g.fillText(SCORE.pts.toLocaleString()+' pts \u00b7 '+got+'/'+NOTES.length+' notes',20,52);
+  g.textAlign='center'; g.textAlign='left';
+  mapTex.needsUpdate=true;
+}
+function toggleMap(){
+  mapOn=!mapOn;
+  if(mapPlane) mapPlane.visible=mapOn&&xrOn;
+  if(mapOn) drawMap();
+  SND.play('ui');
+}
+function updateMap(dt){
+  if(!mapPlane) return;
+  mapPlane.visible=mapOn&&xrOn;
+  if(mapOn&&xrOn){ mapT+=dt; if(mapT>0.4){ mapT=0; drawMap(); } }
+}
 /* ================= sound =================
    Everything is synthesised in WebAudio: no files, no downloads.
    The context starts on the first real user gesture (click, key, or
@@ -2965,6 +3231,15 @@ const SND=(function(){
       crunch(t,0.14,1400,0.4);
       tone(SCALE[2]*0.5,t,0.05,0.05,0.9,'sine',sfxBus); },
     ui(){ crunch(ctx.currentTime,0.05,2400,0.05); },
+    danger(){ const t=ctx.currentTime;
+      tone(SCALE[1]*0.5,t,0.01,0.10,0.5,'sawtooth',sfxBus);
+      tone(SCALE[1]*0.5*1.06,t,0.01,0.08,0.5,'sawtooth',sfxBus); },
+    death(){ const t=ctx.currentTime;
+      [4,2,1,0].forEach((i,k)=>tone(SCALE[i]*0.5,t+k*0.12,0.01,0.08,0.35,'triangle',sfxBus)); },
+    mower(){ const t=ctx.currentTime;
+      if(t-lastDig<0.24) return; lastDig=t;
+      crunch(t,0.09,160,0.24);
+      tone(55+Math.random()*8,t,0.02,0.05,0.2,'sawtooth',sfxBus); },
   };
 
   function update(dt,st){
@@ -3016,7 +3291,7 @@ function reportErr(e){
   try{
     const eb=document.getElementById('errbox');
     eb.style.display='block';
-    eb.textContent='v0.85 caught: '+LASTERR+' — still running; tell Adam\u2019s Claude this text';
+    eb.textContent='v0.9 caught: '+LASTERR+' — still running; tell Adam\u2019s Claude this text';
   }catch(_){}
 }
 function frame(dt){
@@ -3051,6 +3326,8 @@ function frame(dt){
     updateNPCs(elapsed,dt*(xrOn?2:1),WX.rain);
     updateAmbient(elapsed,dt*(xrOn?2:1));
   }
+  updateHazards(dt,elapsed);
+  updateMap(dt);
   updateVRPanel(dt);
   updateHUD(dt);
   flushTunnels();

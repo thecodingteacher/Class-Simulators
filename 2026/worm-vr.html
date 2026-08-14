@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Under the Garden v0.5 — a worm's survey of the soil</title>
+<title>Under the Garden v0.6 — a worm's survey of the soil</title>
 <style>
 :root{
   --soil-o:#241505; --soil-a:#3d2811; --soil-b:#6f4517; --soil-c:#c89346;
@@ -189,7 +189,7 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 <body>
 <div id="stage"></div>
 
-<div id="brand"><h2>Under the Garden</h2><p>v0.5 · soil survey · you are the worm</p></div>
+<div id="brand"><h2>Under the Garden</h2><p>v0.6 · soil survey · you are the worm</p></div>
 
 <div id="gauge" class="hidden">
   <div class="col" id="gcol"></div>
@@ -235,7 +235,7 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 
 <div id="boot"><div class="in">
   <h1>Under the Garden</h1>
-  <div class="sub">v0.5 · Soil survey · plot 4</div>
+  <div class="sub">v0.6 · Soil survey · plot 4</div>
   <div id="bar"><i></i></div>
   <div class="say">Waking the worm</div>
   <div class="err" id="bootErr" style="display:none"></div>
@@ -1761,17 +1761,21 @@ function readKeys(){
 }
 function moveSurface(dt){
   const dry=PL.moist<0.34?0.58:1;
-  const spd=(INP.sprint?46:26)*dry*(xrOn?0.62:1);
+  const spd=(INP.sprint?46:26)*dry*(xrOn?0.72:1);
   let ix=INP.side, iz=INP.fwd;
   const l=Math.hypot(ix,iz);
-  PL.speed=l>0?spd*Math.min(1,l):0;
-  if(l>0){
-    ix/=l; iz/=l;
+  const targetSpeed=l>0?spd*Math.min(1,l):0;
+  // ease speed changes: no instant starts or stops (kinder in a headset)
+  PL.speed+=(targetSpeed-PL.speed)*Math.min(1,dt*(targetSpeed>PL.speed?7:9));
+  if(PL.speed<0.5&&targetSpeed===0){PL.speed=0;}
+  if(l>0.001||PL.speed>0.5){
+    if(l>0.001){ ix/=l; iz/=l; PL.lastIx=ix; PL.lastIz=iz; }
+    else { ix=PL.lastIx||0; iz=PL.lastIz||1; }
     PL.yaw=headingYaw();
     _fwd.set(-Math.sin(PL.yaw),0,-Math.cos(PL.yaw));
     _rgt.set(-Math.cos(PL.yaw),0,Math.sin(PL.yaw));
     _tmp.set(0,0,0).addScaledVector(_fwd,iz).addScaledVector(_rgt,ix).normalize();
-    const step=spd*dt;
+    const step=PL.speed*dt;
     let nx=PL.pos.x+_tmp.x*step, nz=PL.pos.z+_tmp.z*step;
     const q=Math.pow(Math.pow(Math.abs(nx),4)+Math.pow(Math.abs(nz),4),.25);
     if(q>R*1.12){nx=PL.pos.x;nz=PL.pos.z;}
@@ -1781,7 +1785,8 @@ function moveSurface(dt){
   }
   const g=heightAt(PL.pos.x,PL.pos.z);
   const target=Math.max(g,-0.6)+PL.thick;
-  PL.pos.y+=(target-PL.pos.y)*Math.min(1,dt*13);
+  // gentler vertical follow in VR so bumps roll instead of jolt
+  PL.pos.y+=(target-PL.pos.y)*Math.min(1,dt*(xrOn?7:13));
 }
 function moveBurrow(dt){
   const b=PL.burrow;
@@ -2108,10 +2113,20 @@ function flushTunnels(){
    WORLD_PER_METRE converts one real metre of you into world cm.
    At 1.7, a standing adult's eye (~1.6 m) sits ~2.7 cm off the
    ground: proper worm height, with grass like bamboo overhead.  */
-const WORLD_PER_METRE=1.7;
+/* You can be three sizes. Tiny is the "true" worm view, but at that
+   scale everything is perceptually tens of metres away: head parallax
+   and stereo depth vanish and it reads as broken tracking. Mouse view
+   is the comfortable default; work your way down.                    */
+const VR_SIZES=[
+  {k:'mouse', label:'Mouse view',  s:12, blurb:'Grass at shoulder height. The comfortable one.'},
+  {k:'beetle',label:'Beetle view', s:5,  blurb:'Grass towers overhead. Head movement still bites.'},
+  {k:'worm',  label:'True worm',   s:1.7,blurb:'Two centimetres tall. Vast, flat, strange — the honest view.'},
+];
+let vrSize=0;
+let WORLD_PER_METRE=VR_SIZES[0].s;
 const rig=new THREE.Group(); rig.add(wormCam); scene.add(rig);
 let xrOn=false, vrYaw=0, snapCool=0, vrPanel=null, vrPanelTex=null, vrPanelCtx=null;
-let vrShowNotes=false, vrPanelT=0, vrSmoothTurn=true, vrHeight=0;
+let vrShowNotes=false, vrPanelT=0, vrSmoothTurn=false, vrHeight=0;
 const vrBtnPrev={};
 const _xrDir=new THREE.Vector3(), _rigTarget=new THREE.Vector3();
 
@@ -2128,6 +2143,101 @@ function buildVRPanel(){
   vrPanel.rotation.set(-0.85,0,0);
   vrPanel.visible=false;
   return vrPanel;
+}
+
+let vrCardTitle='', vrCardBody='';
+
+/* comfort vignette: a soft dark ring in eye space, fading in with
+   locomotion and turning — the best-known motion sickness damper */
+let vignette=null, vigWant=0, vigNow=0;
+function buildVignette(){
+  const cv=document.createElement('canvas'); cv.width=cv.height=256;
+  const g=cv.getContext('2d');
+  const gr=g.createRadialGradient(128,128,58,128,128,128);
+  gr.addColorStop(0,'rgba(0,0,0,0)');
+  gr.addColorStop(0.62,'rgba(0,0,0,0)');
+  gr.addColorStop(1,'rgba(0,0,0,0.96)');
+  g.fillStyle=gr; g.fillRect(0,0,256,256);
+  const tex=new THREE.CanvasTexture(cv);
+  vignette=new THREE.Mesh(new THREE.PlaneGeometry(1.7,1.7),
+    new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:0,
+      depthTest:false,depthWrite:false}));
+  vignette.position.set(0,0,-0.62);
+  vignette.renderOrder=50;
+  vignette.visible=false;
+  wormCam.add(vignette);
+}
+buildVignette();
+function updateVignette(dt,moving,turning){
+  if(!vignette) return;
+  vignette.visible=xrOn;
+  if(!xrOn){ vigNow=0; vignette.material.opacity=0; return; }
+  vigWant=clamp(moving*0.55+turning*0.75,0,0.9);
+  vigNow+=(vigWant-vigNow)*Math.min(1,dt*(vigWant>vigNow?10:3.5));
+  vignette.material.opacity=vigNow;
+}
+
+function wrapText(g,text,x,y,maxW,lh,maxY){
+  const words=String(text).replace(/<[^>]*>/g,'').split(' ');
+  let line='', yy=y;
+  for(const w of words){
+    const t=line?line+' '+w:w;
+    if(g.measureText(t).width>maxW){ g.fillText(line,x,yy); line=w; yy+=lh; if(yy>maxY)return; }
+    else line=t;
+  }
+  if(line) g.fillText(line,x,yy);
+}
+function drawVRPanel(){
+  if(!vrPanelCtx) return;
+  const g=vrPanelCtx, W=640, H=440;
+  g.clearRect(0,0,W,H);
+  const grd=g.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,'#241505'); grd.addColorStop(.45,'#3d2811');
+  grd.addColorStop(.78,'#6f4517'); grd.addColorStop(1,'#8d5b28');
+  g.fillStyle=grd; g.fillRect(0,0,W,H);
+  g.strokeStyle='#c89346'; g.lineWidth=6; g.strokeRect(3,3,W-6,H-6);
+  g.textBaseline='top';
+  // status strip: version, fps, size, live stick values, any caught error
+  g.font='15px "Courier New",monospace';
+  g.fillStyle='#c0ab86';
+  g.fillText('v0.6  '+(typeof FPS!=='undefined'?FPS:'?')+' fps  '
+    +VR_SIZES[vrSize].k+'  L '+INP.side.toFixed(1)+','+INP.fwd.toFixed(1)
+    +'  '+(vrSmoothTurn?'smooth':'snap'),22,H-52);
+  if(typeof LASTERR!=='undefined'&&LASTERR){
+    g.fillStyle='#f08a5a'; g.fillText(('ERR '+LASTERR).slice(0,58),22,H-30);
+  }else{ g.fillStyle='#6d8a4a'; g.fillText('no errors',22,H-30); }
+  if(vrShowNotes){
+    g.fillStyle='#dca956'; g.font='bold 30px "Bookman Old Style",Georgia,serif';
+    let got=0; NOTES.forEach(n=>{if(n.got)got++;});
+    g.fillText('Field notes  '+got+'/'+NOTES.length,22,18);
+    g.font='19px "Trebuchet MS",sans-serif';
+    let y=62;
+    NOTES.forEach(n=>{
+      if(y>H-72) return;
+      g.fillStyle=n.got?'#91bb3d':'#7d6647';
+      g.fillText(n.got?'\u2713':'\u25a1',24,y);
+      g.fillStyle=n.got?'#efe0c0':'#8a7250';
+      g.fillText((n.got?n.title:'\u2014 not yet \u2014').slice(0,44),56,y);
+      y+=26;
+    });
+  }else{
+    const surf=heightAt(PL.pos.x,PL.pos.z), d=surf-PL.pos.y;
+    g.fillStyle='#dca956'; g.font='bold 30px "Bookman Old Style",Georgia,serif';
+    g.fillText(d>2?Math.round(d)+' cm down':'at the surface',22,18);
+    g.font='18px "Courier New",monospace'; g.fillStyle='#c0ab86';
+    g.fillText('horizon '+horizonKey(PL.pos.y)+'   \u00b7   '+WX.mode
+      +'   \u00b7   '+SCORE.pts+' pts',22,56);
+    g.fillStyle='#160d04'; g.fillRect(22,92,W-44,26);
+    g.fillStyle=PL.moist<0.4?'#c86a34':'#10aaa9';
+    g.fillRect(24,94,(W-48)*PL.moist,22);
+    g.fillStyle='#efe0c0'; g.font='17px "Trebuchet MS",sans-serif';
+    g.fillText('skin moisture '+Math.round(PL.moist*100)+'%',28,96);
+    g.fillStyle='#dca956'; g.font='bold 23px "Bookman Old Style",Georgia,serif';
+    g.fillText((vrCardTitle||'').slice(0,40),22,140);
+    g.fillStyle='#efe0c0'; g.font='19px "Trebuchet MS",sans-serif';
+    wrapText(g,vrCardBody||'Trigger to look at things. Grip to dig or enter a burrow. Left stick click changes your size.',22,176,W-44,25,H-72);
+  }
+  vrPanelTex.needsUpdate=true;
 }
 
 const ctrls=[];
@@ -2192,8 +2302,8 @@ function enterVR(){
     elGauge.classList.remove('hidden'); elWet.classList.remove('hidden');
     elScore.classList.remove('hidden'); elObj.classList.remove('hidden');
   }catch(e){}
-  showCard('Headset on','You are two centimetres tall',
-    'Left stick crawls the way you are looking. Right stick turns \u2014 click the stick to swap smooth and snap. Trigger examines, grip goes down a hole or digs in, B or Y eats a tunnel wider, A or X flips your wrist notebook.','','');
+  showCard('Headset on','Mouse view \u2014 grass at shoulder height',
+    'Left stick crawls the way you are looking, right stick snap-turns. Click the LEFT stick to shrink \u2014 mouse, then beetle, then true worm. Click the RIGHT stick for smooth turning. Trigger examines, grip digs, B or Y widens a tunnel, A or X flips your wrist notebook.','','');
 }
 function exitVR(){
   xrOn=false;
@@ -2233,14 +2343,23 @@ function pollXR(dt){
     // A / X: flip the wrist panel · B / Y: widen · stick click: turn style
     if(bt[4]&&edge(h+'a',bt[4].pressed)){ vrShowNotes=!vrShowNotes; drawVRPanel(); }
     if(bt[5]&&bt[5].pressed) widening=true;
-    if(bt[3]&&edge(h+'stick',bt[3].pressed)){ vrSmoothTurn=!vrSmoothTurn;
-      vrCardTitle='Turning: '+(vrSmoothTurn?'smooth':'snap');
-      vrCardBody=vrSmoothTurn?'Right stick turns continuously. Click the stick again for snap turning if smooth makes you queasy.'
-                             :'Right stick clicks round in 30\u00b0 steps \u2014 the comfortable option.'; }
+    if(bt[3]&&edge(h+'stick',bt[3].pressed)){
+      if(h==='r'){ vrSmoothTurn=!vrSmoothTurn;
+        vrCardTitle='Turning: '+(vrSmoothTurn?'smooth':'snap');
+        vrCardBody=vrSmoothTurn?'Right stick turns continuously.'
+                               :'Right stick clicks round in 30\u00b0 steps \u2014 the comfortable option.';
+      }else{
+        vrSize=(vrSize+1)%VR_SIZES.length;
+        const Z=VR_SIZES[vrSize]; WORLD_PER_METRE=Z.s;
+        rig.scale.setScalar(WORLD_PER_METRE);
+        vrCardTitle=Z.label; vrCardBody=Z.blurb;
+      }
+    }
   }
   INP.side=mx; INP.fwd=my; INP.sprint=sprint; INP.widen=widening;
+  updateVignette(dt,Math.hypot(mx,my),vrSmoothTurn?Math.abs(turn):0);
   if(vrSmoothTurn){
-    vrYaw-=turn*dt*2.4;                      // ~140°/s at full push
+    vrYaw-=turn*dt*1.8;                      // ~100°/s at full push
   }else if(Math.abs(turn)>0.62&&snapCool<=0){
     vrYaw-=Math.sign(turn)*Math.PI/6; snapCool=0.30;
   }
@@ -2258,9 +2377,9 @@ function placeRigXR(dt){
   }else{
     gy=Math.max(heightAt(PL.pos.x,PL.pos.z),-0.6);
   }
-  vrHeight+=(gy-vrHeight)*Math.min(1,dt*10);
+  vrHeight+=(gy-vrHeight)*Math.min(1,dt*7);
   _rigTarget.set(PL.pos.x,vrHeight,PL.pos.z);
-  rig.position.lerp(_rigTarget,Math.min(1,dt*14));
+  rig.position.lerp(_rigTarget,Math.min(1,dt*11));
   rig.rotation.y=vrYaw;
 }
 function updateVRPanel(dt){
@@ -2514,12 +2633,13 @@ function undergroundCam(dist,out){
    a readable error and a frozen black void.                          */
 let elapsed=0, lastT=(typeof performance!=='undefined'?performance.now():Date.now())/1000;
 let LASTERR='', fpsN=0, fpsT=0, FPS=0, xrTick=0;
+window.__clearErr=()=>{LASTERR='';};
 function reportErr(e){
   LASTERR=((e&&e.message)||String(e)).slice(0,140);
   try{
     const eb=document.getElementById('errbox');
     eb.style.display='block';
-    eb.textContent='v0.5 caught: '+LASTERR+' — still running; tell Adam\u2019s Claude this text';
+    eb.textContent='v0.6 caught: '+LASTERR+' — still running; tell Adam\u2019s Claude this text';
   }catch(_){}
 }
 function frame(dt){

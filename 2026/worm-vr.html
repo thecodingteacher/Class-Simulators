@@ -1620,7 +1620,10 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>key[e.code]=false);
 
 renderer.domElement.addEventListener('click',()=>{
-  if(mode==='worm'&&!locked) renderer.domElement.requestPointerLock();
+  if(xrOn) return;
+  if(mode==='worm'&&!locked){
+    try{ renderer.domElement.requestPointerLock(); }catch(e){}
+  }
 });
 document.addEventListener('pointerlockchange',()=>locked=document.pointerLockElement===renderer.domElement);
 addEventListener('mousemove',e=>{
@@ -1635,20 +1638,23 @@ let isoDrag=false, isoSpin=0;
 renderer.domElement.addEventListener('mousedown',e=>{if(mode==='iso'){isoDrag=true;}});
 addEventListener('mouseup',()=>isoDrag=false);
 addEventListener('wheel',e=>{
+  if(xrOn) return;
   if(mode==='iso'){isoZoom=clamp(isoZoom*(1+Math.sign(e.deltaY)*0.10),110,900); isoFrame();}
   else{camDistWant=clamp(camDistWant+Math.sign(e.deltaY)*9,0,190);}
   e.preventDefault();
 },{passive:false});
 
 function toggleMode(){
+  if(xrOn) return;                      // the headset owns the mode
   if(mode==='iso'){
     mode='worm'; cam=wormCam;
     elGauge.classList.remove('hidden'); elWet.classList.remove('hidden');
     elNotesBtn.classList.remove('hidden');
     elScore.classList.remove('hidden'); elObj.classList.remove('hidden');
-    renderer.domElement.requestPointerLock();
+    try{ renderer.domElement.requestPointerLock(); }catch(e){}
   }else{
-    mode='iso'; cam=isoCam; document.exitPointerLock();
+    mode='iso'; cam=isoCam;
+    try{ document.exitPointerLock(); }catch(e){}
     elGauge.classList.add('hidden'); elWet.classList.add('hidden');
     elObj.classList.add('hidden');
   }
@@ -1877,7 +1883,7 @@ function updateGauge(){
 
 /* ---- camera ---- */
 function placeCam(dt){
-  if(xrOn){ placeRigXR(dt); return; }
+  if(xrOn) return;                      // syncXR placed the rig already
   camDist+=(camDistWant-camDist)*Math.min(1,dt*7);
   let baseYaw=lookYaw, basePitch=lookPitch;
   if(PL.burrow){
@@ -2122,17 +2128,17 @@ function buildVRPanel(){
 }
 
 const ctrls=[];
+let vrBtnEl=null;
 function setupVR(){
   if(!VRButton||typeof navigator==='undefined'||!navigator.xr) return;
   renderer.xr.enabled=true;
-  const btn=VRButton.createButton(renderer);
-  Object.assign(btn.style,{zIndex:'40',left:'16px',right:'auto',bottom:'16px',top:'auto',
+  vrBtnEl=VRButton.createButton(renderer);
+  Object.assign(vrBtnEl.style,{zIndex:'40',left:'16px',right:'auto',bottom:'16px',top:'auto',
     width:'auto',minWidth:'112px',padding:'10px 16px',transform:'none',
     background:'#241505',border:'2px solid #c89346',borderRadius:'3px',
     color:'#dca956',font:'14px "Bookman Old Style",Georgia,serif',letterSpacing:'.4px',
     opacity:'1',boxShadow:'0 6px 20px rgba(0,0,0,.5)'});
-  document.body.appendChild(btn);
-
+  document.body.appendChild(vrBtnEl);
   for(let i=0;i<2;i++){
     const c=renderer.xr.getController(i); rig.add(c); ctrls.push(c);
     const nub=new THREE.Mesh(new THREE.SphereGeometry(0.008,10,8),
@@ -2141,28 +2147,49 @@ function setupVR(){
   }
   const grip=renderer.xr.getControllerGrip(0); rig.add(grip);
   grip.add(buildVRPanel());
-
-  renderer.xr.addEventListener('sessionstart',()=>{
-    xrOn=true;
-    if(mode==='iso') toggleMode();
-    /* near/far are in eye space (metres). The rig scale maps them into
-       the world, so ordinary human values are correct here. */
-    wormCam.near=0.03; wormCam.far=1200; wormCam.updateProjectionMatrix();
-    rig.scale.setScalar(WORLD_PER_METRE);
-    vrYaw=PL.yaw; camDistWant=0; vrHeight=0;
-    vrPanel.visible=true;
-    renderer.domElement.style.filter='none';
-    showCard('Headset on','You are two centimetres tall',
-      'Left stick crawls the way you are looking. Right stick turns — click it to switch between smooth and snap. Push the right stick forward to hurry. Trigger examines, grip enters a burrow or digs in, B or Y eats a tunnel wider, A or X flips your wrist notebook.','','');
-  });
-  renderer.xr.addEventListener('sessionend',()=>{
-    xrOn=false;
-    rig.scale.setScalar(1); rig.position.set(0,0,0); rig.rotation.set(0,0,0);
-    wormCam.near=0.35; wormCam.far=4200; wormCam.updateProjectionMatrix();
-    if(vrPanel) vrPanel.visible=false;
-  });
 }
 setupVR();
+
+/* State is synced from the renderer every single frame. No event
+   ordering, no handler that can die half way and leave the scale
+   unset: if isPresenting is true, the VR state IS applied.        */
+function syncXR(dt){
+  const p=!!(renderer.xr&&renderer.xr.isPresenting);
+  if(p&&!xrOn) enterVR();
+  else if(!p&&xrOn) exitVR();
+  if(xrOn){
+    // self-healing: reassert the invariants even if something reset them
+    if(rig.scale.x!==WORLD_PER_METRE) rig.scale.setScalar(WORLD_PER_METRE);
+    if(mode!=='worm'){ mode='worm'; cam=wormCam; }
+    pollXR(dt);
+    placeRigXR(dt);
+  }
+}
+function enterVR(){
+  xrOn=true;
+  try{ document.exitPointerLock&&document.exitPointerLock(); }catch(e){}
+  mode='worm'; cam=wormCam; setKeys();
+  wormCam.near=0.03; wormCam.far=1200; wormCam.updateProjectionMatrix();
+  rig.scale.setScalar(WORLD_PER_METRE);
+  vrYaw=PL.yaw; camDist=0; camDistWant=0; vrHeight=heightAt(PL.pos.x,PL.pos.z);
+  rig.position.set(PL.pos.x,vrHeight,PL.pos.z);
+  rig.rotation.y=vrYaw;
+  if(vrPanel) vrPanel.visible=true;
+  renderer.domElement.style.filter='none';
+  try{
+    elGauge.classList.remove('hidden'); elWet.classList.remove('hidden');
+    elScore.classList.remove('hidden'); elObj.classList.remove('hidden');
+  }catch(e){}
+  showCard('Headset on','You are two centimetres tall',
+    'Left stick crawls the way you are looking. Right stick turns \u2014 click the stick to swap smooth and snap. Trigger examines, grip goes down a hole or digs in, B or Y eats a tunnel wider, A or X flips your wrist notebook.','','');
+}
+function exitVR(){
+  xrOn=false;
+  rig.scale.setScalar(1); rig.position.set(0,0,0); rig.rotation.set(0,0,0);
+  wormCam.near=0.35; wormCam.far=4200; wormCam.updateProjectionMatrix();
+  if(vrPanel) vrPanel.visible=false;
+  lookYaw=vrYaw;
+}
 
 function edge(id,down){ const was=!!vrBtnPrev[id]; vrBtnPrev[id]=down; return down&&!was; }
 /* response curve: dead zone, then ease in, so small pushes creep */
@@ -2472,8 +2499,9 @@ function tick(){
   const dt=Math.min(now-lastT,0.05); lastT=now;
   elapsed+=dt;
 
+  syncXR(dt);
   if(mode==='worm'){
-    readKeys(); if(xrOn) pollXR(dt);
+    readKeys();
     widen(dt);
     if(PL.dig){ moveDig(dt); updateDig(dt); }
     else if(PL.burrow) moveBurrow(dt);

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Under the Garden — a worm's survey of the soil</title>
+<title>Under the Garden v0.5 — a worm's survey of the soil</title>
 <style>
 :root{
   --soil-o:#241505; --soil-a:#3d2811; --soil-b:#6f4517; --soil-c:#c89346;
@@ -189,7 +189,7 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 <body>
 <div id="stage"></div>
 
-<div id="brand"><h2>Under the Garden</h2><p>Soil survey · you are the worm</p></div>
+<div id="brand"><h2>Under the Garden</h2><p>v0.5 · soil survey · you are the worm</p></div>
 
 <div id="gauge" class="hidden">
   <div class="col" id="gcol"></div>
@@ -229,10 +229,13 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 <div id="pip"></div>
 <div id="toast" class="core"></div>
 <div id="keys"></div>
+<div id="errbox" style="position:fixed;left:16px;bottom:64px;z-index:41;display:none;
+  max-width:min(90vw,420px);padding:8px 12px;background:#3a1408;border:2px solid #c86a34;
+  border-radius:3px;font:11px/1.5 'Courier New',monospace;color:#f0c9a8"></div>
 
 <div id="boot"><div class="in">
   <h1>Under the Garden</h1>
-  <div class="sub">Soil survey · plot 4</div>
+  <div class="sub">v0.5 · Soil survey · plot 4</div>
   <div id="bar"><i></i></div>
   <div class="say">Waking the worm</div>
   <div class="err" id="bootErr" style="display:none"></div>
@@ -2132,6 +2135,7 @@ let vrBtnEl=null;
 function setupVR(){
   if(!VRButton||typeof navigator==='undefined'||!navigator.xr) return;
   renderer.xr.enabled=true;
+  if(renderer.xr.setFramebufferScaleFactor) renderer.xr.setFramebufferScaleFactor(0.85);
   vrBtnEl=VRButton.createButton(renderer);
   Object.assign(vrBtnEl.style,{zIndex:'40',left:'16px',right:'auto',bottom:'16px',top:'auto',
     width:'auto',minWidth:'112px',padding:'10px 16px',transform:'none',
@@ -2165,8 +2169,16 @@ function syncXR(dt){
     placeRigXR(dt);
   }
 }
+let savedShadow=true;
 function enterVR(){
   xrOn=true;
+  /* Quest GPU: shadows are the single biggest cost, and at 2 cm eye
+     height they are barely visible anyway. Off for the session. */
+  savedShadow=renderer.shadowMap.enabled;
+  sun.castShadow=false;
+  renderer.shadowMap.enabled=false;
+  if(renderer.xr.setFoveation) try{renderer.xr.setFoveation(1);}catch(e){}
+  scene.fog.density=0.0011;
   try{ document.exitPointerLock&&document.exitPointerLock(); }catch(e){}
   mode='worm'; cam=wormCam; setKeys();
   wormCam.near=0.03; wormCam.far=1200; wormCam.updateProjectionMatrix();
@@ -2185,6 +2197,9 @@ function enterVR(){
 }
 function exitVR(){
   xrOn=false;
+  sun.castShadow=true;
+  renderer.shadowMap.enabled=savedShadow;
+  scene.fog.density=0.00055;
   rig.scale.setScalar(1); rig.position.set(0,0,0); rig.rotation.set(0,0,0);
   wormCam.near=0.35; wormCam.far=4200; wormCam.updateProjectionMatrix();
   if(vrPanel) vrPanel.visible=false;
@@ -2492,13 +2507,23 @@ function undergroundCam(dist,out){
   }
   out.copy(pts[0]); return out;
 }
-/* ---- loop ---- */
+/* ---- loop ----
+   The frame body runs inside a guard. If any subsystem throws, the
+   error is captured and shown, and the NEXT frame still runs: the loop
+   itself can never die, which on a headset is the difference between
+   a readable error and a frozen black void.                          */
 let elapsed=0, lastT=(typeof performance!=='undefined'?performance.now():Date.now())/1000;
-function tick(){
-  const now=(typeof performance!=='undefined'?performance.now():Date.now())/1000;
-  const dt=Math.min(now-lastT,0.05); lastT=now;
-  elapsed+=dt;
-
+let LASTERR='', fpsN=0, fpsT=0, FPS=0, xrTick=0;
+function reportErr(e){
+  LASTERR=((e&&e.message)||String(e)).slice(0,140);
+  try{
+    const eb=document.getElementById('errbox');
+    eb.style.display='block';
+    eb.textContent='v0.5 caught: '+LASTERR+' — still running; tell Adam\u2019s Claude this text';
+  }catch(_){}
+}
+function frame(dt){
+  if(window.__poison) window.__poison();      // test hook
   syncXR(dt);
   if(mode==='worm'){
     readKeys();
@@ -2523,19 +2548,29 @@ function tick(){
     playerMesh.visible=true;
   }
   updateWeather(dt);
-  updateNPCs(elapsed,dt,WX.rain);
-  updateAmbient(elapsed,dt);
-  updateLeaves(elapsed,dt);
+  /* on the headset, halve the CPU-side animation work */
+  xrTick++;
+  if(!xrOn || xrTick%2===0){
+    updateNPCs(elapsed,dt*(xrOn?2:1),WX.rain);
+    updateAmbient(elapsed,dt*(xrOn?2:1));
+  }
   updateVRPanel(dt);
   flushTunnels();
-
+  updateLeaves(elapsed,dt);
   if(cardT>0){cardT-=dt; if(cardT<=0)elCard.classList.remove('on');}
   if(toastT>0){toastT-=dt; if(toastT<=0)elToast.classList.remove('on');}
-
-  renderer.render(scene, xrOn?wormCam:cam);
+}
+function tick(){
+  const now=(typeof performance!=='undefined'?performance.now():Date.now())/1000;
+  const dt=Math.min(now-lastT,0.05); lastT=now;
+  elapsed+=dt;
+  fpsN++; fpsT+=dt; if(fpsT>=1){FPS=Math.round(fpsN/fpsT); fpsN=0; fpsT=0;}
+  try{ frame(dt); }catch(e){ reportErr(e); }
+  try{ renderer.render(scene, xrOn?wormCam:cam); }catch(e){ reportErr(e); }
 }
 
 addEventListener('resize',()=>{
+  if(renderer.xr&&renderer.xr.isPresenting) return;
   renderer.setSize(innerWidth,innerHeight);
   wormCam.aspect=ASP(); wormCam.updateProjectionMatrix(); isoFrame();
 });

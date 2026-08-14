@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Under the Garden v0.95 — a worm's survey of the soil</title>
+<title>Under the Garden v0.96 — a worm's survey of the soil</title>
 <style>
 :root{
   --soil-o:#241505; --soil-a:#3d2811; --soil-b:#6f4517; --soil-c:#c89346;
@@ -189,7 +189,7 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 <body>
 <div id="stage"></div>
 
-<div id="brand"><h2>Under the Garden</h2><p>v0.95 · soil survey · you are the worm</p></div>
+<div id="brand"><h2>Under the Garden</h2><p>v0.96 · soil survey · you are the worm</p></div>
 
 <div id="gauge" class="hidden">
   <div class="col" id="gcol"></div>
@@ -235,7 +235,7 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 
 <div id="boot"><div class="in">
   <h1>Under the Garden</h1>
-  <div class="sub">v0.95 · Soil survey · plot 4</div>
+  <div class="sub">v0.96 · Soil survey · plot 4</div>
   <div id="bar"><i></i></div>
   <div class="say">Waking the worm</div>
   <div class="err" id="bootErr" style="display:none"></div>
@@ -277,6 +277,23 @@ const PIT    = {x:14,z:118,r:206,depth:54};
 /* A circle of hardpan on the Topsoil plateau: packed, pale, lifeless.
    Digging through it is what heals it — aeration, drainage, castings. */
 const BARREN = {x:-19,z:-219,r:58,heal:0};
+/* The whole creek-and-subsoil side of the island is dead ground:
+   grey, bare, wormless. Digging through it brings it back. Life
+   clings on only in rings around the old burrow mouths — refugia,
+   which is exactly how real recolonisation starts.               */
+const DEAD={a0:96,a1:224,heal:0};
+function deadWeight(x,z){
+  const y=heightAt?0:0;             // (height checked by callers)
+  const a=angOf(x,z);
+  let w=sstep(DEAD.a0,DEAD.a0+10,a)*(1-sstep(DEAD.a1-10,DEAD.a1,a));
+  if(w<=0) return 0;
+  for(const m of MOUTHS){
+    if(!m.t||m.t.zone!=='subsoil') continue;
+    const d=Math.hypot(x-m.x,z-m.z);
+    w*=sstep(20,36,d);               // refugia around the old burrows
+  }
+  return w;
+}
 const CREEK_Y= -13;
 
 /* radial profile: [t, height/TOP] */
@@ -529,7 +546,7 @@ scene.add(sun); scene.add(sun.target);
 /* ---------------- terrain ---------------- */
 bakeHeights();
 
-const BARREN_VERTS=[];
+const BARREN_VERTS=[], DEAD_VERTS=[];
 const tGeo=new THREE.PlaneGeometry(SPAN,SPAN,NSEG,NSEG);
 tGeo.rotateX(-Math.PI/2);
 {
@@ -577,6 +594,18 @@ tGeo.rotateX(-Math.PI/2);
     g=mix(g,mix(WET.g,DEEP.g,sstep(-6,-34,y)),uw);
     b=mix(b,mix(WET.b,DEEP.b,sstep(-6,-34,y)),uw);
 
+    // deadlands: everything on that side goes grey and bare
+    const dw=(y>4)?deadWeight(x,z):0;
+    if(dw>0.02){
+      const dust=fbm(x*.06+55,z*.06+31,3);
+      const grey=lin(0x9a8d72), grey2=lin(0x7d7460);
+      const dr=mix(r,mix(grey2.r,grey.r,dust)*(1+j*.3),dw*0.88);
+      const dg=mix(g,mix(grey2.g,grey.g,dust)*(1+j*.3),dw*0.88);
+      const db=mix(b,mix(grey2.b,grey.b,dust)*(1+j*.3),dw*0.88);
+      DEAD_VERTS.push({i:v,hr:clamp(r,0,1),hg:clamp(g,0,1),hb:clamp(b,0,1),
+                       br:clamp(dr,0,1),bg:clamp(dg,0,1),bb:clamp(db,0,1)});
+      r=dr; g=dg; b=db;
+    }
     // hardpan: overwrite with cracked pale clay, but keep the healthy
     // colour on file so healing can bring it back vertex by vertex
     const bd=Math.hypot(x-BARREN.x,z-BARREN.z);
@@ -600,6 +629,16 @@ tGeo.rotateX(-Math.PI/2);
   tGeo.computeVertexNormals();
 }
 /* healing repaints the stored vertices from hardpan back to health */
+let lastDeadStep=-1;
+function applyDeadColours(){
+  const step=Math.floor(DEAD.heal*50);
+  if(step===lastDeadStep) return;
+  lastDeadStep=step;
+  const c=tGeo.attributes.color, h=DEAD.heal;
+  for(const V of DEAD_VERTS)
+    c.setXYZ(V.i, mix(V.br,V.hr,h), mix(V.bg,V.hg,h), mix(V.bb,V.hb,h));
+  c.needsUpdate=true;
+}
 let lastHealStep=-1;
 function applyHealColours(){
   const step=Math.floor(BARREN.heal*40);
@@ -1052,6 +1091,7 @@ function okSpot(x,z,o){
     if(Array.isArray(o.zone)?o.zone.indexOf(ZONES[zi].id)<0:ZONES[zi].id!==o.zone) return false;
   }
   if(!o.onPath && pathDist(x,z)<14) return false;
+  if(o.living && deadWeight(x,z)>0.35) return false;
   for(const k of KEEPOUT) if(Math.hypot(x-k.x,z-k.z)<k.r) return false;
   return true;
 }
@@ -1084,16 +1124,16 @@ function scatter(geo,count,o){
 const CNT={}, PROPS={};
 function place(name,geo,count,o){ const m=scatter(geo,count,o); CNT[name]=m.count; PROPS[name]=m; return m; }
 
-place('dry leaves',   gLeafDry(), 420,{zone:['litter'],maxSlope:.5,s0:.8,s1:1.8,tilt:.5,sink:-1});
-place('fresh leaves', gLeaf(),    150,{zone:['litter','compost'],maxSlope:.5,s0:.7,s1:1.5,tilt:.5,sink:-1});
-place('grass',        gGrass(),   620,{zone:['topsoil','root','creek','compost','litter'],maxSlope:.5,s0:.8,s1:1.6,minY:20});
-place('shrubs',       gShrub(),   210,{zone:['topsoil','root','creek','litter','compost'],maxSlope:.36,s0:.9,s1:1.9,minY:30});
-place('ferns',        gFern(),     70,{zone:['creek','litter','root'],maxSlope:.4,s0:.8,s1:1.5,minY:20});
-place('mushrooms',    gMushroom(), 48,{zone:['litter','compost'],maxSlope:.35,s0:.7,s1:1.5});
-place('flowers',      gFlower(),   46,{zone:['root','topsoil'],maxSlope:.3,s0:.8,s1:1.3});
-place('daisies',      gDaisy(),    60,{zone:['root','topsoil','creek'],maxSlope:.3,s0:.8,s1:1.4});
-place('carrots',      gCarrot(),   16,{zone:['root'],maxSlope:.26,s0:1.0,s1:1.5,sink:2});
-place('tomato plants',gTomato(),   10,{zone:['root'],maxSlope:.24,s0:1.0,s1:1.4});
+place('dry leaves',   gLeafDry(), 420,{living:true,zone:['litter'],maxSlope:.5,s0:.8,s1:1.8,tilt:.5,sink:-1});
+place('fresh leaves', gLeaf(),    150,{living:true,zone:['litter','compost'],maxSlope:.5,s0:.7,s1:1.5,tilt:.5,sink:-1});
+place('grass',        gGrass(),   620,{living:true,zone:['topsoil','root','creek','compost','litter'],maxSlope:.5,s0:.8,s1:1.6,minY:20});
+place('shrubs',       gShrub(),   210,{living:true,zone:['topsoil','root','creek','litter','compost'],maxSlope:.36,s0:.9,s1:1.9,minY:30});
+place('ferns',        gFern(),     70,{living:true,zone:['creek','litter','root'],maxSlope:.4,s0:.8,s1:1.5,minY:20});
+place('mushrooms',    gMushroom(), 48,{living:true,zone:['litter','compost'],maxSlope:.35,s0:.7,s1:1.5});
+place('flowers',      gFlower(),   46,{living:true,zone:['root','topsoil'],maxSlope:.3,s0:.8,s1:1.3});
+place('daisies',      gDaisy(),    60,{living:true,zone:['root','topsoil','creek'],maxSlope:.3,s0:.8,s1:1.4});
+place('carrots',      gCarrot(),   16,{living:true,zone:['root'],maxSlope:.26,s0:1.0,s1:1.5,sink:2});
+place('tomato plants',gTomato(),   10,{living:true,zone:['root'],maxSlope:.24,s0:1.0,s1:1.4});
 place('compost scraps',gScrapBanana(),46,{zone:['compost'],maxSlope:.55,s0:.8,s1:1.5,tilt:.7});
 place('eggshells',    gScrapEgg(), 30,{zone:['compost'],maxSlope:.55,s0:.7,s1:1.3,tilt:.6});
 place('apple cores',  gScrapCore(),28,{zone:['compost'],maxSlope:.55,s0:.8,s1:1.4,tilt:.5});
@@ -1101,8 +1141,8 @@ place('peelings',     gScrapPeel(),40,{zone:['compost'],maxSlope:.55,s0:.8,s1:1.
 place('pebbles',      gPebble(),  520,{maxSlope:.9,s0:.6,s1:1.9,tilt:1.2,minY:-30,maxY:70,onPath:true});
 place('shore rocks',  gRock(),    150,{maxSlope:1.4,s0:.7,s1:2.1,tilt:.5,minY:-26,maxY:34,onPath:true,sink:-3});
 place('pit rubble',   gRock(),     60,{zone:['subsoil'],maxSlope:1.1,s0:.4,s1:1.1,tilt:.8,maxY:40,onPath:true});
-place('reeds',        gReed(),     54,{zone:['creek'],maxSlope:.7,s0:.7,s1:1.4,minY:-8,maxY:26});
-place('root masses',  gRoots(),    70,{zone:['root','topsoil','subsoil','compost'],
+place('reeds',        gReed(),     54,{living:true,zone:['creek'],maxSlope:.7,s0:.7,s1:1.4,minY:-8,maxY:26});
+place('root masses',  gRoots(),    70,{living:true,zone:['root','topsoil','subsoil','compost'],
                                        maxSlope:3.0,minSlope:0.55,s0:1.3,s1:2.8,minY:12,maxY:90,onPath:true});
 
 /* lily pads sit on the water, not the ground */
@@ -1348,6 +1388,7 @@ function spawnNPCs(){
         const a=rnd()*TAU, rr=(.22+Math.sqrt(rnd())*.62)*R;
         x=Math.cos(a)*rr; z=Math.sin(a)*rr;
         if(S.zones.indexOf(ZONES[zoneIndexAt(x,z)].id)<0) continue;
+        if(deadWeight(x,z)>0.35) continue;
         if(slopeAt(x,z)>.42) continue;
         if(heightAt(x,z)<2) continue;
         ok=true; break;
@@ -1433,6 +1474,36 @@ function updateNPCs(time,dt,rain){
   }
 }
 
+/* four grey worms wait offstage; they move in when the dead side heals */
+const RETURNERS=[];
+{
+  const S=SPECIES[1];
+  for(let k=0;k<4;k++){
+    let x=0,z=0,ok=false;
+    for(let t2=0;t2<1200;t2++){
+      const a=(DEAD.a0+15+rnd()*(DEAD.a1-DEAD.a0-30))*D2R;
+      const rr=(0.30+rnd()*0.42)*R;
+      x=Math.sin(a)*rr; z=-Math.cos(a)*rr;
+      if(heightAt(x,z)<8||slopeAt(x,z)>0.4) continue;
+      if(deadWeight(x,z)<0.5) continue;
+      ok=true; break;
+    }
+    if(!ok) continue;
+    const geo=buildWormGeo(RINGS,SIDES,S.cA,S.cB,S.clA,S.clB);
+    const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true}));
+    mesh.castShadow=true; mesh.visible=false; scene.add(mesh);
+    const pts=[]; for(let i=0;i<RINGS;i++)pts.push(new THREE.Vector3());
+    const gy=heightAt(x,z);
+    const w={sp:S,mesh,geo,pts,home:new THREE.Vector2(x,z),gy,ax:x,az:z,
+      face:rnd()*TAU,em:0.12,ph:rnd()*TAU,sp2:.32+rnd()*.3,rad:16+rnd()*20,
+      fact:0,trail:[],dormant:true};
+    for(let i=0;i<60;i++)w.trail.push(new THREE.Vector3(x,gy+S.thick*.8,z));
+    RETURNERS.push(w);
+  }
+}
+function wakeReturners(){
+  RETURNERS.forEach(w=>{ if(w.dormant){ w.dormant=false; w.mesh.visible=true; npcs.push(w); }});
+}
 updateNPCs(0,1/60,0);
 
 /* ---------------- the player ---------------- */
@@ -2185,6 +2256,7 @@ function widen(dt){
   if(changed){
     b.dirty=true; PL.castings+=dt*1.6;
     if(PL.castings>9) unlock('castings');
+    if(deadWeight(PL.pos.x,PL.pos.z)>0.25) addDeadHeal(dt*0.010);
   }
 }
 function flushTunnels(){
@@ -2287,7 +2359,7 @@ function drawVRPanel(){
   // status strip: version, fps, size, live stick values, any caught error
   g.font='15px "Courier New",monospace';
   g.fillStyle='#c0ab86';
-  g.fillText('v0.95  '+(typeof FPS!=='undefined'?FPS:'?')+' fps  '
+  g.fillText('v0.96  '+(typeof FPS!=='undefined'?FPS:'?')+' fps  '
     +VR_SIZES[vrSize].k+'  L '+INP.side.toFixed(1)+','+INP.fwd.toFixed(1)
     +'  '+(vrSmoothTurn?'smooth':'snap'),22,H-52);
   if(typeof LASTERR!=='undefined'&&LASTERR){
@@ -2346,15 +2418,16 @@ function plate(g,x,y,w,h){
   g.fillStyle='rgba(26,15,5,0.80)'; g.fillRect(x,y,w,h);
   g.strokeStyle='#c89346'; g.lineWidth=3; g.strokeRect(x+1,y+1,w-2,h-2);
 }
-/* the bar earns its place: prompt, danger, award, or thirst \u2014 or nothing */
+/* the bar earns its place: prompt, danger, award, thirst, or depth */
 function hudContent(){
   const H=hazardAt&&hazardAt();
   const danger=H&&!(PL.burrow||PL.dig)&&invuln<=0;
   const label=contextLabel();
   const award=window.__award&&window.__award.t>0;
   const dry=PL.moist<0.42;
-  if(!(label||danger||award||dry)) return null;
-  return {label,danger:danger?H:null,award,dry};
+  const digging=!!PL.dig;
+  if(!(label||danger||award||dry||digging)) return null;
+  return {label,danger:danger?H:null,award,dry,digging};
 }
 function drawHUD(){
   const g=hudBotCtx, W=880, H=210;
@@ -2378,6 +2451,11 @@ function drawHUD(){
   if(c.award){
     g.fillStyle='#91bb3d'; g.font='bold 38px "Bookman Old Style",Georgia,serif';
     g.fillText('+'+window.__award.n+'   \u00b7   '+SCORE.pts.toLocaleString()+' pts',22,y); y+=50;
+  }
+  if(c.digging){
+    const dpt=Math.max(0,Math.round(heightAt(PL.pos.x,PL.pos.z)-PL.pos.y));
+    g.fillStyle='#c0ab86'; g.font='bold 26px "Courier New",monospace';
+    g.fillText('\u25bc '+dpt+' cm \u00b7 '+horizonKey(PL.pos.y)+' \u00b7 look up + crawl to breach',22,y); y+=38;
   }
   if(c.dry){
     g.fillStyle='#160d04'; g.fillRect(22,y+6,W-44,26);
@@ -2670,7 +2748,7 @@ function addPoints(n){
 /* ================= digging your own tunnel =================
    Six reusable tunnel slots. Each new dig writes rings into the next
    slot with parallel-transport frames, so only the new ring is touched. */
-const DIG_SLOTS=6, DIG_RINGS=300, DIG_RADIAL=10, DIG_R=8.5;
+const DIG_SLOTS=6, DIG_RINGS=430, DIG_RADIAL=10, DIG_R=8.5;
 const digSlots=[];
 for(let i=0;i<DIG_SLOTS;i++){
   const g=new THREE.BufferGeometry();
@@ -2738,7 +2816,7 @@ function updateMotes(dt,t){
 }
 
 /* worms are blind, but the player is not */
-const headLamp=new THREE.PointLight(0xffd8a4,95,120,2.0);
+const headLamp=new THREE.PointLight(0xffd8a4,68,120,2.0);
 headLamp.visible=false; scene.add(headLamp);
 const _hl={r:0,g:0,b:0};
 const _dt1=new THREE.Vector3(), _dn=new THREE.Vector3(), _db=new THREE.Vector3(),
@@ -2789,8 +2867,20 @@ function startDig(){
     '','Every centimetre you dig turns into castings.');
   return true;
 }
+const mounds=[]; let moundI=0;
+function dropMound(x,z){
+  const y=heightAt(x,z);
+  if(mounds.length<14){
+    const m=new THREE.Mesh(lumpy(P.cone(6,5,8),.3,mounds.length),
+      new THREE.MeshLambertMaterial({color:0x2e1c0c}));
+    m.castShadow=true; scene.add(m); mounds.push(m);
+  }
+  const m=mounds[moundI%14]; moundI++;
+  m.position.set(x,y,z); m.visible=true;
+}
 function stopDig(surfaced){
   if(!PL.dig) return;
+  if(surfaced) dropMound(PL.pos.x,PL.pos.z);
   PL.dig=null; digFace.visible=false; headLamp.visible=false;
   const g=heightAt(PL.pos.x,PL.pos.z);
   PL.pos.y=g+PL.thick;
@@ -2812,6 +2902,10 @@ function updateUnderground(){
 function updateDig(dt){
   const D=PL.dig; if(!D) return;
   const g=heightAt(PL.pos.x,PL.pos.z);
+  const rising=D.lastY!==undefined&&PL.pos.y>D.lastY+0.02;
+  D.lastY=PL.pos.y;
+  if(g-PL.pos.y>20) D.everDeep=true;       // the breach only arms once you have been down
+  if(D.everDeep&&g-PL.pos.y<12&&rising&&PL.speed>1){ PL.pos.y=g+PL.thick; stopDig(true); return; }
   if(PL.pos.y>g-1.5){ stopDig(true); return; }
   if(PL.pos.distanceTo(D.last)>4){
     _dt1.subVectors(PL.pos,D.last).normalize();
@@ -2823,6 +2917,7 @@ function updateDig(dt){
       PL.castings+=0.55; addPoints(PT_DIG);
       if(PL.castings>9) unlock('castings');
       if(Math.hypot(PL.pos.x-BARREN.x,PL.pos.z-BARREN.z)<BARREN.r) addHeal(0.016);
+      if(deadWeight(PL.pos.x,PL.pos.z)>0.25) addDeadHeal(0.0065);
     }
   }
 }
@@ -2870,6 +2965,57 @@ const healVeg=[];
     scene.add(im); healVeg.push({im,N});
   });
 }
+NOTES.push({id:'restore',tag:'Doing',title:'Bringing back the dead side',
+ body:'Half the island died: no worms, no roots, rain running straight off grey ground. Recovery starts from refugia \u2014 the rings of green around the old burrow mouths where a few worms held on. Every tunnel you dig lets water in, every casting feeds the soil, and the survivors spread outward along your work. Ecologists restore real ground exactly this way: protect the refuges, open the soil, let life do the rest.',
+ hint:'The far side of the island is grey and empty. Dig through it \u2014 a lot \u2014 and watch.',got:false});
+
+/* regrowth for the whole sector: hundreds of plants, revealed by heal\u00b2 */
+const deadVeg=[];
+{
+  const defs=[[gGrass(),240,1.0],[gShrub(),60,0.95],[gFern(),28,0.9],[gDaisy(),40,0.9],[gFlower(),22,0.9]];
+  defs.forEach(([geo,N,sc])=>{
+    const im=new THREE.InstancedMesh(geo,
+      new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}),N);
+    im.castShadow=true; im.receiveShadow=true;
+    const col=new THREE.Color(); let n=0,tries=0;
+    while(n<N&&tries<N*160){
+      tries++;
+      const a=(DEAD.a0+6+rnd()*(DEAD.a1-DEAD.a0-12))*D2R;
+      const rr=(0.22+Math.sqrt(rnd())*0.62)*R;
+      const x=Math.sin(a)*rr, z=-Math.cos(a)*rr;
+      if(heightAt(x,z)<10||slopeAt(x,z)>0.42) continue;
+      if(deadWeight(x,z)<0.30) continue;
+      if(pathDist(x,z)<12) continue;
+      const sc2=(0.7+rnd()*0.8)*sc;
+      _m4.compose(new THREE.Vector3(x,heightAt(x,z),z),
+        _q.setFromEuler(new THREE.Euler(0,rnd()*TAU,0)),
+        new THREE.Vector3(sc2,sc2,sc2));
+      im.setMatrixAt(n,_m4);
+      const b=.85+rnd()*.3; col.setRGB(b,b,b); im.setColorAt(n,col);
+      n++;
+    }
+    im.instanceMatrix.needsUpdate=true;
+    if(im.instanceColor) im.instanceColor.needsUpdate=true;
+    im.count=0; scene.add(im); deadVeg.push({im,N:n});
+  });
+}
+let deadMilestone=0;
+function addDeadHeal(a){
+  if(DEAD.heal>=1) return;
+  DEAD.heal=clamp(DEAD.heal+a,0,1);
+  applyDeadColours();
+  deadVeg.forEach(v=>{ v.im.count=Math.floor(DEAD.heal*DEAD.heal*v.N); });
+  unlock('restore');
+  if(DEAD.heal>=0.25&&deadMilestone<1){ deadMilestone=1;
+    toast('The grey is fading','Around your tunnels, the ground is darkening. Water is getting in.'); }
+  if(DEAD.heal>=0.60&&deadMilestone<2){ deadMilestone=2;
+    wakeReturners(); SND.play('find');
+    toast('The worms are back','Grey worms are spreading out from the refugia into ground you opened.'); }
+  if(DEAD.heal>=1&&deadMilestone<3){ deadMilestone=3;
+    addPoints(1000); SND.play('find');
+    toast('The island is whole again \u00b7 +1000','Half an island restored by one worm. This is how it really happens \u2014 just slower.'); }
+}
+
 let healMilestone=0;
 function addHeal(a){
   if(BARREN.heal>=1) return;
@@ -3230,6 +3376,19 @@ function drawMap(){
     g.beginPath(); g.arc(px,pz,BARREN.r/(R*1.12)*0.5*MAPW,0,Math.PI*2); g.stroke();
     g.fillStyle=g.strokeStyle; g.font='bold 15px "Trebuchet MS",sans-serif'; g.textAlign='center';
     g.fillText(BARREN.heal>=1?'\u2713 healed':'hardpan '+Math.round(BARREN.heal*100)+'%',px,pz-BARREN.r/(R*1.12)*0.5*MAPW-6); }
+  // the deadlands: the whole grey sector, greening as it heals
+  { const cx=MAPW/2, cz=MAPW/2, rr=0.5*MAPW*0.99;
+    const a0=(DEAD.a0-90)*Math.PI/180, a1=(DEAD.a1-90)*Math.PI/180;
+    g.beginPath(); g.moveTo(cx,cz); g.arc(cx,cz,rr,a0,a1); g.closePath();
+    g.fillStyle=DEAD.heal>=1?'rgba(120,190,80,0.14)':'rgba(120,120,120,'+(0.34*(1-DEAD.heal))+')';
+    g.fill();
+    g.strokeStyle=DEAD.heal>=1?'#91bb3d':'#b0a890'; g.lineWidth=2.5;
+    g.setLineDash(DEAD.heal>=1?[]:[9,6]); g.stroke(); g.setLineDash([]);
+    const am=((DEAD.a0+DEAD.a1)/2-90)*Math.PI/180;
+    g.fillStyle=DEAD.heal>=1?'#91bb3d':'#d8d2c0';
+    g.font='bold 17px "Trebuchet MS",sans-serif'; g.textAlign='center';
+    g.fillText(DEAD.heal>=1?'\u2713 restored':'deadlands \u00b7 '+Math.round(DEAD.heal*100)+'%',
+      cx+Math.cos(am)*rr*0.55, cz+Math.sin(am)*rr*0.55); }
   // the good-soil patch: the hardpan's opposite number
   { const [px,pz]=world2map(GOODSOIL.x,GOODSOIL.z);
     const rr=GOODSOIL.r/(R*1.12)*0.5*MAPW;
@@ -3454,7 +3613,7 @@ function reportErr(e){
   try{
     const eb=document.getElementById('errbox');
     eb.style.display='block';
-    eb.textContent='v0.95 caught: '+LASTERR+' — still running; tell Adam\u2019s Claude this text';
+    eb.textContent='v0.96 caught: '+LASTERR+' — still running; tell Adam\u2019s Claude this text';
   }catch(_){}
 }
 function frame(dt){

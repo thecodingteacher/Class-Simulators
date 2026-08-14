@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Under the Garden v0.6 — a worm's survey of the soil</title>
+<title>Under the Garden v0.7 — a worm's survey of the soil</title>
 <style>
 :root{
   --soil-o:#241505; --soil-a:#3d2811; --soil-b:#6f4517; --soil-c:#c89346;
@@ -189,7 +189,7 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 <body>
 <div id="stage"></div>
 
-<div id="brand"><h2>Under the Garden</h2><p>v0.6 · soil survey · you are the worm</p></div>
+<div id="brand"><h2>Under the Garden</h2><p>v0.7 · soil survey · you are the worm</p></div>
 
 <div id="gauge" class="hidden">
   <div class="col" id="gcol"></div>
@@ -235,7 +235,7 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 
 <div id="boot"><div class="in">
   <h1>Under the Garden</h1>
-  <div class="sub">v0.6 · Soil survey · plot 4</div>
+  <div class="sub">v0.7 · Soil survey · plot 4</div>
   <div id="bar"><i></i></div>
   <div class="say">Waking the worm</div>
   <div class="err" id="bootErr" style="display:none"></div>
@@ -1576,6 +1576,7 @@ function unlock(id){
   const n=NOTES.find(n=>n.id===id);
   if(!n||n.got) return false;
   n.got=true;
+  SND.play(n.id.indexOf('find:')===0?'find':'note');
   addPoints(n.id.indexOf('find:')===0?PT_FIND:PT_NOTE);
   const got=renderNotes();
   if(got===NOTES.length) toast('Survey complete','Every note recorded. Darwin took forty years; you took rather less.');
@@ -1593,7 +1594,7 @@ function showCard(who,title,body,sci,more){
   elCard.innerHTML='<div class="who">'+who+'</div><h3>'+title+'</h3><p>'+body+'</p>'
     +(sci?'<div class="sci">'+sci+'</div>':'')
     +(more?'<div class="more">'+more+'</div>':'');
-  elCard.classList.add('on'); cardT=9.5;
+  elCard.classList.add('on'); cardT=9.5; SND.play('ui');
   vrCardTitle=title; vrCardBody=body;
 }
 
@@ -1611,6 +1612,8 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyF'){interact(); e.preventDefault();}
   if(e.code==='Space'){burrowToggle(); e.preventDefault();}
   if(e.code==='KeyN'){elDrawer.classList.toggle('on'); e.preventDefault();}
+  if(e.code==='KeyM'){ const m=SND.toggleMute();
+    toast(m?'Muted':'Sound on', m?'Press M to bring the garden back.':'Generative soil music, rain, and worm foley. All synthesised live.'); e.preventDefault(); }
   if(e.code==='KeyR'){
     if(WX.forced==='rain'){ setWeather(null);
       toast('Clearing up','The rain eases off. Watch the burrows drain and everyone go back down.'); }
@@ -1666,7 +1669,7 @@ function toggleMode(){
 function setKeys(){
   elKeys.innerHTML = mode==='iso'
     ? '<b>E</b> go down as the worm &nbsp;·&nbsp; drag to turn the chart &nbsp;·&nbsp; wheel to zoom'
-    : '<b>WASD</b> crawl &nbsp;·&nbsp; <b>shift</b> hurry &nbsp;·&nbsp; <b>wheel</b> pull the view back &nbsp;·&nbsp; <b>space</b> dig in / enter a burrow &nbsp;·&nbsp; <b>F</b> look at something &nbsp;·&nbsp; <b>Q</b> eat the tunnel wider &nbsp;·&nbsp; <b>R</b> make it rain &nbsp;·&nbsp; <b>N</b> notes &nbsp;·&nbsp; <b>E</b> survey chart';
+    : '<b>WASD</b> crawl &nbsp;·&nbsp; <b>shift</b> hurry &nbsp;·&nbsp; <b>wheel</b> pull the view back &nbsp;·&nbsp; <b>space</b> dig in / enter a burrow &nbsp;·&nbsp; <b>F</b> look at something &nbsp;·&nbsp; <b>Q</b> eat the tunnel wider &nbsp;·&nbsp; <b>M</b> sound &nbsp;·&nbsp; <b>R</b> make it rain &nbsp;·&nbsp; <b>N</b> notes &nbsp;·&nbsp; <b>E</b> survey chart';
 }
 setKeys();
 
@@ -1689,6 +1692,7 @@ function burrowToggle(){
   if(nearMouth){
     const {b,mi}=nearMouth;
     PL.burrow=b; PL.bt=mi===0?0.012:0.988; PL.bdir=mi===0?1:-1;
+    SND.play(PL.burrow.flood>0.45?'splash':'burrow');
     unlock('zone:'+ (b.def.zone==='root'?'root':'subsoil'));
     showCard('Burrow', b.def.name, b.def.label,'','Use W and S to follow the tunnel. Q widens it. Space to climb out.');
     return;
@@ -1773,7 +1777,7 @@ function moveSurface(dt){
     else { ix=PL.lastIx||0; iz=PL.lastIz||1; }
     PL.yaw=headingYaw();
     _fwd.set(-Math.sin(PL.yaw),0,-Math.cos(PL.yaw));
-    _rgt.set(-Math.cos(PL.yaw),0,Math.sin(PL.yaw));
+    _rgt.set(Math.cos(PL.yaw),0,-Math.sin(PL.yaw));
     _tmp.set(0,0,0).addScaledVector(_fwd,iz).addScaledVector(_rgt,ix).normalize();
     const step=PL.speed*dt;
     let nx=PL.pos.x+_tmp.x*step, nz=PL.pos.z+_tmp.z*step;
@@ -2200,7 +2204,7 @@ function drawVRPanel(){
   // status strip: version, fps, size, live stick values, any caught error
   g.font='15px "Courier New",monospace';
   g.fillStyle='#c0ab86';
-  g.fillText('v0.6  '+(typeof FPS!=='undefined'?FPS:'?')+' fps  '
+  g.fillText('v0.7  '+(typeof FPS!=='undefined'?FPS:'?')+' fps  '
     +VR_SIZES[vrSize].k+'  L '+INP.side.toFixed(1)+','+INP.fwd.toFixed(1)
     +'  '+(vrSmoothTurn?'smooth':'snap'),22,H-52);
   if(typeof LASTERR!=='undefined'&&LASTERR){
@@ -2282,6 +2286,14 @@ function syncXR(dt){
 let savedShadow=true;
 function enterVR(){
   xrOn=true;
+  SND.init();
+  try{
+    const s=renderer.xr.getSession&&renderer.xr.getSession();
+    if(s&&s.addEventListener){
+      s.addEventListener('selectstart',()=>SND.init());
+      s.addEventListener('squeezestart',()=>SND.init());
+    }
+  }catch(e){}
   /* Quest GPU: shadows are the single biggest cost, and at 2 cm eye
      height they are barely visible anyway. Off for the session. */
   savedShadow=renderer.shadowMap.enabled;
@@ -2442,7 +2454,7 @@ function updateLeaves(t,dt){
     if(!!L.tunnel!==inside) continue;
     if(PL.pos.distanceTo(L.pos)<14){
       L.got=true; L.mesh.visible=false;
-      SCORE.leaves++; addPoints(PT_LEAF);
+      SCORE.leaves++; SND.play('leaf'); addPoints(PT_LEAF);
       if(SCORE.leaves>=8) unlock('midden');
       elLeafCount.textContent=SCORE.leaves+'/'+leaves.length;
     }
@@ -2534,6 +2546,7 @@ function startDig(){
   PL.dig={slot, last:new THREE.Vector3(PL.pos.x,g-1,PL.pos.z), full:false};
   PL.pos.set(PL.pos.x,g-2,PL.pos.z);
   PL.pitch=-0.55; lookPitch=-0.55;
+  SND.play('burrow');
   _dt1.set(0,-1,0); digRing(slot,PL.dig.last,_dt1);
   addPoints(0);
   unlock('dig');
@@ -2571,6 +2584,7 @@ function updateDig(dt){
       if(!D.full){ D.full=true; toast('Tunnel full','That burrow is as long as it goes. Surface and start another.'); }
     }else{
       D.last.copy(PL.pos);
+      SND.play('dig');
       PL.castings+=0.55; addPoints(PT_DIG);
       if(PL.castings>9) unlock('castings');
     }
@@ -2584,7 +2598,7 @@ function moveDig(dt){
   if(l>0){
     const yaw=headingYaw(), pit=xrOn?xrPitch():lookPitch;
     _fwd.set(-Math.sin(yaw)*Math.cos(pit),Math.sin(pit),-Math.cos(yaw)*Math.cos(pit));
-    _rgt.set(-Math.cos(yaw),0,Math.sin(yaw));
+    _rgt.set(Math.cos(yaw),0,-Math.sin(yaw));
     _tmp.set(0,0,0).addScaledVector(_fwd,INP.fwd/l).addScaledVector(_rgt,INP.side/l).normalize();
     const step=spd*dt;
     const nx=PL.pos.x+_tmp.x*step, ny=PL.pos.y+_tmp.y*step, nz=PL.pos.z+_tmp.z*step;
@@ -2626,6 +2640,158 @@ function undergroundCam(dist,out){
   }
   out.copy(pts[0]); return out;
 }
+/* ================= sound =================
+   Everything is synthesised in WebAudio: no files, no downloads.
+   The context starts on the first real user gesture (click, key, or
+   the Enter VR press), which is what Quest's browser requires.       */
+const SND=(function(){
+  let ctx=null, master=null, duck=null, muffle=null;
+  let musicBus=null, sfxBus=null, rainSrc=null, rainGain=null,
+      windGain=null, creekGain=null;
+  let muted=false, ready=false;
+  let nextNote=0, nextChord=0, crawlAcc=0, lastDig=0;
+
+  /* C-minor pentatonic: earthy, never saccharine */
+  const SCALE=[130.81,155.56,174.61,196.00,233.08, 261.63,311.13,349.23,392.00,466.16];
+
+  function noiseBuffer(seconds){
+    const b=ctx.createBuffer(1,Math.floor(ctx.sampleRate*seconds),ctx.sampleRate);
+    const d=b.getChannelData(0);
+    let pink=0;
+    for(let i=0;i<d.length;i++){
+      const w=Math.random()*2-1;
+      pink=pink*0.96+w*0.04;                     // cheap pinkening
+      d[i]=(w*0.4+pink*3.2)*0.5;
+    }
+    return b;
+  }
+  function loopNoise(filterType,freq,q,gain0,bus){
+    const src=ctx.createBufferSource(); src.buffer=noiseBuffer(2.3); src.loop=true;
+    const f=ctx.createBiquadFilter(); f.type=filterType;
+    f.frequency.value=freq; f.Q.value=q||0.8;
+    const g=ctx.createGain(); g.gain.value=gain0;
+    src.connect(f); f.connect(g); g.connect(bus); src.start();
+    return {src,f,g};
+  }
+
+  function init(){
+    if(ready) return;
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC) return;
+      ctx=new AC();
+      master=ctx.createGain(); master.gain.value=0.9;
+      duck=ctx.createGain(); duck.gain.value=1;
+      /* one filter muffles the whole world when you are underground */
+      muffle=ctx.createBiquadFilter(); muffle.type='lowpass';
+      muffle.frequency.value=18000; muffle.Q.value=0.4;
+      duck.connect(muffle); muffle.connect(master); master.connect(ctx.destination);
+      musicBus=ctx.createGain(); musicBus.gain.value=0.34; musicBus.connect(duck);
+      sfxBus=ctx.createGain(); sfxBus.gain.value=0.9; sfxBus.connect(duck);
+
+      const rain=loopNoise('bandpass',2100,0.6,0.0,duck); rainGain=rain.g; rainSrc=rain;
+      const wind=loopNoise('lowpass',420,0.5,0.028,duck); windGain=wind.g;
+      const creek=loopNoise('bandpass',900,1.1,0.0,duck); creekGain=creek.g;
+
+      nextNote=ctx.currentTime+1.2; nextChord=ctx.currentTime+0.4;
+      ready=true;
+    }catch(e){ /* sound is optional; the game never depends on it */ }
+  }
+
+  function env(g,t0,a,peak,r){
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.linearRampToValueAtTime(peak,t0+a);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+a+r);
+  }
+  function tone(freq,t0,a,peak,r,type,bus,detune){
+    const o=ctx.createOscillator(); o.type=type||'triangle';
+    o.frequency.value=freq; if(detune)o.detune.value=detune;
+    const g=ctx.createGain(); env(g,t0,a,peak,r);
+    o.connect(g); g.connect(bus);
+    o.start(t0); o.stop(t0+a+r+0.05);
+  }
+  function crunch(t0,peak,cutoff,len){
+    const src=ctx.createBufferSource(); src.buffer=noiseBuffer(len||0.16);
+    const f=ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=cutoff;
+    const g=ctx.createGain(); env(g,t0,0.005,peak,(len||0.16)-0.01);
+    src.connect(f); f.connect(g); g.connect(sfxBus); src.start(t0);
+  }
+
+  /* generative music: a slow low drone that re-roots itself, and a
+     sparse melody wandering the pentatonic above it */
+  let rootI=0;
+  function scheduleMusic(now,under){
+    if(now>nextChord){
+      rootI=(rootI+[0,2,3][Math.floor(Math.random()*3)])%5;
+      const root=SCALE[rootI]*(under?0.5:1);
+      tone(root,   now,2.6,0.050,7.0,'sine',musicBus);
+      tone(root*1.5,now+0.4,3.0,0.034,6.4,'sine',musicBus,4);
+      nextChord=now+9+Math.random()*5;
+    }
+    if(now>nextNote){
+      const n=SCALE[(rootI+[0,1,2,4][Math.floor(Math.random()*4)])%SCALE.length]
+              *(under?1:2)*(Math.random()<0.25?2:1);
+      tone(n,now,0.08,under?0.035:0.05,under?2.6:1.7,'triangle',musicBus,(Math.random()-0.5)*8);
+      nextNote=now+(under?3.4:2.1)+Math.random()*(under?3.4:2.4);
+    }
+  }
+
+  const cues={
+    leaf(){ const t=ctx.currentTime;
+      tone(SCALE[7],t,0.006,0.09,0.22,'triangle',sfxBus);
+      tone(SCALE[9],t+0.07,0.006,0.07,0.26,'triangle',sfxBus); },
+    note(){ const t=ctx.currentTime;
+      [5,7,9].forEach((i,k)=>tone(SCALE[i],t+k*0.09,0.008,0.075,0.5,'triangle',sfxBus)); },
+    find(){ const t=ctx.currentTime;
+      [0,2,4,7,9].forEach((i,k)=>tone(SCALE[i]*2,t+k*0.085,0.008,0.07,0.7,'triangle',sfxBus));
+      tone(SCALE[0],t,0.02,0.05,1.6,'sine',sfxBus); },
+    dig(){ const t=ctx.currentTime;
+      if(t-lastDig<0.09) return; lastDig=t;
+      crunch(t,0.16,520+Math.random()*260,0.13); },
+    burrow(){ const t=ctx.currentTime;
+      crunch(t,0.2,380,0.3); tone(SCALE[0],t,0.02,0.045,0.8,'sine',sfxBus); },
+    splash(){ const t=ctx.currentTime;
+      crunch(t,0.14,1400,0.4);
+      tone(SCALE[2]*0.5,t,0.05,0.05,0.9,'sine',sfxBus); },
+    ui(){ crunch(ctx.currentTime,0.05,2400,0.05); },
+  };
+
+  function update(dt,st){
+    if(!ready||muted) return;
+    if(ctx.state==='suspended'){ ctx.resume(); return; }
+    const now=ctx.currentTime;
+    scheduleMusic(now,st.under);
+
+    /* one-pole eases so nothing clicks */
+    const ease=(p,v,k)=>{p.value+=(v-p.value)*Math.min(1,dt*k);};
+    ease(muffle.frequency, st.under?(st.flooded?420:760):18000, 5);
+    ease(rainGain.gain, st.under?st.rain*0.012:st.rain*0.16, 3);
+    ease(windGain.gain, st.under?0.004:0.028+st.rain*0.02, 3);
+    ease(creekGain.gain, st.under?0.0:st.creek*0.10, 3);
+    ease(musicBus.gain, st.under?0.26:0.34, 2);
+
+    /* crawl and dig foley driven by actual distance covered */
+    crawlAcc+=st.speed*dt;
+    if(crawlAcc>9){
+      crawlAcc=0;
+      if(st.speed>1){
+        if(st.under) cues.dig();
+        else crunch(now,0.035+st.speed*0.0012,900+Math.random()*500,0.09);
+      }
+    }
+  }
+  function play(name){ if(ready&&!muted&&ctx.state==='running'&&cues[name]) cues[name](); }
+  function toggleMute(){
+    muted=!muted;
+    if(master) master.gain.value=muted?0:0.9;
+    return muted;
+  }
+  return {init,update,play,toggleMute,get ready(){return ready;}};
+})();
+
+/* the context legally needs a gesture; catch every kind there is */
+['pointerdown','keydown','touchstart'].forEach(ev=>
+  addEventListener(ev,function once(){ SND.init(); },{once:false,passive:true}));
 /* ---- loop ----
    The frame body runs inside a guard. If any subsystem throws, the
    error is captured and shown, and the NEXT frame still runs: the loop
@@ -2639,7 +2805,7 @@ function reportErr(e){
   try{
     const eb=document.getElementById('errbox');
     eb.style.display='block';
-    eb.textContent='v0.6 caught: '+LASTERR+' — still running; tell Adam\u2019s Claude this text';
+    eb.textContent='v0.7 caught: '+LASTERR+' — still running; tell Adam\u2019s Claude this text';
   }catch(_){}
 }
 function frame(dt){
@@ -2676,6 +2842,14 @@ function frame(dt){
   }
   updateVRPanel(dt);
   flushTunnels();
+  SND.update(dt,{
+    under:!!(PL.burrow||PL.dig),
+    flooded:!!(PL.burrow&&PL.burrow.flood>0.45),
+    rain:WX.rain,
+    speed:PL.speed,
+    creek:clamp(1-Math.abs(heightAt(PL.pos.x,PL.pos.z))/30,0,1)
+      *(ZONES[zoneIndexAt(PL.pos.x,PL.pos.z)].id==='creek'?1:0.25),
+  });
   updateLeaves(elapsed,dt);
   if(cardT>0){cardT-=dt; if(cardT<=0)elCard.classList.remove('on');}
   if(toastT>0){toastT-=dt; if(toastT<=0)elToast.classList.remove('on');}

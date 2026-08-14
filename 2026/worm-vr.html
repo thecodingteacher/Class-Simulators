@@ -1,0 +1,2580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Under the Garden — a worm's survey of the soil</title>
+<style>
+:root{
+  --soil-o:#241505; --soil-a:#3d2811; --soil-b:#6f4517; --soil-c:#c89346;
+  --worm:#b16d4c; --worm-lit:#d29173; --leaf:#91bb3d; --turq:#10aaa9;
+  --paper:#efe0c0; --paper-dim:#c0ab86; --sand:#dca956; --ink:#170c03;
+  --disp:"Bookman Old Style","Bookman","URW Bookman L","Palatino Linotype",Palatino,Georgia,serif;
+  --body:"Trebuchet MS","Lucida Grande","Segoe UI",system-ui,sans-serif;
+  --util:"Courier New",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#0a1620;
+  font-family:var(--body);color:var(--paper);-webkit-font-smoothing:antialiased}
+canvas{display:block}
+#stage{position:fixed;inset:0}
+
+/* ---- shared panel: banded like a soil core ---- */
+.core{
+  background:linear-gradient(180deg,var(--soil-o) 0%,var(--soil-o) 22%,
+    var(--soil-a) 23%,var(--soil-a) 52%,var(--soil-b) 53%,var(--soil-b) 82%,
+    #8d5b28 83%,#8d5b28 100%);
+  border:2px solid var(--soil-c); border-radius:3px;
+  box-shadow:0 10px 34px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,222,170,.18);
+}
+.core::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:2px;
+  background:repeating-linear-gradient(94deg,rgba(0,0,0,.12) 0 2px,transparent 2px 7px);
+  mix-blend-mode:multiply;opacity:.5}
+
+/* ---- loading ---- */
+#boot{position:fixed;inset:0;display:grid;place-items:center;z-index:60;
+  background:radial-gradient(120% 90% at 50% 8%,#4a2f12 0%,#1b1005 55%,#0d0803 100%);transition:opacity .7s}
+#boot .in{text-align:center;max-width:min(92vw,430px);padding:0 18px}
+#boot h1{font-family:var(--disp);font-size:clamp(28px,7vw,46px);margin:0 0 4px;
+  color:var(--sand);letter-spacing:.5px;line-height:1.05;text-shadow:0 3px 0 rgba(0,0,0,.5)}
+#boot .sub{font-family:var(--util);font-size:11.5px;letter-spacing:2.6px;text-transform:uppercase;
+  color:var(--paper-dim);margin-bottom:24px}
+#bar{height:7px;background:#150c04;border:1px solid #6a4a22;border-radius:4px;overflow:hidden}
+#bar i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--worm),var(--sand));transition:width .3s}
+#boot .say{margin-top:12px;font-family:var(--util);font-size:12px;color:var(--paper-dim);min-height:1.3em}
+#boot .err{color:#e8a06a;font-size:13px;line-height:1.55;font-family:var(--body);text-align:left;margin-top:16px}
+
+/* ---- depth gauge : the signature ---- */
+#gauge{position:fixed;left:16px;top:50%;transform:translateY(-50%);width:62px;height:min(58vh,420px);
+  z-index:20;user-select:none;transition:opacity .35s}
+#gauge .col{position:absolute;left:0;top:0;width:34px;height:100%;border:2px solid var(--soil-c);
+  border-radius:3px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.55)}
+#gauge .band{position:absolute;left:0;width:100%}
+#gauge .band span{position:absolute;left:40px;top:50%;transform:translateY(-50%);
+  font-family:var(--util);font-size:9.5px;letter-spacing:1.4px;color:var(--paper-dim);white-space:nowrap}
+#gauge .band b{position:absolute;left:40px;top:50%;transform:translateY(-50%);
+  font-family:var(--disp);font-size:13px;color:var(--sand)}
+#gauge .rule{position:absolute;left:0;width:100%;height:1px;background:rgba(0,0,0,.45)}
+#mark{position:absolute;left:-7px;width:48px;height:18px;margin-top:-9px;pointer-events:none;
+  transition:top .12s linear}
+#mark svg{display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+#depthRead{position:absolute;left:0;bottom:-24px;font-family:var(--util);font-size:11px;
+  color:var(--sand);letter-spacing:.5px;white-space:nowrap}
+
+/* ---- top-left title strip ---- */
+#brand{position:fixed;left:16px;top:14px;z-index:20;pointer-events:none}
+#brand h2{font-family:var(--disp);font-size:17px;margin:0;color:var(--sand);letter-spacing:.3px;
+  text-shadow:0 2px 5px rgba(0,0,0,.8)}
+#brand p{margin:1px 0 0;font-family:var(--util);font-size:10px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--paper-dim);text-shadow:0 1px 3px rgba(0,0,0,.9)}
+
+/* ---- moisture ---- */
+#wet{position:fixed;right:16px;top:104px;z-index:20;width:178px;padding:9px 11px 10px}
+#score{position:fixed;right:16px;top:14px;z-index:20;width:178px;padding:9px 12px 10px;transition:opacity .35s}
+#score .pts{display:flex;align-items:baseline;gap:7px}
+#score .pts b{font-family:var(--disp);font-size:27px;color:var(--sand);line-height:1;
+  text-shadow:0 2px 0 rgba(0,0,0,.45)}
+#score .pts span{font-family:var(--util);font-size:10px;letter-spacing:1.8px;
+  text-transform:uppercase;color:var(--paper-dim)}
+#score .sub{margin-top:4px;font-family:var(--util);font-size:10.5px;color:var(--paper-dim);
+  letter-spacing:.8px}
+#score.bump .pts b{color:var(--leaf)}
+
+#obj{position:fixed;left:16px;top:56px;z-index:20;width:min(80vw,286px);padding:9px 12px 10px;
+  cursor:pointer;transition:opacity .35s}
+#obj .lab{display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--util);font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:var(--leaf)}
+#obj .lab b{color:var(--paper-dim);font-weight:normal}
+#obj .txt{margin-top:5px;font-size:13.5px;line-height:1.42;color:var(--paper)}
+#obj .foot{margin-top:7px;font-family:var(--util);font-size:9.5px;letter-spacing:1.2px;
+  text-transform:uppercase;color:var(--paper-dim)}
+#obj:hover{border-color:var(--leaf)}
+#wet .lab{display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--util);font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--paper-dim)}
+#wet .trk{margin-top:6px;height:8px;background:#160d04;border:1px solid #6a4a22;border-radius:4px;overflow:hidden}
+#wet .trk i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#2c7f86,var(--turq));transition:width .25s}
+#wet .hint{margin-top:6px;font-size:11.5px;line-height:1.35;color:var(--paper);min-height:0;
+  max-height:0;overflow:hidden;transition:max-height .3s}
+#wet.dry .hint{max-height:44px}
+#wet.dry .trk i{background:linear-gradient(90deg,#8a4a2a,#c86a34)}
+#wet .wx{margin-top:7px;display:flex;align-items:center;gap:7px;
+  font-family:var(--util);font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--paper-dim)}
+#wet .wx i{width:9px;height:9px;border-radius:50%;background:#e0b357;
+  box-shadow:0 0 8px currentColor;transition:background .6s}
+
+/* ---- notes counter + drawer ---- */
+#notesBtn{position:fixed;right:16px;bottom:16px;z-index:22;cursor:pointer;padding:9px 14px;
+  font-family:var(--disp);font-size:14px;color:var(--sand);background:var(--soil-o);
+  border:2px solid var(--soil-c);border-radius:3px;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+#notesBtn:hover{background:var(--soil-a)}
+#notesBtn:focus-visible{outline:3px solid var(--leaf);outline-offset:2px}
+#notesBtn em{font-style:normal;font-family:var(--util);font-size:12px;color:var(--paper-dim)}
+
+#drawer{position:fixed;right:16px;bottom:64px;z-index:23;width:min(92vw,352px);
+  max-height:min(70vh,540px);overflow:auto;padding:16px 16px 14px;display:none}
+#drawer.on{display:block}
+#drawer h3{font-family:var(--disp);margin:0 0 2px;font-size:19px;color:var(--sand)}
+#drawer .sub{font-family:var(--util);font-size:10px;letter-spacing:1.8px;text-transform:uppercase;
+  color:var(--paper-dim);margin-bottom:12px}
+.prog{height:5px;background:#160d04;border:1px solid #6a4a22;border-radius:3px;
+  overflow:hidden;margin-bottom:12px}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--worm),var(--leaf));
+  transition:width .4s}
+.note{padding:9px 0;border-top:1px solid rgba(200,147,70,.28);display:flex;gap:10px;align-items:flex-start}
+.note .tick{flex:0 0 18px;width:18px;height:18px;margin-top:2px;border:2px solid var(--leaf);
+  border-radius:3px;display:grid;place-items:center;font-size:12px;line-height:1;
+  color:var(--ink);background:var(--leaf);font-weight:bold}
+.note.locked .tick{background:transparent;border-color:#6d5836;color:transparent}
+.note .body{flex:1 1 auto;min-width:0}
+.note h4{margin:0 0 3px;font-size:13.5px;font-family:var(--disp);color:var(--paper)}
+.note p{margin:0;font-size:12.5px;line-height:1.5;color:var(--paper-dim)}
+.note.locked h4{color:#7d6647}
+.note.locked p{font-style:italic;color:#6d5836}
+.note .tag{font-family:var(--util);font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;
+  color:var(--leaf);display:block;margin-bottom:2px}
+.note.locked .tag{color:#6d5836}
+
+/* ---- reading card (signs, worms, finds) ---- */
+#card{position:fixed;left:50%;bottom:34px;transform:translate(-50%,14px);z-index:25;
+  width:min(94vw,520px);padding:16px 18px 15px;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s}
+#card.on{opacity:1;transform:translate(-50%,0)}
+#card .who{font-family:var(--util);font-size:10px;letter-spacing:2.2px;text-transform:uppercase;
+  color:var(--leaf);margin-bottom:3px}
+#card h3{font-family:var(--disp);margin:0 0 6px;font-size:21px;color:var(--sand);line-height:1.1}
+#card p{margin:0;font-size:14.5px;line-height:1.55;color:var(--paper)}
+#card .sci{font-style:italic;color:var(--paper-dim);font-size:12.5px;margin-top:5px}
+#card .more{margin-top:9px;font-family:var(--util);font-size:11px;color:var(--paper-dim)}
+
+/* ---- prompt pip ---- */
+#pip{position:fixed;left:50%;top:56%;transform:translateX(-50%);z-index:21;
+  font-family:var(--util);font-size:12.5px;letter-spacing:1.4px;color:var(--paper);
+  background:rgba(20,12,4,.82);border:1px solid var(--soil-c);border-radius:3px;padding:6px 12px;
+  opacity:0;transition:opacity .2s;pointer-events:none;text-transform:uppercase}
+#pip.on{opacity:1}
+kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radius:2px;
+  padding:0 5px;font-size:11px;font-weight:bold}
+
+/* ---- toast ---- */
+#toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-16px);z-index:30;
+  padding:11px 17px;opacity:0;transition:opacity .35s,transform .35s;pointer-events:none;
+  max-width:min(92vw,430px)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#toast b{display:block;font-family:var(--disp);color:var(--sand);font-size:15px;margin-bottom:2px}
+#toast span{font-size:12.5px;color:var(--paper);line-height:1.45}
+
+/* ---- keys ---- */
+#keys{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:19;
+  font-family:var(--util);font-size:10.5px;letter-spacing:.9px;color:var(--paper-dim);
+  text-align:center;text-shadow:0 1px 4px #000;pointer-events:none;line-height:1.7;padding:0 12px}
+#keys b{color:var(--sand);font-weight:normal}
+
+.hidden{opacity:0!important;pointer-events:none!important}
+#drawer::-webkit-scrollbar{width:8px}
+#drawer::-webkit-scrollbar-thumb{background:var(--soil-b);border-radius:4px}
+
+@media (max-width:760px){
+  #gauge{height:38vh;width:52px;left:10px}
+  #wet{width:146px;right:10px;top:96px}
+  #score{width:146px;right:10px}
+  #obj{display:none}
+  #card{bottom:20px;padding:13px 14px}
+  #card h3{font-size:18px}
+  #keys{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<div id="brand"><h2>Under the Garden</h2><p>Soil survey · you are the worm</p></div>
+
+<div id="gauge" class="hidden">
+  <div class="col" id="gcol"></div>
+  <div id="mark"><svg width="48" height="18" viewBox="0 0 48 18">
+    <path d="M2 9 Q9 2 16 9 T30 9 Q37 15 44 9" fill="none" stroke="#b16d4c" stroke-width="5.5" stroke-linecap="round"/>
+    <path d="M2 9 Q9 2 16 9 T30 9 Q37 15 44 9" fill="none" stroke="#d29173" stroke-width="2.2" stroke-linecap="round"/>
+  </svg></div>
+  <div id="depthRead">surface</div>
+</div>
+
+<div id="score" class="core hidden">
+  <div class="pts"><b id="pts">0</b><span>points</span></div>
+  <div class="sub"><span id="leafCount">0/30</span> leaf scraps</div>
+</div>
+
+<div id="obj" class="core hidden">
+  <div class="lab"><span>Objective</span><b id="objN">1 / 15</b></div>
+  <div class="txt" id="objTxt">—</div>
+  <div class="foot">press <kbd>N</kbd> for the whole list</div>
+</div>
+
+<div id="wet" class="core hidden">
+  <div class="lab"><span>Skin moisture</span><b id="wetPct">100%</b></div>
+  <div class="trk"><i id="wetBar"></i></div>
+  <div class="hint">Drying out. Head for shade, damp litter, or dig in.</div>
+  <div class="wx"><i id="wxDot"></i><span id="wx">fine</span></div>
+</div>
+
+<button id="notesBtn" class="hidden">Field notes <em id="noteCount">0/13</em></button>
+<div id="drawer" class="core">
+  <h3>Field notes</h3>
+  <div class="sub">Recorded on site</div>
+  <div id="noteList"></div>
+</div>
+
+<div id="card" class="core"></div>
+<div id="pip"></div>
+<div id="toast" class="core"></div>
+<div id="keys"></div>
+
+<div id="boot"><div class="in">
+  <h1>Under the Garden</h1>
+  <div class="sub">Soil survey · plot 4</div>
+  <div id="bar"><i></i></div>
+  <div class="say">Waking the worm</div>
+  <div class="err" id="bootErr" style="display:none"></div>
+</div></div>
+
+<script>
+window.__BOOTGAME = function(THREE, VRButton){
+window.__STARTED = true;
+/* ===================================================================
+   UNDER THE GARDEN — a worm's survey
+   1 world unit = 1 centimetre. The player worm is 12 units long.
+   =================================================================== */
+
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const mix=(a,b,t)=>a+(b-a)*t;
+const sstep=(e0,e1,x)=>{const t=clamp((x-e0)/(e1-e0),0,1);return t*t*(3-2*t);};
+const TAU=Math.PI*2, D2R=Math.PI/180;
+
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const rnd=mulberry(0x5EED17);
+
+function hash2(x,y){let h=Math.sin(x*127.1+y*311.7)*43758.5453;return h-Math.floor(h);}
+function vnoise(x,y){
+  const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
+  const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+  const a=hash2(xi,yi),b=hash2(xi+1,yi),c=hash2(xi,yi+1),d=hash2(xi+1,yi+1);
+  return mix(mix(a,b,u),mix(c,d,u),v);
+}
+function fbm(x,y,oct=4){let s=0,amp=.5,f=1;
+  for(let i=0;i<oct;i++){s+=amp*vnoise(x*f,y*f);f*=2.03;amp*=.5;}return s;}
+
+/* ---------------- world constants ---------------- */
+const R      = 440;      // island radius (cm)
+const TOP    = 92;       // nominal plateau height
+const SPAN   = 1200;     // terrain grid span
+const NSEG   = 288;      // grid resolution
+const PIT    = {x:14,z:118,r:206,depth:54};
+const CREEK_Y= -13;
+
+/* radial profile: [t, height/TOP] */
+const PROF=[[0,1],[.68,1],[.80,.975],[.885,.66],[.955,.13],[1.0,-.05],[1.08,-.28],[1.6,-.66]];
+function profile(t){
+  if(t<=0)return 1;
+  for(let i=1;i<PROF.length;i++){
+    if(t<=PROF[i][0]){
+      const a=PROF[i-1],b=PROF[i];
+      const k=(t-a[0])/(b[0]-a[0]);
+      return mix(a[1],b[1],k*k*(3-2*k));
+    }
+  }
+  return PROF[PROF.length-1][1];
+}
+
+/* ---------------- zones ---------------- */
+const ZONES=[
+  {id:'topsoil',name:'Topsoil',      a0:328,a1:394,lift:  0, surf:0x33210d, tint:0x4a3315},
+  {id:'root',   name:'Root Zone',    a0: 34,a1: 92,lift:  5, surf:0x3a2610, tint:0x54381a},
+  {id:'creek',  name:'Creek Bank',   a0: 92,a1:146,lift:-76, surf:0x4a3a18, tint:0x6d5a2a,
+   lr0:.40, lr1:.74, lo0:.99, lo1:1.30},
+  {id:'subsoil',name:'Subsoil',      a0:146,a1:222,lift: -9, surf:0x9f7034, tint:0xb98a4a},
+  {id:'compost',name:'Compost',      a0:222,a1:290,lift: 15, surf:0x6b4a16, tint:0x8d6420},
+  {id:'litter', name:'Leaf Litter',  a0:290,a1:328,lift:  8, surf:0x8a5a1c, tint:0xb0742a},
+];
+const ZI={}; ZONES.forEach((z,i)=>{ZI[z.id]=i; z.i=i;
+  if(z.lr0===undefined){z.lr0=.16;z.lr1=.52;} if(z.lo0===undefined){z.lo0=.66;z.lo1=.86;}});
+
+function angOf(x,z){let a=Math.atan2(x,-z)/D2R; if(a<0)a+=360; return a;}
+function inSpan(a,z){let s=a; if(s<z.a0)s+=360; return s>=z.a0&&s<z.a1;}
+function zoneIndexAt(x,z){const a=angOf(x,z);
+  for(let i=0;i<ZONES.length;i++) if(inSpan(a,ZONES[i])) return i;
+  return 0;}
+
+/* soft zone weights so lifts blend instead of stepping */
+function zoneWeights(x,z,out){
+  const a=angOf(x,z), BLEND=9;
+  let sum=0;
+  for(let i=0;i<6;i++){
+    const Z=ZONES[i]; let s=a; if(s<Z.a0)s+=360;
+    const d0=s-Z.a0, d1=Z.a1-s;
+    let w = sstep(-BLEND,BLEND,d0)*sstep(-BLEND,BLEND,d1);
+    // wrap check for the far copy
+    let s2=a+360; const e0=s2-Z.a0,e1=Z.a1-s2;
+    if(e0>-BLEND&&e1>-BLEND) w=Math.max(w,sstep(-BLEND,BLEND,e0)*sstep(-BLEND,BLEND,e1));
+    out[i]=w; sum+=w;
+  }
+  if(sum<1e-5){out[0]=1;sum=1;}
+  for(let i=0;i<6;i++)out[i]/=sum;
+  return out;
+}
+
+/* ---------------- paths ---------------- */
+/* sandy trails run along the zone boundaries, radiating from the centre */
+const PATH_ANG=[34,92,146,222,290,328];
+function pathDist(x,z){
+  const r=Math.hypot(x,z);
+  if(r<8) return 0;
+  const a=angOf(x,z);
+  let best=1e9;
+  for(const pa of PATH_ANG){
+    let d=Math.abs(((a-pa+540)%360)-180);
+    d=180-d;                      // angular distance
+    best=Math.min(best,d*D2R*r);  // arc distance
+  }
+  const inner=sstep(20,90,r), outer=1-sstep(R*0.72,R*0.86,r);
+  return best/Math.max(.08,inner*outer);
+}
+
+/* ---------------- burrows ----------------
+   Four navigable tunnels in two zones. The same control points that
+   generate the tube interiors also press the entrance dimples into the
+   terrain, so a hole you can see is always a hole you can enter.      */
+const TUNNELS=[
+ {id:'shaft', zone:'subsoil', r:11, name:'Deep shaft',
+  label:'A nightcrawler\u2019s permanent burrow. Straight down, then along.',
+  p:[[-74,146,0],[-74,146,-18],[-70,152,-46],[-52,168,-62],[-14,182,-66],
+     [34,178,-60],[68,166,-40],[80,162,-14],[80,162,0]]},
+ {id:'gallery', zone:'subsoil', r:11, name:'The gallery',
+  label:'A wide feeding run, packed smooth with castings.',
+  p:[[6,236,0],[6,236,-16],[26,224,-30],[62,196,-34],[74,152,-30],
+     [40,120,-26],[-16,116,-24],[-52,132,-16],[-56,138,0]]},
+ {id:'rootrun', zone:'root', r:10, name:'Root run',
+  label:'Endogeic tunnelling \u2014 sideways, through the feeding roots.',
+  p:[[206,-112,0],[206,-112,-14],[224,-96,-24],[248,-74,-27],[262,-44,-25],
+     [268,-22,-16],[268,-22,0]]},
+ {id:'sipe', zone:'root', r:10, name:'Old seep',
+  label:'Rainwater drains down old burrows. This one still weeps.',
+  p:[[186,-172,0],[186,-172,-15],[196,-150,-30],[214,-128,-38],[236,-104,-33],
+     [250,-84,-20],[252,-80,0]]},
+];
+const MOUTHS=[];
+TUNNELS.forEach(T=>{
+  MOUTHS.push({x:T.p[0][0], z:T.p[0][1], t:T, end:0});
+  MOUTHS.push({x:T.p[T.p.length-1][0], z:T.p[T.p.length-1][1], t:T, end:1});
+});
+
+/* ---------------- height ---------------- */
+const _w=new Array(6);
+function rawHeight(x,z){
+  const q=Math.pow(Math.pow(Math.abs(x),4)+Math.pow(Math.abs(z),4),.25);
+  const a=angOf(x,z);
+  const wob=(fbm(Math.cos(a*D2R)*2.1+9,Math.sin(a*D2R)*2.1+4,4)-.5)*.10;
+  const t=q/(R*(1+wob));
+  let h=TOP*profile(t);
+
+  // zone lifts on their own radial ramps
+  zoneWeights(x,z,_w);
+  let lift=0;
+  for(let i=0;i<6;i++){
+    const Z=ZONES[i];
+    lift+=_w[i]*Z.lift*sstep(Z.lr0,Z.lr1,t)*(1-sstep(Z.lo0,Z.lo1,t));
+  }
+  h+=lift;
+
+  // the excavated pit
+  const pd=Math.hypot(x-PIT.x,z-PIT.z)/PIT.r;
+  h-=PIT.depth*(1-sstep(.80,1.0,pd));
+
+  // sandy trails pressed into the surface
+  if(h>TOP*.5){
+    const pdst=pathDist(x,z);
+    h-=4.5*(1-sstep(9,26,pdst));
+  }
+
+  // texture
+  h+=(fbm(x*.011+31,z*.011+17,4)-.5)*7.0;
+  h+=(fbm(x*.045,z*.045,3)-.5)*2.2;
+
+  // burrow entrances: a funnel pressed in around every tunnel mouth
+  for(let m=0;m<MOUTHS.length;m++){
+    const M=MOUTHS[m], d=Math.hypot(x-M.x,z-M.z)/26;
+    if(d<1) h-=8*(1-sstep(.25,1.0,d));
+  }
+  return h;
+}
+
+/* ---------------- baked grid ---------------- */
+const HG=new Float32Array((NSEG+1)*(NSEG+1));
+const CELL=SPAN/NSEG, HALF=SPAN/2;
+function bakeHeights(){
+  for(let j=0;j<=NSEG;j++){
+    const z=-HALF+j*CELL;
+    for(let i=0;i<=NSEG;i++) HG[j*(NSEG+1)+i]=rawHeight(-HALF+i*CELL,z);
+  }
+}
+function heightAt(x,z){
+  const fx=(x+HALF)/CELL, fz=(z+HALF)/CELL;
+  const i=clamp(Math.floor(fx),0,NSEG-1), j=clamp(Math.floor(fz),0,NSEG-1);
+  const u=clamp(fx-i,0,1), v=clamp(fz-j,0,1), s=NSEG+1;
+  const a=HG[j*s+i],b=HG[j*s+i+1],c=HG[(j+1)*s+i],d=HG[(j+1)*s+i+1];
+  return mix(mix(a,b,u),mix(c,d,u),v);
+}
+function slopeAt(x,z){
+  const e=CELL;
+  const dx=(heightAt(x+e,z)-heightAt(x-e,z))/(2*e);
+  const dz=(heightAt(x,z+e)-heightAt(x,z-e))/(2*e);
+  return Math.hypot(dx,dz);
+}
+function normalAt(x,z,out){
+  const e=CELL;
+  const dx=(heightAt(x+e,z)-heightAt(x-e,z))/(2*e);
+  const dz=(heightAt(x,z+e)-heightAt(x,z-e))/(2*e);
+  out.set(-dx,1,-dz).normalize(); return out;
+}
+
+/* ---------------- soil horizons ----------------
+   Colour of any exposed soil is a pure function of world height.
+   Because cliff faces, pit walls, tunnel interiors and terrace edges
+   all read from this one function, they can never disagree.        */
+const HORIZONS=[
+  {y: 92, c:0x2a1a08, k:'O'},   // organic
+  {y: 78, c:0x3b2710, k:'A'},   // topsoil
+  {y: 62, c:0x5a3714, k:'A'},
+  {y: 44, c:0x7d4d1a, k:'B'},   // subsoil
+  {y: 22, c:0x9f7034, k:'B'},
+  {y:  2, c:0xab7c44, k:'C'},   // parent material
+  {y:-40, c:0x8e6b3f, k:'C'},
+];
+/* three's colour management treats vertex colours as linear working space,
+   so every hand-picked sRGB hex is converted once, here. */
+function s2l(c){return c<=.04045?c/12.92:Math.pow((c+.055)/1.055,2.4);}
+function lin(hex){return {r:s2l((hex>>16&255)/255),g:s2l((hex>>8&255)/255),b:s2l((hex&255)/255)};}
+HORIZONS.forEach(H=>{const l=lin(H.c);H.lr=l.r;H.lg=l.g;H.lb=l.b;});
+ZONES.forEach(Z=>{const a=lin(Z.surf),b=lin(Z.tint);
+  Z.sr=a.r;Z.sg=a.g;Z.sb=a.b; Z.tr=b.r;Z.tg=b.g;Z.tb=b.b;});
+
+function horizonRGB(y,jitter,out){
+  let i=0;
+  while(i<HORIZONS.length-1 && y<HORIZONS[i+1].y) i++;
+  const A=HORIZONS[Math.min(i,HORIZONS.length-1)];
+  const B=HORIZONS[Math.min(i+1,HORIZONS.length-1)];
+  const k=A.y===B.y?0:clamp((A.y-y)/(A.y-B.y),0,1);
+  const j=1+jitter;
+  out.r=mix(A.lr,B.lr,k)*j; out.g=mix(A.lg,B.lg,k)*j; out.b=mix(A.lb,B.lb,k)*j;
+  return out;
+}
+function horizonKey(y){
+  if(y>82) return 'O';
+  if(y>52) return 'A';
+  if(y>14) return 'B';
+  return 'C';
+}
+/* ================= scene, terrain, water, burrows ================= */
+const stage=document.getElementById('stage');
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0d5f86);
+scene.fog=new THREE.FogExp2(0x2e7f92,0.00055);
+
+/* cameras: orthographic survey chart + the worm's own eye */
+const ASP=()=>innerWidth/innerHeight;
+const AZ=45*D2R, EL=57*D2R;
+const CDIR=new THREE.Vector3(Math.cos(EL)*Math.sin(AZ),Math.sin(EL),Math.cos(EL)*Math.cos(AZ));
+let isoZoom=560;
+const isoCam=new THREE.OrthographicCamera(-1,1,1,-1,1,6000);
+function isoFrame(){
+  isoCam.left=-isoZoom*ASP(); isoCam.right=isoZoom*ASP();
+  isoCam.top=isoZoom; isoCam.bottom=-isoZoom; isoCam.updateProjectionMatrix();
+}
+const isoTarget=new THREE.Vector3(0,40,40);
+function isoPlace(){
+  isoCam.position.copy(isoTarget).addScaledVector(CDIR,2200);
+  isoCam.lookAt(isoTarget);
+}
+isoFrame(); isoPlace();
+
+const wormCam=new THREE.PerspectiveCamera(74,ASP(),0.35,4200);
+let mode='iso', cam=isoCam;
+
+/* light */
+const hemi=new THREE.HemisphereLight(0xbfe4ff,0x4a3416,0.62); scene.add(hemi);
+const amb=new THREE.AmbientLight(0xffe6bd,0.22); scene.add(amb);
+const sun=new THREE.DirectionalLight(0xfff0cf,2.05);
+sun.position.set(-560,880,-430); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+const sc=sun.shadow.camera;
+sc.left=-620;sc.right=620;sc.top=620;sc.bottom=-620;sc.near=180;sc.far=2400;
+sun.shadow.bias=-0.0016; sun.shadow.normalBias=1.2;
+scene.add(sun); scene.add(sun.target);
+
+/* ---------------- terrain ---------------- */
+bakeHeights();
+
+const tGeo=new THREE.PlaneGeometry(SPAN,SPAN,NSEG,NSEG);
+tGeo.rotateX(-Math.PI/2);
+{
+  const pos=tGeo.attributes.position, N=pos.count;
+  const col=new Float32Array(N*3);
+  const c={r:0,g:0,b:0};
+  const GRASS=lin(0x5d8a1e), GRASS2=lin(0x8fb63c);
+  const SAND=lin(0xdca956), PATH=lin(0xb68b39);
+  const WET=lin(0x6f6a43), DEEP=lin(0x2a4a4a);
+  const W=new Array(6);
+  for(let v=0;v<N;v++){
+    const x=pos.getX(v), z=pos.getZ(v);
+    const y=heightAt(x,z);
+    pos.setY(v,y);
+    const sl=slopeAt(x,z);
+    const j=(fbm(x*.07+5,z*.07+2,3)-.5)*.30;
+    horizonRGB(y,j,c);
+    let r=c.r,g=c.g,b=c.b;
+
+    // plateau tops carry their zone's own character
+    zoneWeights(x,z,W);
+    let zr=0,zg=0,zb=0;
+    const patch=fbm(x*.028+40,z*.028+70,3);
+    for(let i=0;i<6;i++){const Z=ZONES[i],k=W[i];
+      zr+=k*mix(Z.sr,Z.tr,patch); zg+=k*mix(Z.sg,Z.tg,patch); zb+=k*mix(Z.sb,Z.tb,patch);}
+    const surfaceness=(1-sstep(.30,.72,sl))*sstep(70,84,y);
+    r=mix(r,zr*(1+j*.6),surfaceness); g=mix(g,zg*(1+j*.6),surfaceness); b=mix(b,zb*(1+j*.6),surfaceness);
+
+    // green lip: the rounded edge where every terrace rolls over
+    const lip=sstep(.10,.22,sl)*(1-sstep(.33,.56,sl))*sstep(72,84,y)
+              *(.55+.45*fbm(x*.05+11,z*.05+3,2));
+    const gg=fbm(x*.09,z*.09,2);
+    r=mix(r,mix(GRASS.r,GRASS2.r,gg),lip); g=mix(g,mix(GRASS.g,GRASS2.g,gg),lip);
+    b=mix(b,mix(GRASS.b,GRASS2.b,gg),lip);
+
+    // trails
+    const pw=(1-sstep(8,20,pathDist(x,z)))*sstep(.62,.30,sl)*sstep(72,84,y);
+    r=mix(r,PATH.r*(1+j),pw); g=mix(g,PATH.g*(1+j),pw); b=mix(b,PATH.b*(1+j),pw);
+
+    // beach + waterline
+    const bw=(1-sstep(4,20,Math.abs(y-5)))*sstep(.55,.22,sl);
+    r=mix(r,SAND.r*(1+j),bw); g=mix(g,SAND.g*(1+j),bw); b=mix(b,SAND.b*(1+j),bw);
+    const uw=sstep(0,-16,y);
+    r=mix(r,mix(WET.r,DEEP.r,sstep(-6,-34,y)),uw);
+    g=mix(g,mix(WET.g,DEEP.g,sstep(-6,-34,y)),uw);
+    b=mix(b,mix(WET.b,DEEP.b,sstep(-6,-34,y)),uw);
+
+    col[v*3]=clamp(r,0,1); col[v*3+1]=clamp(g,0,1); col[v*3+2]=clamp(b,0,1);
+  }
+  tGeo.setAttribute('color',new THREE.BufferAttribute(col,3));
+  tGeo.computeVertexNormals();
+}
+const terrain=new THREE.Mesh(tGeo,new THREE.MeshLambertMaterial({
+  vertexColors:true, side:THREE.DoubleSide}));   // solid from below, not a window
+terrain.receiveShadow=true; terrain.castShadow=true;
+scene.add(terrain);
+
+/* ---------------- ocean ---------------- */
+const HTEX=256, HSPAN=1500;
+const hData=new Uint8Array(HTEX*HTEX*4);
+for(let j=0;j<HTEX;j++)for(let i=0;i<HTEX;i++){
+  const x=(i/(HTEX-1)-.5)*HSPAN, z=(j/(HTEX-1)-.5)*HSPAN;
+  const h=clamp((heightAt(x,z)+90)/230,0,1);
+  const o=(j*HTEX+i)*4; hData[o]=h*255; hData[o+1]=h*255; hData[o+2]=h*255; hData[o+3]=255;
+}
+const heightTex=new THREE.DataTexture(hData,HTEX,HTEX,THREE.RGBAFormat);
+heightTex.minFilter=heightTex.magFilter=THREE.LinearFilter;
+heightTex.needsUpdate=true;
+
+const GNOISE=`
+float hsh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float nz(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.0-2.0*f);
+ return mix(mix(hsh(i),hsh(i+vec2(1,0)),u.x),mix(hsh(i+vec2(0,1)),hsh(i+vec2(1,1)),u.x),u.y);}
+float fb(vec2 p){float s=0.0,a=0.5;for(int i=0;i<4;i++){s+=a*nz(p);p*=2.03;a*=0.5;}return s;}
+vec3 SR(vec3 c){return pow(c,vec3(2.2));}
+`;
+const waterU={
+  uTime:{value:0}, uH:{value:heightTex}, uSpan:{value:HSPAN},
+  uSun:{value:sun.position.clone().normalize()},
+  uFog:{value:new THREE.Color(0x2e7f92)}, uDry:{value:0}, uRain:{value:0}
+};
+const oceanMat=new THREE.ShaderMaterial({
+  uniforms:waterU,
+  vertexShader:`
+    uniform float uTime, uSpan; uniform sampler2D uH;
+    varying vec3 vW; varying float vD; varying vec3 vN;
+    float depthAt(vec2 p){ vec2 uv=p/uSpan+0.5;
+      if(uv.x<0.0||uv.x>1.0||uv.y<0.0||uv.y>1.0) return 90.0;
+      return -(texture2D(uH,uv).r*230.0-90.0); }
+    float wav(vec2 p,float t){
+      return sin(p.x*0.021+t*1.15)*1.0
+           + sin(p.y*0.0165-t*0.92)*0.85
+           + sin((p.x*0.61+p.y*0.79)*0.033+t*1.6)*0.55;
+    }
+    void main(){
+      vec4 wp=modelMatrix*vec4(position,1.0);
+      float d=depthAt(wp.xz); vD=d;
+      float att=smoothstep(0.0,26.0,d);
+      float e=3.0;
+      float h0=wav(wp.xz,uTime)*att;
+      float hx=wav(wp.xz+vec2(e,0.0),uTime)*att;
+      float hz=wav(wp.xz+vec2(0.0,e),uTime)*att;
+      wp.y+=h0*2.4;
+      vN=normalize(vec3(-(hx-h0)*2.4/e,1.0,-(hz-h0)*2.4/e));
+      vW=wp.xyz;
+      gl_Position=projectionMatrix*viewMatrix*wp;
+    }`,
+  fragmentShader:GNOISE+`
+    uniform float uTime, uDry, uRain; uniform vec3 uSun, uFog;
+    varying vec3 vW; varying float vD; varying vec3 vN;
+    void main(){
+      float d=max(vD,0.0);
+      vec3 shallow=SR(vec3(0.176,0.808,0.741));
+      vec3 mid    =SR(vec3(0.039,0.647,0.655));
+      vec3 deep   =SR(vec3(0.0,0.329,0.553));
+      vec3 col=mix(shallow,mid,smoothstep(2.0,26.0,d));
+      col=mix(col,deep,smoothstep(24.0,72.0,d));
+      // sand showing through the shallows
+      col=mix(SR(vec3(0.86,0.66,0.34)),col,smoothstep(0.0,7.0,d));
+
+      // surf: bands that break where the water gets thin
+      float band=fb(vW.xz*0.05+vec2(uTime*0.30,0.0));
+      float surf=smoothstep(0.55,0.95,band)*(1.0-smoothstep(1.0,13.0,d));
+      float edge=(1.0-smoothstep(0.0,3.4,d))*(0.55+0.45*sin(uTime*2.1+vW.x*0.09+vW.z*0.07));
+      col=mix(col,SR(vec3(0.94,0.96,0.93)),clamp(surf*0.85+edge*0.6,0.0,1.0));
+
+      vec3 V=normalize(cameraPosition-vW);
+      vec3 H=normalize(uSun+V);
+      col+=vec3(1.0,0.94,0.80)*pow(max(dot(vN,H),0.0),150.0)*0.85;
+      col+=vec3(0.30,0.55,0.62)*pow(1.0-max(dot(vN,V),0.0),3.4)*0.35;
+      // rain: the sea goes flat, grey and pockmarked
+      float pit=fb(vW.xz*0.55+vec2(floor(uTime*13.0)*7.3,0.0));
+      col=mix(col,SR(vec3(0.32,0.40,0.43)),uRain*0.42);
+      col+=vec3(0.16)*smoothstep(0.72,0.95,pit)*uRain;
+      col=mix(col,uFog,smoothstep(420.0,1500.0,length(cameraPosition-vW)));
+      col=mix(col,vec3(dot(col,vec3(0.33))),uDry*0.55);
+      gl_FragColor=vec4(col,1.0);
+      #include <colorspace_fragment>
+    }`
+});
+const ocean=new THREE.Mesh(new THREE.PlaneGeometry(3400,3400,120,120),oceanMat);
+ocean.rotation.x=-Math.PI/2; ocean.position.y=0; ocean.renderOrder=-1;
+scene.add(ocean);
+
+/* ---------------- burrows ----------------
+   Tubes are built by hand rather than with TubeGeometry, because the
+   player widens them as they eat their way along, so every ring needs
+   its own radius.                                                    */
+const TSEG=150, TRADIAL=13;
+
+function makeTube(curve,segs,radial){
+  const fr=curve.computeFrenetFrames(segs,false);
+  const N=(segs+1)*radial;
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(N*3),3));
+  g.setAttribute('normal',new THREE.BufferAttribute(new Float32Array(N*3),3));
+  g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(N*3),3));
+  const idx=[];
+  for(let i=0;i<segs;i++)for(let s=0;s<radial;s++){
+    const a=i*radial+s, b=i*radial+(s+1)%radial;
+    const c=(i+1)*radial+s, d=(i+1)*radial+(s+1)%radial;
+    idx.push(a,b,c, b,d,c);
+  }
+  g.setIndex(idx);
+  g.userData={fr,segs,radial,pts:[]};
+  for(let i=0;i<=segs;i++) g.userData.pts.push(curve.getPointAt(i/segs));
+  return g;
+}
+const _tv=new THREE.Vector3(), _tc={r:0,g:0,b:0};
+function shapeTube(g,radii,scale,colourFn,yOff){
+  yOff=yOff||0;
+  const {fr,segs,radial,pts}=g.userData;
+  const pos=g.attributes.position, nor=g.attributes.normal, col=g.attributes.color;
+  for(let i=0;i<=segs;i++){
+    const P=pts[i], Nn=fr.normals[i], B=fr.binormals[i], r=radii[i]*scale;
+    for(let s=0;s<radial;s++){
+      const a=s/radial*TAU, cx=Math.cos(a)*r, cy=Math.sin(a)*r;
+      const o=i*radial+s;
+      pos.setXYZ(o,P.x+Nn.x*cx+B.x*cy, P.y+Nn.y*cx+B.y*cy+yOff*radii[i], P.z+Nn.z*cx+B.z*cy);
+      _tv.set(Nn.x*cx+B.x*cy, Nn.y*cx+B.y*cy, Nn.z*cx+B.z*cy).normalize();
+      nor.setXYZ(o,_tv.x,_tv.y,_tv.z);
+      if(colourFn){ colourFn(P.y+Nn.y*cx+B.y*cy, P.x, P.z, _tc);
+        col.setXYZ(o,_tc.r,_tc.g,_tc.b); }
+    }
+  }
+  pos.needsUpdate=true; nor.needsUpdate=true;
+  if(colourFn) col.needsUpdate=true;
+  g.computeBoundingSphere();
+}
+function soilWall(y,x,z,out){
+  const j=(fbm(x*.16+3,z*.16+9,3)-.5)*.42-.16;
+  horizonRGB(y,j,out);
+  out.r=clamp(out.r,0,1); out.g=clamp(out.g,0,1); out.b=clamp(out.b,0,1);
+}
+
+const burrows=[];
+TUNNELS.forEach(T=>{
+  const pts=T.p.map(p=>new THREE.Vector3(p[0],p[2],p[1]));
+  pts[0].y=heightAt(pts[0].x,pts[0].z)-1.5;
+  pts[1].y=Math.min(pts[1].y,pts[0].y-4);
+  const L=pts.length;
+  pts[L-1].y=heightAt(pts[L-1].x,pts[L-1].z)-1.5;
+  pts[L-2].y=Math.min(pts[L-2].y,pts[L-1].y-4);
+  const curve=new THREE.CatmullRomCurve3(pts,false,'catmullrom',0.4);
+
+  const radii=new Float32Array(TSEG+1).fill(T.r);
+  const geo=makeTube(curve,TSEG,TRADIAL);
+  shapeTube(geo,radii,1,soilWall);
+  const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({
+    vertexColors:true, side:THREE.BackSide}));
+  scene.add(mesh);
+
+  /* rainwater rising inside the burrow */
+  const wgeo=makeTube(curve,TSEG,TRADIAL);
+  shapeTube(wgeo,radii,0.001,null);
+  const wcol=wgeo.attributes.color;
+  for(let i=0;i<wcol.count;i++) wcol.setXYZ(i,0.06,0.30,0.34);
+  const wmesh=new THREE.Mesh(wgeo,new THREE.MeshLambertMaterial({
+    vertexColors:true, transparent:true, opacity:0.62,
+    depthWrite:false, side:THREE.DoubleSide}));
+  wmesh.renderOrder=2; wmesh.visible=false; scene.add(wmesh);
+
+  burrows.push({def:T,curve,mesh,geo,radii,wmesh,wgeo,flood:0,shownFlood:-1,
+    len:curve.getLength(), dirty:false,
+    mouths:[{p:pts[0].clone(),t:0},{p:pts[L-1].clone(),t:1}]});
+});
+
+/* a soft glow at every mouth so you can find your way back out */
+burrows.forEach(b=>b.mouths.forEach(m=>{
+  const l=new THREE.PointLight(0xffe0a8,900,90,2.0);
+  l.position.copy(m.p).setY(m.p.y+6); scene.add(l);
+}));
+
+/* radius at a point along the tunnel, for the camera and for movement */
+function burrowRadius(b,t){
+  const f=clamp(t,0,1)*TSEG, i=Math.floor(f), k=f-i;
+  return mix(b.radii[i], b.radii[Math.min(i+1,TSEG)], k);
+}
+/* ================= props ================= */
+const _m4=new THREE.Matrix4(), _q=new THREE.Quaternion(), _v3=new THREE.Vector3();
+
+function mergeParts(parts){
+  // polyhedron geometries come back non-indexed; give them one
+  parts.forEach(p=>{ if(!p.g.index){
+    const n=p.g.attributes.position.count, a=new Uint32Array(n);
+    for(let i=0;i<n;i++)a[i]=i; p.g.setIndex(new THREE.BufferAttribute(a,1)); }});
+  let vc=0,ic=0;
+  parts.forEach(p=>{vc+=p.g.attributes.position.count; ic+=p.g.index.count;});
+  const pos=new Float32Array(vc*3), nor=new Float32Array(vc*3), col=new Float32Array(vc*3);
+  const idx=new Uint32Array(ic);
+  let vo=0,io=0;
+  const nm=new THREE.Matrix3();
+  parts.forEach(p=>{
+    const g=p.g, P=g.attributes.position, N=g.attributes.normal, I=g.index;
+    const M=p.m||_m4.identity(); nm.getNormalMatrix(M);
+    for(let i=0;i<P.count;i++){
+      _v3.fromBufferAttribute(P,i).applyMatrix4(M);
+      pos[(vo+i)*3]=_v3.x; pos[(vo+i)*3+1]=_v3.y; pos[(vo+i)*3+2]=_v3.z;
+      _v3.fromBufferAttribute(N,i).applyMatrix3(nm).normalize();
+      nor[(vo+i)*3]=_v3.x; nor[(vo+i)*3+1]=_v3.y; nor[(vo+i)*3+2]=_v3.z;
+      col[(vo+i)*3]=p.c.r; col[(vo+i)*3+1]=p.c.g; col[(vo+i)*3+2]=p.c.b;
+    }
+    for(let i=0;i<I.count;i++) idx[io+i]=I.getX(i)+vo;
+    vo+=P.count; io+=I.count;
+  });
+  const out=new THREE.BufferGeometry();
+  out.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  out.setAttribute('normal',new THREE.BufferAttribute(nor,3));
+  out.setAttribute('color',new THREE.BufferAttribute(col,3));
+  out.setIndex(new THREE.BufferAttribute(idx,1));
+  return out;
+}
+const P={
+  box:(w,h,d)=>new THREE.BoxGeometry(w,h,d),
+  cone:(r,h,s=7)=>new THREE.ConeGeometry(r,h,s),
+  cyl:(r1,r2,h,s=7)=>new THREE.CylinderGeometry(r1,r2,h,s),
+  sph:(r,s=7,t=5)=>new THREE.SphereGeometry(r,s,t),
+  ico:(r,d=1)=>new THREE.IcosahedronGeometry(r,d),
+};
+function mat4(x,y,z,rx,ry,rz,sx,sy,sz){
+  const m=new THREE.Matrix4();
+  m.compose(new THREE.Vector3(x,y,z),
+    _q.setFromEuler(new THREE.Euler(rx||0,ry||0,rz||0)),
+    new THREE.Vector3(sx===undefined?1:sx, sy===undefined?(sx===undefined?1:sx):sy,
+                      sz===undefined?(sx===undefined?1:sx):sz));
+  return m;
+}
+function lumpy(geo,amt,seed){
+  const p=geo.attributes.position;
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
+    const n=fbm(x*.6+seed,z*.6+y*.6,3)-.5;
+    p.setXYZ(i,x*(1+n*amt),y*(1+n*amt*.8),z*(1+n*amt));
+  }
+  geo.computeVertexNormals(); return geo;
+}
+/* a tapered blade: leaves, grass, petals */
+function blade(len,wid,bend,seg=5){
+  const pos=[],nor=[],idx=[];
+  for(let i=0;i<=seg;i++){
+    const t=i/seg, w=wid*(1-t*t)*(t<.12?t/.12:1);
+    const y=len*t, z=bend*t*t;
+    pos.push(-w,y,z, w,y,z); nor.push(0,0,1, 0,0,1);
+  }
+  for(let i=0;i<seg;i++){const a=i*2;idx.push(a,a+1,a+2, a+1,a+3,a+2);}
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pos),3));
+  g.setAttribute('normal',new THREE.BufferAttribute(new Float32Array(nor),3));
+  g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+
+/* ---- prop generators (all return a merged, vertex-coloured geometry) ---- */
+const C={
+  litter1:lin(0xd8962f), litter2:lin(0xa8641c), litter3:lin(0xc2a41f), litter4:lin(0x8a4a14),
+  green1:lin(0x5d8a1e), green2:lin(0x91bb3d), green3:lin(0x3e5f14),
+  stem:lin(0x6f7f28), bark:lin(0x6a4c26), bark2:lin(0x8a6a38),
+  rock:lin(0x6f6a52), rock2:lin(0x8d8770), pebble:lin(0x9a8158),
+  shroom:lin(0xc6923e), shroomS:lin(0xe0cfa2),
+  root:lin(0xa8763c), root2:lin(0x8a5c2a),
+  banana:lin(0xd8bb35), egg:lin(0xe6dcc0), peel:lin(0xb07028), rot:lin(0x7a5a1c),
+  tomato:lin(0xb8360c), carrot:lin(0xc4701c), purple:lin(0x936aaa), white:lin(0xe8e4d0),
+  pad:lin(0x4f8a3a), wood:lin(0x6f4a1c), wood2:lin(0x8a6231),
+};
+
+function gLeaf(){
+  const b=blade(9,4.6,1.2,4);
+  return mergeParts([
+    {g:b,c:C.litter1,m:mat4(0,0,0,-Math.PI/2,0,0)},
+    {g:blade(7,3.4,1.0,4),c:C.litter2,m:mat4(1.5,.35,1.2,-Math.PI/2,.8,0)},
+  ]);
+}
+function gLeafDry(){
+  return mergeParts([
+    {g:blade(8,4.0,1.6,4),c:C.litter4,m:mat4(0,0,0,-Math.PI/2+.2,0,0)},
+    {g:blade(6,3.0,1.3,4),c:C.litter3,m:mat4(-1.2,.3,1.0,-Math.PI/2,-.9,0)},
+  ]);
+}
+function gPebble(){ return mergeParts([{g:lumpy(P.ico(2.0,0),.55,7),c:C.pebble}]); }
+function gRock(){
+  return mergeParts([
+    {g:lumpy(P.ico(11,1),.42,3),c:C.rock},
+    {g:lumpy(P.ico(6,0),.5,9),c:C.rock2,m:mat4(7,-2,4)},
+  ]);
+}
+function gGrass(){
+  const ps=[];
+  for(let i=0;i<5;i++){
+    const a=i/5*TAU+rnd()*.6;
+    ps.push({g:blade(13+rnd()*9,1.5,3+rnd()*3,5),c:i%2?C.green1:C.green2,
+      m:mat4(Math.cos(a)*1.2,0,Math.sin(a)*1.2,0,a,(rnd()-.5)*.5)});
+  }
+  return mergeParts(ps);
+}
+function gShrub(){
+  const ps=[{g:P.cyl(.7,1.0,7,5),c:C.stem,m:mat4(0,3.5,0)}];
+  for(let i=0;i<9;i++){
+    const a=i/9*TAU*1.6, r=2+rnd()*3, y=5+rnd()*9;
+    ps.push({g:blade(9+rnd()*5,5.5,2.5,4),c:i%3===0?C.green3:(i%3===1?C.green1:C.green2),
+      m:mat4(Math.cos(a)*r,y,Math.sin(a)*r,-.5-rnd()*.7,a,0)});
+  }
+  return mergeParts(ps);
+}
+function gFern(){
+  const ps=[];
+  for(let i=0;i<7;i++){
+    const a=i/7*TAU;
+    ps.push({g:blade(16,3.2,6,6),c:C.green3,m:mat4(0,1,0,-.9,a,0)});
+    ps.push({g:blade(11,2.4,4,5),c:C.green1,m:mat4(0,2,0,-.4,a+.4,0)});
+  }
+  return mergeParts(ps);
+}
+function gMushroom(){
+  return mergeParts([
+    {g:P.cyl(.85,1.15,7,6),c:C.shroomS,m:mat4(0,3.5,0)},
+    {g:P.sph(3.2,9,5),c:C.shroom,m:mat4(0,7.2,0,0,0,0,1,.55,1)},
+  ]);
+}
+function gShelfFungus(){
+  const ps=[];
+  for(let i=0;i<4;i++)
+    ps.push({g:P.sph(3.4-i*.5,9,4),c:i%2?C.shroom:C.shroomS,
+      m:mat4(i*1.1,i*2.0,0,0,0,.25,1.3,.30,1)});
+  return mergeParts(ps);
+}
+function gFlower(){
+  const ps=[{g:P.cyl(.35,.5,14,5),c:C.stem,m:mat4(0,7,0)}];
+  for(let i=0;i<9;i++){
+    const t=i/9;
+    ps.push({g:blade(3.4,2.0,.6,3),c:C.purple,
+      m:mat4(0,12+t*8,0,-.7,t*5.2,0)});
+  }
+  return mergeParts(ps);
+}
+function gDaisy(){
+  const ps=[{g:P.cyl(.3,.4,7,5),c:C.stem,m:mat4(0,3.5,0)}];
+  for(let i=0;i<7;i++)
+    ps.push({g:blade(3.0,1.5,.2,3),c:C.white,m:mat4(0,7,0,-1.3,i/7*TAU,0)});
+  ps.push({g:P.sph(1.0,7,5),c:C.litter3,m:mat4(0,7.4,0)});
+  return mergeParts(ps);
+}
+function gScrapBanana(){
+  const ps=[];
+  for(let i=0;i<4;i++)
+    ps.push({g:blade(11,2.2,5,5),c:C.banana,m:mat4(0,.5,0,-1.35,i/4*TAU,0)});
+  return mergeParts(ps);
+}
+function gScrapEgg(){
+  return mergeParts([{g:P.sph(3.2,9,5),c:C.egg,m:mat4(0,.6,0,Math.PI,0,0,1,.62,1)}]);
+}
+function gScrapCore(){
+  return mergeParts([
+    {g:lumpy(P.ico(3.0,0),.35,11),c:C.rot,m:mat4(0,2.4,0,0,0,0,1,1.25,1)},
+    {g:P.cyl(.3,.3,3,4),c:C.bark,m:mat4(0,5.4,0)},
+  ]);
+}
+function gScrapPeel(){
+  const ps=[];
+  for(let i=0;i<5;i++)
+    ps.push({g:blade(7,2.6,3,4),c:i%2?C.peel:C.litter2,m:mat4(0,.4,0,-1.4,i/5*TAU+.3,0)});
+  return mergeParts(ps);
+}
+function gLilyPad(){
+  return mergeParts([{g:P.cyl(7.5,7.5,.5,12),c:C.pad}]);
+}
+function gReed(){
+  const ps=[];
+  for(let i=0;i<6;i++){
+    const a=i/6*TAU;
+    ps.push({g:blade(34+rnd()*16,1.7,4,6),c:C.green1,m:mat4(Math.cos(a),0,Math.sin(a),0,a,(rnd()-.5)*.35)});
+  }
+  ps.push({g:P.cyl(1.5,1.5,9,7),c:C.bark,m:mat4(2,38,0,0,0,.08)});
+  return mergeParts(ps);
+}
+function gCarrot(){
+  const ps=[{g:P.cone(3.0,14,8),c:C.carrot,m:mat4(0,-4,0,Math.PI,0,0)}];
+  for(let i=0;i<6;i++)
+    ps.push({g:blade(13,3.2,3,5),c:C.green2,m:mat4(0,3,0,-.55,i/6*TAU,0)});
+  return mergeParts(ps);
+}
+function gTomato(){
+  const ps=[{g:P.cyl(.9,1.1,26,6),c:C.stem,m:mat4(0,13,0)}];
+  for(let i=0;i<8;i++){
+    const a=i/8*TAU*1.7, y=8+i*2.2;
+    ps.push({g:blade(11,6.5,2.5,4),c:i%2?C.green1:C.green3,m:mat4(0,y,0,-.55,a,0)});
+  }
+  for(let i=0;i<3;i++){
+    const a=i/3*TAU+.4;
+    ps.push({g:P.sph(3.4,9,7),c:C.tomato,m:mat4(Math.cos(a)*5,17+i*3,Math.sin(a)*5)});
+  }
+  return mergeParts(ps);
+}
+/* exposed root systems: the thing every cut face in the reference is showing */
+function gRoots(){
+  const ps=[];
+  function branch(x,y,z,dx,dy,dz,r,d){
+    const len=6+rnd()*7;
+    const ex=x+dx*len, ey=y+dy*len, ez=z+dz*len;
+    const mid=new THREE.Vector3((x+ex)/2,(y+ey)/2,(z+ez)/2);
+    const dir=new THREE.Vector3(ex-x,ey-y,ez-z);
+    const m=new THREE.Matrix4().compose(mid,
+      new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize()),
+      new THREE.Vector3(1,dir.length()/ (r*2)*r*2/ (r*2) ,1));
+    const g=P.cyl(r,r*.72,dir.length(),4);
+    ps.push({g,c:d<1?C.root:C.root2,m:new THREE.Matrix4().compose(mid,
+      new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize()),
+      new THREE.Vector3(1,1,1))});
+    if(d<2&&r>.4){
+      for(let i=0;i<2;i++)
+        branch(ex,ey,ez,dx+(rnd()-.5)*1.1,dy-rnd()*.5,dz+(rnd()-.5)*1.1,r*.62,d+1);
+    }
+  }
+  for(let i=0;i<3;i++) branch(0,0,0,(rnd()-.5)*.9,-1,(rnd()-.5)*.9,1.5,0);
+  return mergeParts(ps);
+}
+
+/* ---------------- scattering ---------------- */
+const KEEPOUT=[];
+MOUTHS.forEach(m=>KEEPOUT.push({x:m.x,z:m.z,r:44}));
+
+function okSpot(x,z,o){
+  const q=Math.pow(Math.pow(Math.abs(x),4)+Math.pow(Math.abs(z),4),.25)/R;
+  if(q>(o.maxT||0.985)||q<(o.minT||0)) return false;
+  const y=heightAt(x,z);
+  if(y<(o.minY!==undefined?o.minY:2)||y>(o.maxY!==undefined?o.maxY:200)) return false;
+  const s=slopeAt(x,z);
+  if(s>(o.maxSlope||0.42)) return false;
+  if(o.minSlope&&s<o.minSlope) return false;
+  if(o.zone){
+    const zi=zoneIndexAt(x,z);
+    if(Array.isArray(o.zone)?o.zone.indexOf(ZONES[zi].id)<0:ZONES[zi].id!==o.zone) return false;
+  }
+  if(!o.onPath && pathDist(x,z)<14) return false;
+  for(const k of KEEPOUT) if(Math.hypot(x-k.x,z-k.z)<k.r) return false;
+  return true;
+}
+const scatterMeshes=[];
+function scatter(geo,count,o){
+  const mat=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
+  const im=new THREE.InstancedMesh(geo,mat,count);
+  im.castShadow=o.shadow!==false; im.receiveShadow=true;
+  const col=new THREE.Color(); let n=0,tries=0;
+  while(n<count&&tries<count*90){
+    tries++;
+    const a=rnd()*TAU, rr=Math.sqrt(rnd())*R*(o.maxT||.985);
+    const x=Math.cos(a)*rr, z=Math.sin(a)*rr;
+    if(!okSpot(x,z,o)) continue;
+    const y=heightAt(x,z)+(o.sink||0);
+    const s=(o.s0||1)+rnd()*((o.s1||1.4)-(o.s0||1));
+    _m4.compose(new THREE.Vector3(x,y,z),
+      _q.setFromEuler(new THREE.Euler(o.tilt?(rnd()-.5)*o.tilt:0,rnd()*TAU,o.tilt?(rnd()-.5)*o.tilt:0)),
+      new THREE.Vector3(s,s*(o.sy||1),s));
+    im.setMatrixAt(n,_m4);
+    const b=.82+rnd()*.36; col.setRGB(b,b,b); im.setColorAt(n,col);
+    n++;
+  }
+  im.count=n; im.instanceMatrix.needsUpdate=true;
+  if(im.instanceColor) im.instanceColor.needsUpdate=true;
+  scene.add(im); scatterMeshes.push({im,sway:o.sway||0});
+  return im;
+}
+
+const CNT={}, PROPS={};
+function place(name,geo,count,o){ const m=scatter(geo,count,o); CNT[name]=m.count; PROPS[name]=m; return m; }
+
+place('dry leaves',   gLeafDry(), 420,{zone:['litter'],maxSlope:.5,s0:.8,s1:1.8,tilt:.5,sink:-1});
+place('fresh leaves', gLeaf(),    150,{zone:['litter','compost'],maxSlope:.5,s0:.7,s1:1.5,tilt:.5,sink:-1});
+place('grass',        gGrass(),   620,{zone:['topsoil','root','creek','compost','litter'],maxSlope:.5,s0:.8,s1:1.6,minY:20});
+place('shrubs',       gShrub(),   210,{zone:['topsoil','root','creek','litter','compost'],maxSlope:.36,s0:.9,s1:1.9,minY:30});
+place('ferns',        gFern(),     70,{zone:['creek','litter','root'],maxSlope:.4,s0:.8,s1:1.5,minY:20});
+place('mushrooms',    gMushroom(), 48,{zone:['litter','compost'],maxSlope:.35,s0:.7,s1:1.5});
+place('flowers',      gFlower(),   46,{zone:['root','topsoil'],maxSlope:.3,s0:.8,s1:1.3});
+place('daisies',      gDaisy(),    60,{zone:['root','topsoil','creek'],maxSlope:.3,s0:.8,s1:1.4});
+place('carrots',      gCarrot(),   16,{zone:['root'],maxSlope:.26,s0:1.0,s1:1.5,sink:2});
+place('tomato plants',gTomato(),   10,{zone:['root'],maxSlope:.24,s0:1.0,s1:1.4});
+place('compost scraps',gScrapBanana(),46,{zone:['compost'],maxSlope:.55,s0:.8,s1:1.5,tilt:.7});
+place('eggshells',    gScrapEgg(), 30,{zone:['compost'],maxSlope:.55,s0:.7,s1:1.3,tilt:.6});
+place('apple cores',  gScrapCore(),28,{zone:['compost'],maxSlope:.55,s0:.8,s1:1.4,tilt:.5});
+place('peelings',     gScrapPeel(),40,{zone:['compost'],maxSlope:.55,s0:.8,s1:1.5,tilt:.7});
+place('pebbles',      gPebble(),  520,{maxSlope:.9,s0:.6,s1:1.9,tilt:1.2,minY:-30,maxY:70,onPath:true});
+place('shore rocks',  gRock(),    150,{maxSlope:1.4,s0:.7,s1:2.1,tilt:.5,minY:-26,maxY:34,onPath:true,sink:-3});
+place('pit rubble',   gRock(),     60,{zone:['subsoil'],maxSlope:1.1,s0:.4,s1:1.1,tilt:.8,maxY:40,onPath:true});
+place('reeds',        gReed(),     54,{zone:['creek'],maxSlope:.7,s0:.7,s1:1.4,minY:-8,maxY:26});
+place('root masses',  gRoots(),    70,{zone:['root','topsoil','subsoil','compost'],
+                                       maxSlope:3.0,minSlope:0.55,s0:1.3,s1:2.8,minY:12,maxY:90,onPath:true});
+
+/* lily pads sit on the water, not the ground */
+{
+  const geo=gLilyPad(), mat=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
+  const im=new THREE.InstancedMesh(geo,mat,40); im.receiveShadow=true;
+  let n=0,tries=0;
+  while(n<40&&tries<4000){
+    tries++;
+    const a=(92+rnd()*54)*D2R, rr=(.55+rnd()*.42)*R;
+    const x=Math.sin(a)*rr, z=-Math.cos(a)*rr;
+    const y=heightAt(x,z);
+    if(y>-4||y<-40) continue;
+    const s=.7+rnd()*.8;
+    _m4.compose(new THREE.Vector3(x,0.9,z),_q.setFromEuler(new THREE.Euler(0,rnd()*TAU,0)),
+      new THREE.Vector3(s,1,s));
+    im.setMatrixAt(n,_m4); n++;
+  }
+  im.count=n; im.instanceMatrix.needsUpdate=true; scene.add(im); CNT['lily pads']=n;
+  window.__lily=im;
+}
+
+/* ---------------- the fallen log ---------------- */
+{
+  const a=308*D2R, rr=R*.60;
+  const lx=Math.sin(a)*rr, lz=-Math.cos(a)*rr, ly=heightAt(lx,lz);
+  const ps=[];
+  for(let i=0;i<3;i++){
+    ps.push({g:P.cyl(9-i*1.2,8-i*1.2,86,9),c:i%2?C.bark:C.bark2,
+      m:mat4(i*7,i*11,i*5,0,0,Math.PI/2+(i*.06),1,1,1)});
+  }
+  const log=new THREE.Mesh(mergeParts(ps),new THREE.MeshLambertMaterial({vertexColors:true}));
+  log.position.set(lx,ly+7,lz); log.rotation.y=a+1.1;
+  log.castShadow=true; log.receiveShadow=true; scene.add(log);
+  CNT['fallen log']=1;
+  // shelf fungus growing off it
+  const sf=new THREE.Mesh(gShelfFungus(),new THREE.MeshLambertMaterial({vertexColors:true}));
+  sf.position.set(lx+10,ly+12,lz+6); sf.rotation.y=a; sf.scale.setScalar(1.6);
+  sf.castShadow=true; scene.add(sf);
+  KEEPOUT.push({x:lx,z:lz,r:56});
+}
+
+/* find level, dry ground near a bearing — used for signs and buried finds */
+function findFlat(midDeg,opt){
+  opt=opt||{};
+  const tries=[[opt.maxSlope||0.30, opt.minY!==undefined?opt.minY:10],
+               [0.46,4],[0.70,-2]];
+  for(const [ms,my] of tries){
+    let best=null,bs=-1e9;
+    for(let da=-28;da<=28;da+=4){
+      for(let rr=R*0.80;rr>R*0.15;rr-=7){
+        const a=(midDeg+da)*D2R;
+        const x=Math.sin(a)*rr, z=-Math.cos(a)*rr;
+        const y=heightAt(x,z), sl=slopeAt(x,z);
+        if(y<my||sl>ms) continue;
+        if(pathDist(x,z)<10) continue;
+        let block=false;
+        for(const k of KEEPOUT) if(Math.hypot(x-k.x,z-k.z)<k.r*0.8){block=true;break;}
+        if(block) continue;
+        const score=-Math.abs(da)*0.7-sl*46-Math.abs(rr-R*0.50)*0.022;
+        if(score>bs){bs=score;best={x,z,y,slope:sl};}
+      }
+    }
+    if(best) return best;
+  }
+  return {x:Math.sin(midDeg*D2R)*R*0.42,z:-Math.cos(midDeg*D2R)*R*0.42,
+          y:heightAt(Math.sin(midDeg*D2R)*R*0.42,-Math.cos(midDeg*D2R)*R*0.42),slope:0};
+}
+
+/* ---------------- signs ---------------- */
+function signTexture(text){
+  const cv=document.createElement('canvas'); cv.width=512; cv.height=140;
+  const g=cv.getContext('2d');
+  g.fillStyle='#6f4a1c'; g.fillRect(0,0,512,140);
+  g.fillStyle='rgba(0,0,0,.20)';
+  for(let i=0;i<26;i++){const y=Math.random()*140;g.fillRect(0,y,512,1+Math.random()*2);}
+  g.strokeStyle='#3a2510'; g.lineWidth=8; g.strokeRect(4,4,504,132);
+  g.fillStyle='#f4e3bd'; g.textAlign='center'; g.textBaseline='middle';
+  g.font='bold 66px "Bookman Old Style", Georgia, serif';
+  g.shadowColor='rgba(0,0,0,.55)'; g.shadowOffsetY=3; g.shadowBlur=4;
+  g.fillText(text,256,74);
+  const t=new THREE.CanvasTexture(cv);
+  t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; return t;
+}
+const signs=[];
+ZONES.forEach(Z=>{
+  const mid=((Z.a0+Z.a1)/2)%360;
+  const spot=findFlat(mid,{maxSlope:.28,minY:Z.id==='creek'?2:14});
+  const px=spot.x, pz=spot.z, py=spot.y;
+  const grp=new THREE.Group(); grp.position.set(px,py,pz); grp.rotation.y=mid*D2R+Math.PI;
+  const posts=new THREE.Mesh(mergeParts([
+    {g:P.cyl(1.5,1.9,34,6),c:C.wood,m:mat4(-9,17,0)},
+    {g:P.cyl(1.5,1.9,34,6),c:C.wood,m:mat4( 9,17,0)},
+  ]),new THREE.MeshLambertMaterial({vertexColors:true}));
+  posts.castShadow=true; grp.add(posts);
+  const board=new THREE.Mesh(new THREE.BoxGeometry(30,8.2,1.6),
+    [0,1,2,3,4,5].map(i=>new THREE.MeshLambertMaterial(
+      i===4?{map:signTexture(Z.name)}:{color:0x5e3d17})));
+  board.position.y=32; board.castShadow=true; grp.add(board);
+  scene.add(grp);
+  signs.push({zone:Z,pos:new THREE.Vector3(px,py+30,pz),grp});
+  KEEPOUT.push({x:px,z:pz,r:26});
+});
+CNT['signs']=signs.length;
+
+/* ---------------- particles ---------------- */
+function dotTex(inner,outer){
+  const cv=document.createElement('canvas'); cv.width=cv.height=64;
+  const g=cv.getContext('2d'); const gr=g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,inner); gr.addColorStop(1,outer);
+  g.fillStyle=gr; g.fillRect(0,0,64,64);
+  const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace; return t;
+}
+/* compost steam — compost heaps really are warm */
+let steam=null;
+{
+  const mid=256*D2R, rr=R*.52;
+  const cx=Math.sin(mid)*rr, cz=-Math.cos(mid)*rr, cy=heightAt(cx,cz);
+  const N=180, pos=new Float32Array(N*3), seed=new Float32Array(N);
+  for(let i=0;i<N;i++){ pos[i*3]=cx+(rnd()-.5)*90; pos[i*3+1]=cy; pos[i*3+2]=cz+(rnd()-.5)*90; seed[i]=rnd(); }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  steam=new THREE.Points(g,new THREE.PointsMaterial({
+    size:16,map:dotTex('rgba(255,246,228,.55)','rgba(255,246,228,0)'),
+    transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.5}));
+  steam.userData={seed,cy,base:pos.slice()};
+  scene.add(steam);
+  window.__compost={x:cx,z:cz,y:cy};
+}
+/* leaves drifting down in the litter zone */
+let drift=null;
+{
+  const mid=309*D2R, rr=R*.5;
+  const cx=Math.sin(mid)*rr, cz=-Math.cos(mid)*rr;
+  const N=110, pos=new Float32Array(N*3), seed=new Float32Array(N);
+  for(let i=0;i<N;i++){pos[i*3]=cx+(rnd()-.5)*230; pos[i*3+1]=heightAt(pos[i*3],cz)+rnd()*160;
+    pos[i*3+2]=cz+(rnd()-.5)*230; seed[i]=rnd();}
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  drift=new THREE.Points(g,new THREE.PointsMaterial({
+    size:9,map:dotTex('rgba(216,150,47,.95)','rgba(168,100,28,0)'),
+    transparent:true,depthWrite:false,opacity:.9}));
+  drift.userData={seed,cx,cz};
+  scene.add(drift);
+}
+/* ================= worms ================= */
+const RINGS=24, SIDES=9;
+
+function buildWormGeo(rings,sides,cA,cB,clitA,clitB){
+  const g=new THREE.BufferGeometry();
+  const N=rings*sides;
+  g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(N*3),3));
+  g.setAttribute('normal',new THREE.BufferAttribute(new Float32Array(N*3),3));
+  const col=new Float32Array(N*3);
+  for(let i=0;i<rings;i++){
+    const t=i/(rings-1);
+    const clit=(t>0.24&&t<0.38);
+    const seg=(Math.sin(t*rings*Math.PI)>0)?1.0:0.86;   // segment ridges
+    for(let s=0;s<sides;s++){
+      const belly=1-0.30*Math.max(0,Math.cos(s/sides*TAU));
+      const a=clit?clitA:cA, b=clit?clitB:cB;
+      const k=belly*seg;
+      const o=(i*sides+s)*3;
+      col[o]=mix(a.r,b.r,k); col[o+1]=mix(a.g,b.g,k); col[o+2]=mix(a.b,b.b,k);
+    }
+  }
+  g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const idx=[];
+  for(let i=0;i<rings-1;i++)for(let s=0;s<sides;s++){
+    const a=i*sides+s, b=i*sides+(s+1)%sides, c=(i+1)*sides+s, d=(i+1)*sides+(s+1)%sides;
+    idx.push(a,c,b, b,c,d);
+  }
+  g.setIndex(idx);
+  return g;
+}
+
+const _up=new THREE.Vector3(0,1,0), _t=new THREE.Vector3(),
+      _n=new THREE.Vector3(), _bn=new THREE.Vector3(), _p=new THREE.Vector3();
+
+/* writes a ring-by-ring tube through the supplied spine points */
+function shapeWorm(geo,pts,thick,rings,sides,phase){
+  const pos=geo.attributes.position, nor=geo.attributes.normal;
+  for(let i=0;i<rings;i++){
+    const t=i/(rings-1);
+    const P=pts[i];
+    const A=pts[Math.max(0,i-1)], B=pts[Math.min(rings-1,i+1)];
+    _t.subVectors(B,A); if(_t.lengthSq()<1e-8)_t.set(0,0,1); _t.normalize();
+    _n.crossVectors(_up,_t); if(_n.lengthSq()<1e-6)_n.set(1,0,0); _n.normalize();
+    _bn.crossVectors(_t,_n).normalize();
+    // taper: blunt head, thickest a third back, pointed tail
+    let r=thick*(0.55+0.72*Math.sin(Math.pow(t,0.62)*Math.PI));
+    if(t<0.06) r=thick*0.62;
+    if(t>0.30&&t<0.40) r*=1.14;                         // clitellum swell
+    r*=1+0.17*Math.sin(t*9.5-phase);                    // peristaltic wave
+    for(let s=0;s<sides;s++){
+      const a=s/sides*TAU;
+      const cx=Math.cos(a)*r, cy=Math.sin(a)*r*0.86;
+      _p.copy(P).addScaledVector(_n,cx).addScaledVector(_bn,cy);
+      const o=(i*sides+s);
+      pos.setXYZ(o,_p.x,_p.y,_p.z);
+      _p.set(0,0,0).addScaledVector(_n,cx).addScaledVector(_bn,cy).normalize();
+      nor.setXYZ(o,_p.x,_p.y,_p.z);
+    }
+  }
+  pos.needsUpdate=true; nor.needsUpdate=true;
+  geo.computeBoundingSphere();
+}
+
+/* ---------------- species ---------------- */
+const SPECIES=[
+ {key:'tiger', common:'Tiger worm', sci:'Eisenia fetida',
+  group:'Epigeic \u2014 lives in the litter',
+  zones:['litter','compost'], n:5, len:11, thick:1.5,
+  cA:lin(0x6d2c1e), cB:lin(0xc4664a), clA:lin(0xa06a4a), clB:lin(0xd9a184),
+  facts:[
+   'I live up in the leaf litter and the compost, never deep down. Worms like me are called epigeic \u2014 it means \u201Cupon the earth\u201D.',
+   'I can eat about half my own body weight every day. That is why worm farms are full of us and not of nightcrawlers.',
+   'My stripes are the joins between my segments. I have around ninety of them, and every one has tiny bristles underneath.']},
+ {key:'grey', common:'Grey worm', sci:'Aporrectodea caliginosa',
+  group:'Endogeic \u2014 works the topsoil',
+  zones:['topsoil','root'], n:5, len:12, thick:1.6,
+  cA:lin(0x6a5c4c), cB:lin(0xbcab96), clA:lin(0x9c8b74), clB:lin(0xd8cbb4),
+  facts:[
+   'I tunnel sideways, never straight down, and I eat the soil itself \u2014 digesting the specks of dead plant mixed through it.',
+   'I have no lungs. Oxygen soaks straight through my skin, which only works while the skin stays wet. Dry worm, no breathing.',
+   'The smooth band around me is my clitellum. It makes a slippery ring that slides off over my head and seals shut into a cocoon.']},
+ {key:'night', common:'Nightcrawler', sci:'Lumbricus terrestris',
+  group:'Anecic \u2014 digs deep and permanent',
+  zones:['subsoil'], n:4, len:15, thick:1.9,
+  cA:lin(0x5e2c1c), cB:lin(0xb87c5e), clA:lin(0x9a6b52), clB:lin(0xd4a48a),
+  facts:[
+   'My burrow drops straight down, sometimes two metres, and I keep the same one my whole life.',
+   'After dark I reach out, grab a leaf, and drag it down to eat. Tail stays in the hole. That is the rule.',
+   'Near my head are five pairs of pumping vessels wrapped round my gut. Most people just call them my five hearts.']},
+];
+
+const npcs=[];
+function spawnNPCs(){
+  SPECIES.forEach(S=>{
+    for(let k=0;k<S.n;k++){
+      let x=0,z=0,ok=false;
+      for(let tries=0;tries<900;tries++){
+        const a=rnd()*TAU, rr=(.22+Math.sqrt(rnd())*.62)*R;
+        x=Math.cos(a)*rr; z=Math.sin(a)*rr;
+        if(S.zones.indexOf(ZONES[zoneIndexAt(x,z)].id)<0) continue;
+        if(slopeAt(x,z)>.42) continue;
+        if(heightAt(x,z)<2) continue;
+        ok=true; break;
+      }
+      if(!ok) continue;
+      const geo=buildWormGeo(RINGS,SIDES,S.cA,S.cB,S.clA,S.clB);
+      const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true}));
+      mesh.castShadow=true; scene.add(mesh);
+      const pts=[]; for(let i=0;i<RINGS;i++)pts.push(new THREE.Vector3());
+      const gy=heightAt(x,z);
+      const w={sp:S,mesh,geo,pts,home:new THREE.Vector2(x,z),gy,
+        ax:x,az:z, face:rnd()*TAU, em:0.12, ph:rnd()*TAU,
+        sp2:.32+rnd()*.3, rad:16+rnd()*20, fact:0, trail:[]};
+      for(let i=0;i<60;i++) w.trail.push(new THREE.Vector3(x,gy+S.thick*.8,z));
+      npcs.push(w);
+    }
+  });
+}
+spawnNPCs();
+CNT['other worms']=npcs.length;
+
+/* walk a trail backwards, dropping a point every `ds` centimetres */
+const _sa=new THREE.Vector3();
+function spineFromTrail(trail,pts,ds,count,from){
+  let seg=0, acc=0;
+  pts[0].copy(trail[0]);
+  for(let i=1;i<count;i++){
+    const want=i*ds;
+    if(want>from){ pts[i].copy(pts[i-1]); continue; }
+    while(seg<trail.length-2 && acc+trail[seg].distanceTo(trail[seg+1])<want){
+      acc+=trail[seg].distanceTo(trail[seg+1]); seg++;
+    }
+    const a=trail[seg], b=trail[Math.min(seg+1,trail.length-1)];
+    const d=a.distanceTo(b);
+    pts[i].lerpVectors(a,b,d>1e-5?clamp((want-acc)/d,0,1):0);
+  }
+}
+
+/* Earthworms do not stroll about in daylight. They lie in their burrow
+   with the head just clear of the hole, feeling for a leaf. In rain they
+   come right out — which is the only time you ever see one crossing a path. */
+function updateNPCs(time,dt,rain){
+  for(const w of npcs){
+    const S=w.sp, ds=S.len/(RINGS-1);
+    const probing=0.10+0.30*Math.max(0,Math.sin(time*0.42+w.ph));
+    const want=rain>0.35 ? 1.0 : probing;
+    w.em+=(want-w.em)*Math.min(1,dt*0.8);
+    const out=w.em*S.len*1.06;                    // length of worm above ground
+
+    if(rain>0.35){
+      // crawling: the anchor wanders and the body follows it
+      w.face+=Math.sin(time*0.5+w.ph)*dt*0.9;
+      const spd=7+w.sp2*8;
+      let nx=w.ax+Math.cos(w.face)*spd*dt, nz=w.az+Math.sin(w.face)*spd*dt;
+      if(Math.hypot(nx-w.home.x,nz-w.home.y)>w.rad*2.2){ w.face+=2.2; }
+      else if(slopeAt(nx,nz)<0.6){ w.ax=nx; w.az=nz; }
+    }else{
+      // pull back toward the hole
+      w.ax+=(w.home.x-w.ax)*Math.min(1,dt*1.2);
+      w.az+=(w.home.y-w.az)*Math.min(1,dt*1.2);
+    }
+    const hx=w.ax+Math.cos(w.face)*out*0.72+Math.sin(time*2.1+w.ph)*1.6*w.em;
+    const hz=w.az+Math.sin(w.face)*out*0.72+Math.cos(time*1.8+w.ph)*1.6*w.em;
+    const hy=heightAt(hx,hz)+S.thick*0.8;
+    const head=w.trail[0];
+    if(head.distanceTo(_sa.set(hx,hy,hz))>0.4){
+      w.trail.unshift(new THREE.Vector3(hx,hy,hz));
+      if(w.trail.length>90) w.trail.length=90;
+    }else head.set(hx,hy,hz);
+
+    spineFromTrail(w.trail,w.pts,ds,RINGS,out);
+    // everything past `out` has not come out of the hole yet
+    for(let i=0;i<RINGS;i++){
+      const d=i*ds;
+      if(d<=out) continue;
+      const v=d-out;
+      const ang=v*0.5+w.ph;
+      w.pts[i].set(w.home.x+Math.cos(ang)*2.2*Math.min(1,v/6),
+                   w.gy-1.2-v*0.78,
+                   w.home.y+Math.sin(ang)*2.2*Math.min(1,v/6));
+    }
+    shapeWorm(w.geo,w.pts,S.thick,RINGS,SIDES,time*(rain>0.35?8:3.2));
+  }
+}
+
+updateNPCs(0,1/60,0);
+
+/* ---------------- the player ---------------- */
+const PL={
+  pos:new THREE.Vector3(), yaw:0, pitch:-0.12,
+  vel:new THREE.Vector3(), speed:0, len:12, thick:1.45,
+  trail:[], burrow:null, dig:null, bt:0, bdir:1, moist:1, sunTime:0, castings:0,
+};
+const playerGeo=buildWormGeo(RINGS,SIDES,lin(0x7a3a24),lin(0xd29173),lin(0xb08a6a),lin(0xe6c4a6));
+const playerMesh=new THREE.Mesh(playerGeo,new THREE.MeshLambertMaterial({vertexColors:true}));
+playerMesh.castShadow=true; scene.add(playerMesh);
+const playerPts=[]; for(let i=0;i<RINGS;i++) playerPts.push(new THREE.Vector3());
+
+/* start on the topsoil trail, facing the pit */
+(function spawn(){
+  const a=6*D2R;
+  for(let rr=R*.62;rr>R*.2;rr-=5){
+    const x=Math.sin(a)*rr, z=-Math.cos(a)*rr;
+    if(slopeAt(x,z)<.26&&heightAt(x,z)>40){PL.pos.set(x,heightAt(x,z)+PL.thick,z);break;}
+  }
+  if(PL.pos.lengthSq()===0) PL.pos.set(0,heightAt(0,-R*.4)+2,-R*.4);
+  PL.yaw=Math.PI;
+  for(let i=0;i<RINGS;i++) PL.trail.push(PL.pos.clone().add(new THREE.Vector3(0,0,i*.5)));
+})();
+
+/* ---------------- notes ---------------- */
+const NOTES=[];
+function note(id,tag,title,body,hint){NOTES.push({id,tag,title,body,hint,got:false});}
+ZONES.forEach(Z=>note('zone:'+Z.id,'Horizon',Z.name,'',''));
+const ZONE_TEXT={
+ litter:['O horizon \u2014 organic',
+  'Everything that falls lands here: leaves, twigs, a feather. Nothing has rotted right down yet, so you can still tell what each piece used to be. This is the worm\u2019s pantry.'],
+ topsoil:['A horizon \u2014 topsoil',
+  'Dead leaves have broken down into dark crumbly humus and mixed in with mineral grains. Nearly every living thing in the soil is in this one thin layer.'],
+ root:['The rhizosphere',
+  'Plants feed here. Fine root hairs pull in water and nutrients, and the sliver of soil pressed against a root is the busiest place in the whole garden.'],
+ compost:['A heap that runs hot',
+  'The middle of a compost heap can pass 50\u00B0C. That is not the sun \u2014 it is billions of microbes working. The steam coming off it is real.'],
+ subsoil:['B horizon \u2014 subsoil',
+  'Minerals washed down from the layers above collect here. Fewer roots, fewer creatures, and iron turns the colour orange.'],
+ creek:['Where the bank gives way',
+  'Running water carries loose soil away. Roots knit the bank together and hold it. Where the roots stop, the bank slumps into the creek.'],
+};
+NOTES.forEach(n=>{
+  const z=n.id.split(':')[1]; if(!ZONE_TEXT[z]) return;
+  n.title=ZONE_TEXT[z][0]; n.body=ZONE_TEXT[z][1]; n.hint='A sign somewhere is still unread.';
+});
+SPECIES.forEach(S=>note('sp:'+S.key,'Neighbour',S.common,S.facts[0],
+  'There is another kind of worm here you have not met.'));
+
+const FINDS=[
+ {id:'darwin', tag:'Find', title:'A very old notebook',
+  where:'topsoil', zone:'topsoil',
+  body:'Charles Darwin spent more than forty years watching earthworms. His last book, published in 1881, was about them, and it sold faster than his famous one had. By weighing their castings he worked out that the worms under a single field haul between about seven and eighteen tons of dry soil per acre up to the surface every year.',
+  hint:'Someone watched worms for forty-four years and left his book behind.',
+  col:0x3a2a14, size:5.5},
+ {id:'cocoon', tag:'Find', title:'A cocoon, not an egg',
+  where:'compost', zone:'compost',
+  body:'It is lemon-shaped and smaller than a grain of rice. One or two young worms come out of it, already the right shape, just tiny. Worms have no caterpillar stage and no baby form \u2014 they hatch as small worms and grow.',
+  hint:'Smaller than a rice grain, and a whole family is inside.',
+  col:0xd8c48a, size:3.2},
+ {id:'halftruth', tag:'Find', title:'The half-truth',
+  where:'gallery', tunnel:'gallery', tunT:0.52,
+  body:'You have heard that cutting a worm in half makes two worms. It does not. The head end can sometimes grow a short new tail. The back end has no brain, no mouth and no hearts, and it dies. Please do not test this.',
+  hint:'A story every child is told about worms. It is wrong.',
+  col:0x9a9482, size:5},
+ {id:'mole', tag:'Find', title:'An old mole run',
+  where:'shaft', tunnel:'shaft', tunT:0.30,
+  body:'Worms come up in the rain \u2014 but not to escape drowning. A worm can sit underwater for hours. There are two better reasons: wet ground lets a worm travel across the surface without drying out, and the drumming of rain sounds a great deal like a mole digging.',
+  hint:'Rain on the roof sounds like something coming.',
+  col:0x4a3a2a, size:6},
+ {id:'giant', tag:'Find', title:'The gurgler',
+  where:'shaft', tunnel:'shaft', tunT:0.80,
+  body:'The Giant Gippsland earthworm lives in blue-grey clay in the Strzelecki Ranges of South Gippsland, Victoria. Most are about 80 cm long and the largest properly measured ones reach 150 cm \u2014 old reports of three-metre worms have never been confirmed since. One weighs around 200 grams, which is roughly ten mice. You hear one before you ever see it: it gurgles as it moves through its wet burrow. It is listed as vulnerable across Australia and endangered in Victoria, and it is one of about a thousand earthworm species native to this country.',
+  hint:'Lives in Victoria, weighs about ten mice, and you hear it before you see it.',
+  col:0xc09a86, size:14},
+];
+FINDS.forEach(f=>note('find:'+f.id,f.tag,f.title,f.body,f.hint));
+
+/* place the finds in the world */
+const findObjs=[];
+FINDS.forEach(f=>{
+  let p=new THREE.Vector3();
+  if(f.tunnel){
+    const b=burrows.find(b=>b.def.id===f.tunnel);
+    b.curve.getPointAt(f.tunT,p);
+    p.y-=b.def.r*0.55;
+  }else{
+    const Z=ZONES[ZI[f.zone]], mid=((Z.a0+Z.a1)/2)%360;
+    const spot=findFlat(mid+19,{maxSlope:.32,minY:18});
+    p.set(spot.x,spot.y+f.size*.55,spot.z);
+  }
+  const g=f.id==='giant'
+    ? buildWormGeo(RINGS,SIDES,lin(0x8a4a34),lin(0xd8a48c),lin(0xc09a86),lin(0xe8cbb8))
+    : (f.id==='cocoon'? P.sph(f.size,10,8) : lumpy(P.ico(f.size,1),.35,f.id.length));
+  let mesh;
+  if(f.id==='giant'){
+    mesh=new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true}));
+    const pts=[]; for(let i=0;i<RINGS;i++)pts.push(new THREE.Vector3());
+    f.pts=pts; f.geo=g;
+  }else{
+    mesh=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:f.col,emissive:f.col,emissiveIntensity:.16}));
+  }
+  mesh.position.copy(p); mesh.castShadow=true; scene.add(mesh);
+  const halo=new THREE.PointLight(0xffdca0,f.tunnel?300:260,f.tunnel?52:70,2.0);
+  halo.position.copy(p).setY(p.y+7); scene.add(halo);
+  f.mesh=mesh; f.pos=p; f.halo=halo; f.got=false;
+  findObjs.push(f);
+  KEEPOUT.push({x:p.x,z:p.z,r:22});
+});
+CNT['hidden finds']=findObjs.length;
+/* ================= play ================= */
+const $=id=>document.getElementById(id);
+const elGauge=$('gauge'), elMark=$('mark'), elDepth=$('depthRead'), elGcol=$('gcol');
+const elWet=$('wet'), elWetBar=$('wetBar'), elWetPct=$('wetPct');
+const elWx=$('wx'), elWxDot=$('wxDot');
+const elPts=$('pts'), elLeafCount=$('leafCount'), elScore=$('score');
+const elObj=$('obj'), elObjN=$('objN'), elObjTxt=$('objTxt');
+const elCard=$('card'), elPip=$('pip'), elToast=$('toast'), elKeys=$('keys');
+const elDrawer=$('drawer'), elNotesBtn=$('notesBtn'), elNoteList=$('noteList'), elNoteCount=$('noteCount');
+
+/* ---- depth gauge: horizons drawn to scale ---- */
+const GY_TOP=112, GY_BOT=-74;
+const GBANDS=[
+ {y0:112,y1:82, c:'#2a1a08', k:'O', n:'litter'},
+ {y0:82, y1:52, c:'#432c12', k:'A', n:'topsoil'},
+ {y0:52, y1:14, c:'#8a5620', k:'B', n:'subsoil'},
+ {y0:14, y1:-74,c:'#ab7c44', k:'C', n:'parent rock'},
+];
+(function drawGauge(){
+  const H=y=>(GY_TOP-y)/(GY_TOP-GY_BOT)*100;
+  GBANDS.forEach(B=>{
+    const d=document.createElement('div'); d.className='band';
+    d.style.top=H(B.y0)+'%'; d.style.height=(H(B.y1)-H(B.y0))+'%'; d.style.background=B.c;
+    elGcol.appendChild(d);
+    const lab=document.createElement('div'); lab.className='band';
+    lab.style.top=H(B.y0)+'%'; lab.style.height=(H(B.y1)-H(B.y0))+'%';
+    lab.innerHTML='<b>'+B.k+'</b><span style="margin-left:15px">'+B.n+'</span>';
+    elGauge.appendChild(lab);
+    const r=document.createElement('div'); r.className='rule'; r.style.top=H(B.y0)+'%';
+    elGcol.appendChild(r);
+  });
+})();
+
+/* ---- notes ---- */
+function renderNotes(){
+  let got=0; NOTES.forEach(n=>{if(n.got)got++;});
+  elNoteList.innerHTML=
+    '<div class="prog"><i style="width:'+(100*got/NOTES.length).toFixed(1)+'%"></i></div>'
+    +NOTES.map(n=>
+      '<div class="note'+(n.got?'':' locked')+'">'
+      +'<span class="tick">'+(n.got?'\u2713':'')+'</span>'
+      +'<div class="body"><span class="tag">'+(n.got?n.tag:'Still looking')+'</span>'
+      +'<h4>'+(n.got?n.title:'\u2014\u2014\u2014\u2014')+'</h4>'
+      +'<p>'+(n.got?n.body:n.hint)+'</p></div></div>').join('');
+  elNoteCount.textContent=got+'/'+NOTES.length;
+  renderObjective(got);
+  return got;
+}
+function renderObjective(got){
+  if(got===undefined){ got=0; NOTES.forEach(n=>{if(n.got)got++;}); }
+  let next=null; for(const n of NOTES) if(!n.got){ next=n; break; }
+  elObjN.textContent=got+' / '+NOTES.length;
+  elObjTxt.textContent = next ? next.hint
+    : 'Every note ticked. Go and stand in the rain \u2014 you have earned it.';
+}
+NOTES.push({id:'castings',tag:'Find',title:'What comes out the back',
+ body:'A worm does not shove soil aside \u2014 it eats it. Soil goes in the front, gets ground up in a muscular gizzard with a few swallowed grit particles, and comes out the back as a casting. Castings hold more nitrogen, phosphorus and potassium than the soil that went in, which is why gardeners buy them by the bag.',
+ hint:'Make a tunnel wider and work out where the soil went.',got:false});
+let toastT=0;
+function toast(title,msg){
+  elToast.innerHTML='<b>'+title+'</b><span>'+msg+'</span>';
+  elToast.classList.add('on'); toastT=4.2;
+}
+function unlock(id){
+  const n=NOTES.find(n=>n.id===id);
+  if(!n||n.got) return false;
+  n.got=true;
+  addPoints(n.id.indexOf('find:')===0?PT_FIND:PT_NOTE);
+  const got=renderNotes();
+  if(got===NOTES.length) toast('Survey complete','Every note recorded. Darwin took forty years; you took rather less.');
+  else toast('Noted \u00b7 +'+(n.id.indexOf('find:')===0?PT_FIND:PT_NOTE)+' points',
+    n.title+' \u2014 '+got+' of '+NOTES.length+' ticked off.');
+  return true;
+}
+renderNotes();
+elNotesBtn.addEventListener('click',()=>elDrawer.classList.toggle('on'));
+elObj.addEventListener('click',()=>elDrawer.classList.toggle('on'));
+
+/* ---- card ---- */
+let cardT=0;
+function showCard(who,title,body,sci,more){
+  elCard.innerHTML='<div class="who">'+who+'</div><h3>'+title+'</h3><p>'+body+'</p>'
+    +(sci?'<div class="sci">'+sci+'</div>':'')
+    +(more?'<div class="more">'+more+'</div>':'');
+  elCard.classList.add('on'); cardT=9.5;
+  vrCardTitle=title; vrCardBody=body;
+}
+
+let pipMsg='', pipT=0;
+function pip(m){ pipMsg=m; pipT=2.4; }
+
+/* ---- input: keyboard and VR feed the same three numbers ---- */
+const INP={fwd:0,side:0,sprint:false,widen:false};
+const key={};
+let locked=false, lookYaw=0, lookPitch=-0.10, camDist=0, camDistWant=0;
+const CAM={set(d){camDistWant=d;camDist=d;}, get(){return camDist;}};
+addEventListener('keydown',e=>{
+  key[e.code]=true;
+  if(e.code==='KeyE'){toggleMode(); e.preventDefault();}
+  if(e.code==='KeyF'){interact(); e.preventDefault();}
+  if(e.code==='Space'){burrowToggle(); e.preventDefault();}
+  if(e.code==='KeyN'){elDrawer.classList.toggle('on'); e.preventDefault();}
+  if(e.code==='KeyR'){
+    if(WX.forced==='rain'){ setWeather(null);
+      toast('Clearing up','The rain eases off. Watch the burrows drain and everyone go back down.'); }
+    else{ setWeather('rain');
+      toast('Rain','Burrows fill from the bottom up. Every worm on the plot is coming to the surface.'); }
+    e.preventDefault();
+  }
+  if(e.code==='Escape'){elDrawer.classList.remove('on');}
+});
+addEventListener('keyup',e=>key[e.code]=false);
+
+renderer.domElement.addEventListener('click',()=>{
+  if(mode==='worm'&&!locked) renderer.domElement.requestPointerLock();
+});
+document.addEventListener('pointerlockchange',()=>locked=document.pointerLockElement===renderer.domElement);
+addEventListener('mousemove',e=>{
+  if(mode==='worm'&&locked){
+    lookYaw-=e.movementX*0.0022;
+    lookPitch=clamp(lookPitch-e.movementY*0.0020,-1.15,0.95);
+  }else if(mode==='iso'&&isoDrag){
+    isoSpin-=e.movementX*0.004; isoTarget.y=clamp(isoTarget.y-e.movementY*0.6,-40,160);
+  }
+});
+let isoDrag=false, isoSpin=0;
+renderer.domElement.addEventListener('mousedown',e=>{if(mode==='iso'){isoDrag=true;}});
+addEventListener('mouseup',()=>isoDrag=false);
+addEventListener('wheel',e=>{
+  if(mode==='iso'){isoZoom=clamp(isoZoom*(1+Math.sign(e.deltaY)*0.10),110,900); isoFrame();}
+  else{camDistWant=clamp(camDistWant+Math.sign(e.deltaY)*9,0,190);}
+  e.preventDefault();
+},{passive:false});
+
+function toggleMode(){
+  if(mode==='iso'){
+    mode='worm'; cam=wormCam;
+    elGauge.classList.remove('hidden'); elWet.classList.remove('hidden');
+    elNotesBtn.classList.remove('hidden');
+    elScore.classList.remove('hidden'); elObj.classList.remove('hidden');
+    renderer.domElement.requestPointerLock();
+  }else{
+    mode='iso'; cam=isoCam; document.exitPointerLock();
+    elGauge.classList.add('hidden'); elWet.classList.add('hidden');
+    elObj.classList.add('hidden');
+  }
+  setKeys();
+}
+function setKeys(){
+  elKeys.innerHTML = mode==='iso'
+    ? '<b>E</b> go down as the worm &nbsp;·&nbsp; drag to turn the chart &nbsp;·&nbsp; wheel to zoom'
+    : '<b>WASD</b> crawl &nbsp;·&nbsp; <b>shift</b> hurry &nbsp;·&nbsp; <b>wheel</b> pull the view back &nbsp;·&nbsp; <b>space</b> dig in / enter a burrow &nbsp;·&nbsp; <b>F</b> look at something &nbsp;·&nbsp; <b>Q</b> eat the tunnel wider &nbsp;·&nbsp; <b>R</b> make it rain &nbsp;·&nbsp; <b>N</b> notes &nbsp;·&nbsp; <b>E</b> survey chart';
+}
+setKeys();
+
+/* ---- burrowing ---- */
+let nearMouth=null, nearThing=null;
+function burrowToggle(){
+  if(PL.dig){
+    const g=heightAt(PL.pos.x,PL.pos.z);
+    if(g-PL.pos.y<26){ PL.pos.y=g+PL.thick; stopDig(true); }
+    else pip('dig upwards first \u2014 you are too deep to climb out here');
+    return;
+  }
+  if(PL.burrow){
+    const b=PL.burrow, m=PL.bt<0.5?b.mouths[0]:b.mouths[1];
+    PL.burrow=null;
+    PL.pos.set(m.p.x,heightAt(m.p.x,m.p.z)+PL.thick+1,m.p.z);
+    showCard('Back up top','Out of the burrow','The air up here is dry and there are birds. Do not stay long.','','');
+    return;
+  }
+  if(nearMouth){
+    const {b,mi}=nearMouth;
+    PL.burrow=b; PL.bt=mi===0?0.012:0.988; PL.bdir=mi===0?1:-1;
+    unlock('zone:'+ (b.def.zone==='root'?'root':'subsoil'));
+    showCard('Burrow', b.def.name, b.def.label,'','Use W and S to follow the tunnel. Q widens it. Space to climb out.');
+    return;
+  }
+  startDig();
+}
+
+/* ---- interaction ---- */
+function interact(){
+  if(!nearThing) return;
+  const T=nearThing;
+  if(T.kind==='sign'){
+    const z=T.o.zone.id, t=ZONE_TEXT[z];
+    unlock('zone:'+z);
+    showCard('Survey marker \u2014 '+T.o.zone.name,t[0],t[1],'','');
+  }else if(T.kind==='worm'){
+    const S=T.o.sp;
+    const i=T.o.fact; T.o.fact=(i+1)%S.facts.length;
+    unlock('sp:'+S.key);
+    showCard(S.group,S.common,S.facts[i],S.sci, S.facts.length>1?'Ask again for another answer.':'');
+  }else if(T.kind==='find'){
+    const f=T.o;
+    if(!f.got){ f.got=true; unlock('find:'+f.id);
+      if(f.halo){f.halo.intensity=0;}
+    }
+    showCard('Found',f.title,f.body,'','');
+  }
+}
+
+function headingYaw(){
+  if(!xrOn) return lookYaw;
+  wormCam.getWorldDirection(_hv);
+  return Math.atan2(-_hv.x,-_hv.z);
+}
+const _hv=new THREE.Vector3();
+
+/* ---- foliage sway ---- */
+const swayU={value:0};
+['grass','shrubs','ferns','flowers','daisies','reeds','fresh leaves'].forEach(k=>{
+  const m=PROPS[k]; if(!m) return;
+  m.material.onBeforeCompile=sh=>{
+    sh.uniforms.uSway=swayU;
+    sh.vertexShader='uniform float uSway;\n'+sh.vertexShader.replace('#include <begin_vertex>',
+      `#include <begin_vertex>
+       #ifdef USE_INSTANCING
+         vec3 iw=vec3(instanceMatrix[3][0],instanceMatrix[3][1],instanceMatrix[3][2]);
+       #else
+         vec3 iw=vec3(0.0);
+       #endif
+       float amp=max(transformed.y,0.0)*0.030;
+       transformed.x+=sin(uSway*1.45+iw.x*0.045+iw.z*0.031)*amp;
+       transformed.z+=cos(uSway*1.18+iw.z*0.052+iw.x*0.027)*amp*0.8;`);
+  };
+  m.material.needsUpdate=true;
+});
+
+/* ---- movement ---- */
+const _fwd=new THREE.Vector3(), _rgt=new THREE.Vector3(), _tmp=new THREE.Vector3();
+function readKeys(){
+  let ix=0,iz=0;
+  if(key['KeyW']||key['ArrowUp'])iz+=1;
+  if(key['KeyS']||key['ArrowDown'])iz-=1;
+  if(key['KeyA']||key['ArrowLeft'])ix-=1;
+  if(key['KeyD']||key['ArrowRight'])ix+=1;
+  if(!xrOn){
+    INP.fwd=iz; INP.side=ix;
+    INP.sprint=!!(key['ShiftLeft']||key['ShiftRight']);
+    INP.widen=!!key['KeyQ'];
+  }
+}
+function moveSurface(dt){
+  const dry=PL.moist<0.34?0.58:1;
+  const spd=(INP.sprint?46:26)*dry*(xrOn?0.62:1);
+  let ix=INP.side, iz=INP.fwd;
+  const l=Math.hypot(ix,iz);
+  PL.speed=l>0?spd*Math.min(1,l):0;
+  if(l>0){
+    ix/=l; iz/=l;
+    PL.yaw=headingYaw();
+    _fwd.set(-Math.sin(PL.yaw),0,-Math.cos(PL.yaw));
+    _rgt.set(-Math.cos(PL.yaw),0,Math.sin(PL.yaw));
+    _tmp.set(0,0,0).addScaledVector(_fwd,iz).addScaledVector(_rgt,ix).normalize();
+    const step=spd*dt;
+    let nx=PL.pos.x+_tmp.x*step, nz=PL.pos.z+_tmp.z*step;
+    const q=Math.pow(Math.pow(Math.abs(nx),4)+Math.pow(Math.abs(nz),4),.25);
+    if(q>R*1.12){nx=PL.pos.x;nz=PL.pos.z;}
+    const hNow=heightAt(PL.pos.x,PL.pos.z), hNew=heightAt(nx,nz);
+    // a worm can climb a lot, but not an overhang
+    if((hNew-hNow)/Math.max(step,0.001)<1.9){ PL.pos.x=nx; PL.pos.z=nz; }
+  }
+  const g=heightAt(PL.pos.x,PL.pos.z);
+  const target=Math.max(g,-0.6)+PL.thick;
+  PL.pos.y+=(target-PL.pos.y)*Math.min(1,dt*13);
+}
+function moveBurrow(dt){
+  const b=PL.burrow;
+  const wade=b.flood>0.45?0.72:1;                       // pushing through water
+  let d=Math.abs(INP.fwd)>0.18?Math.sign(INP.fwd):0;
+  PL.speed=d!==0?(INP.sprint?40:24)*wade*(xrOn?0.62:1):0;
+  if(d!==0){
+    PL.bt=clamp(PL.bt + d*PL.bdir*PL.speed*dt/b.len, 0, 1);
+    if(PL.bt<=0.004||PL.bt>=0.996){
+      const m=PL.bt<0.5?b.mouths[0]:b.mouths[1];
+      PL.burrow=null;
+      PL.pos.set(m.p.x,heightAt(m.p.x,m.p.z)+PL.thick+1,m.p.z);
+      return;
+    }
+  }
+  b.curve.getPointAt(PL.bt,_tmp);
+  PL.pos.copy(_tmp).setY(_tmp.y-b.def.r*0.55+PL.thick);
+}
+
+/* ---- proximity ---- */
+function scanNear(){
+  nearMouth=null; nearThing=null;
+  const under=!!(PL.burrow||PL.dig);
+  let best=1e9;
+  if(!under){
+    for(const b of burrows) for(let i=0;i<2;i++){
+      const d=PL.pos.distanceTo(b.mouths[i].p);
+      if(d<40&&d<best){best=d; nearMouth={b,mi:i};}
+    }
+  }
+  best=1e9;
+  if(!under){
+    for(const s of signs){
+      const d=PL.pos.distanceTo(s.pos);
+      if(d<44&&d<best){best=d; nearThing={kind:'sign',o:s};}
+    }
+    for(const w of npcs){
+      const d=PL.pos.distanceTo(w.pts[0]);
+      if(d<30&&d<best){best=d; nearThing={kind:'worm',o:w};}
+    }
+  }
+  for(const f of findObjs){
+    if(f.tunnel && !PL.burrow) continue;
+    if(!f.tunnel && under) continue;
+    const d=PL.pos.distanceTo(f.pos);
+    if(d<30&&d<best){best=d; nearThing={kind:'find',o:f};}
+  }
+  if(pipT>0){ elPip.innerHTML=pipMsg; elPip.classList.add('on'); return; }
+  if(nearThing){
+    const label=nearThing.kind==='sign'?'read the marker'
+      :nearThing.kind==='worm'?'talk to '+nearThing.o.sp.common.toLowerCase()
+      :(nearThing.o.got?'look again':'look closer');
+    elPip.innerHTML='<kbd>F</kbd> '+label; elPip.classList.add('on');
+  }else if(nearMouth){
+    elPip.innerHTML='<kbd>space</kbd> go down the burrow'; elPip.classList.add('on');
+  }else if(PL.burrow){
+    elPip.innerHTML='<kbd>space</kbd> climb out &nbsp; <kbd>Q</kbd> eat it wider';
+    elPip.classList.add('on');
+  }else if(PL.dig){
+    elPip.innerHTML='<kbd>space</kbd> surface &nbsp; look where you want to go';
+    elPip.classList.add('on');
+  }else if(PL.pos.y-heightAt(PL.pos.x,PL.pos.z)<8){
+    elPip.innerHTML='<kbd>space</kbd> dig in'; elPip.classList.add('on');
+  }else elPip.classList.remove('on');
+}
+
+/* ---- moisture: worms breathe through wet skin ---- */
+function updateMoisture(dt){
+  let wet=false;
+  if(PL.burrow||PL.dig) wet=true;
+  else{
+    const g=heightAt(PL.pos.x,PL.pos.z);
+    const zid=ZONES[zoneIndexAt(PL.pos.x,PL.pos.z)].id;
+    if(g<12) wet=true;                                  // near the waterline
+    if(zid==='litter'||zid==='compost'||zid==='creek') wet=true;
+    if(g<40) wet=true;                                  // down in the shaded pit
+  }
+  if(WX.rain>0.45) wet=true;
+  if(PL.burrow&&PL.burrow.flood>0.3) wet=true;
+  PL.moist=clamp(PL.moist + (wet? dt/9 : -dt/72), 0.12, 1);
+  const pct=Math.round(PL.moist*100);
+  elWetBar.style.width=pct+'%'; elWetPct.textContent=pct+'%';
+  elWet.classList.toggle('dry',PL.moist<0.40);
+  waterU.uDry.value=1-PL.moist;
+  if(!xrOn){
+    const sat=0.35+0.65*Math.max(PL.moist,0.25);
+    renderer.domElement.style.filter = PL.moist<0.9
+      ? 'saturate('+sat.toFixed(2)+') brightness('+(0.80+0.20*PL.moist).toFixed(2)+')' : 'none';
+  }
+}
+
+/* ---- gauge ---- */
+function updateGauge(){
+  const y=PL.pos.y;
+  const pct=clamp((GY_TOP-y)/(GY_TOP-GY_BOT),0,1)*100;
+  elMark.style.top=pct+'%';
+  const surf=heightAt(PL.pos.x,PL.pos.z);
+  const d=surf-y;
+  elDepth.textContent = d>2 ? Math.round(d)+' cm down \u00b7 '+horizonKey(y)
+                            : (y<2?'in the water':'at the surface \u00b7 O');
+}
+
+/* ---- camera ---- */
+function placeCam(dt){
+  if(xrOn){
+    const head=playerPts[0];
+    rig.position.set(head.x-Math.sin(PL.yaw)*1.4, head.y+0.4, head.z-Math.cos(PL.yaw)*1.4);
+    rig.rotation.y=vrYaw;
+    return;
+  }
+  camDist+=(camDistWant-camDist)*Math.min(1,dt*7);
+  let baseYaw=lookYaw, basePitch=lookPitch;
+  if(PL.burrow){
+    const b=PL.burrow;
+    b.curve.getTangentAt(PL.bt,_tmp).multiplyScalar(PL.bdir);
+    const ty=Math.atan2(-_tmp.x,-_tmp.z);
+    baseYaw=ty+clamp(((lookYaw-ty+Math.PI*3)%(Math.PI*2))-Math.PI,-1.7,1.7);
+  }
+  _fwd.set(-Math.sin(baseYaw)*Math.cos(basePitch),Math.sin(basePitch),-Math.cos(baseYaw)*Math.cos(basePitch));
+  const head=playerPts[0];
+  const under=!!(PL.burrow||PL.dig);
+  if(under){
+    // ride the tunnel's own axis; anything else puts the lens in solid soil
+    const cap=PL.burrow?burrowRadius(PL.burrow,PL.bt)*1.1:22;
+    const d=Math.min(camDist,cap);
+    if(d<2.0){ wormCam.position.copy(head).addScaledVector(_fwd,1.6); wormCam.position.y+=1.1; }
+    else wormCam.position.copy(undergroundCam(d,_cw));
+  }else if(camDist<1.5){
+    wormCam.position.copy(head).addScaledVector(_fwd,1.6); wormCam.position.y+=1.1;
+  }else{
+    _cw.copy(head).addScaledVector(_fwd,-camDist); _cw.y+=camDist*0.42+2;
+    safeSurfaceCam(head,_cw,wormCam.position);
+  }
+  _tmp.copy(head).addScaledVector(_fwd,26);
+  wormCam.lookAt(_tmp);
+}
+
+/* ---- worm body ---- */
+function updatePlayerBody(dt,time){
+  const last=PL.trail[0];
+  if(PL.pos.distanceTo(last)>0.42){
+    PL.trail.unshift(PL.pos.clone());
+    if(PL.trail.length>420) PL.trail.length=420;
+  }
+  const ds=PL.len/(RINGS-1);
+  let seg=0, acc=0;
+  playerPts[0].copy(PL.pos);
+  for(let i=1;i<RINGS;i++){
+    let want=i*ds;
+    while(seg<PL.trail.length-2 && acc+PL.trail[seg].distanceTo(PL.trail[seg+1])<want){
+      acc+=PL.trail[seg].distanceTo(PL.trail[seg+1]); seg++;
+    }
+    const a=PL.trail[seg], b=PL.trail[Math.min(seg+1,PL.trail.length-1)];
+    const d=a.distanceTo(b);
+    const k=d>1e-5?clamp((want-acc)/d,0,1):0;
+    playerPts[i].lerpVectors(a,b,k);
+  }
+  shapeWorm(playerGeo,playerPts,PL.thick,RINGS,SIDES,time*(6+PL.speed*0.16));
+  playerMesh.visible=xrOn?true:camDist>2.2;
+}
+
+/* ---- ambient ---- */
+function updateAmbient(t,dt){
+  waterU.uTime.value=t; swayU.value=t;
+  // compost steam
+  {
+    const g=steam.geometry.attributes.position, ud=steam.userData;
+    for(let i=0;i<g.count;i++){
+      const s=ud.seed[i];
+      const life=(t*0.30+s)%1;
+      g.setY(i, ud.cy+life*95);
+      g.setX(i, ud.base[i*3]+Math.sin(t*0.6+s*9)*12*life);
+      g.setZ(i, ud.base[i*3+2]+Math.cos(t*0.5+s*7)*12*life);
+    }
+    g.needsUpdate=true;
+    steam.material.opacity=0.42;
+  }
+  // leaves coming down
+  {
+    const g=drift.geometry.attributes.position, ud=drift.userData;
+    for(let i=0;i<g.count;i++){
+      let y=g.getY(i)-(7+ud.seed[i]*9)*dt;
+      const x=g.getX(i)+Math.sin(t*1.1+ud.seed[i]*20)*7*dt;
+      const gr=heightAt(x,g.getZ(i));
+      if(y<gr+1){ y=gr+120+ud.seed[i]*80; }
+      g.setY(i,y); g.setX(i,x);
+    }
+    g.needsUpdate=true;
+  }
+  // lily pads riding the swell
+  if(window.__lily){
+    const im=window.__lily;
+    for(let i=0;i<im.count;i++){
+      im.getMatrixAt(i,_m4);
+      const px=_m4.elements[12], pz=_m4.elements[14];
+      _m4.elements[13]=0.9+Math.sin(px*0.021+t*1.15)*0.9+Math.sin(pz*0.0165-t*0.92)*0.7;
+      im.setMatrixAt(i,_m4);
+    }
+    im.instanceMatrix.needsUpdate=true;
+  }
+  // the giant, breathing in the dark
+  const giant=findObjs.find(f=>f.id==='giant');
+  if(giant&&giant.pts){
+    const b=burrows.find(b=>b.def.id==='shaft');
+    for(let i=0;i<RINGS;i++){
+      const tt=clamp(0.80-i*0.0055+Math.sin(t*0.35)*0.012,0.02,0.98);
+      b.curve.getPointAt(tt,_tmp);
+      giant.pts[i].set(_tmp.x,_tmp.y-b.def.r*0.55,_tmp.z);
+    }
+    shapeWorm(giant.geo,giant.pts,4.4,RINGS,SIDES,t*3.0);
+    giant.mesh.position.set(0,0,0);
+    giant.pos.copy(giant.pts[0]);
+  }
+}
+
+/* ================= weather ================= */
+const WX={mode:'fine', rain:0, forced:null, t:0};
+const WX_CYCLE=[['fine',100],['overcast',34],['rain',78],['overcast',26]];
+let wxIdx=0, wxT=0, floodedNoted=false;
+const SKY_FINE=new THREE.Color(0x0d5f86), SKY_WET=new THREE.Color(0x51636b);
+const FOG_FINE=new THREE.Color(0x2e7f92), FOG_WET=new THREE.Color(0x63737a);
+const _skyTmp=new THREE.Color(), _fogTmp=new THREE.Color();
+
+/* rain: short falling streaks, kept in a box around wherever you are */
+const RAIN_N=1400, RAIN_BOX=620;
+const rainGeo=new THREE.BufferGeometry();
+{
+  const p=new Float32Array(RAIN_N*6);
+  for(let i=0;i<RAIN_N;i++){
+    const x=(rnd()-.5)*RAIN_BOX, y=rnd()*420, z=(rnd()-.5)*RAIN_BOX;
+    p[i*6]=x; p[i*6+1]=y; p[i*6+2]=z;
+    p[i*6+3]=x; p[i*6+4]=y+9; p[i*6+5]=z;
+  }
+  rainGeo.setAttribute('position',new THREE.BufferAttribute(p,3));
+}
+const rainMesh=new THREE.LineSegments(rainGeo,new THREE.LineBasicMaterial({
+  color:0xbfe0ea, transparent:true, opacity:0.0, depthWrite:false}));
+rainMesh.frustumCulled=false; rainMesh.visible=false; scene.add(rainMesh);
+const rainCentre=new THREE.Vector3();
+
+function setWeather(m){ WX.forced=m; WX.mode=m; wxT=0; }
+function updateWeather(dt){
+  if(WX.forced===null){
+    wxT+=dt;
+    if(wxT>WX_CYCLE[wxIdx][1]){ wxT=0; wxIdx=(wxIdx+1)%WX_CYCLE.length; }
+    WX.mode=WX_CYCLE[wxIdx][0];
+  }
+  const want = WX.mode==='rain'?1 : WX.mode==='overcast'?0.20 : 0;
+  WX.rain += (want-WX.rain)*Math.min(1,dt*0.32);
+  const r=WX.rain;
+
+  sun.intensity=mix(2.05,0.42,r);
+  hemi.intensity=mix(0.62,0.46,r);
+  amb.intensity=mix(0.22,0.34,r);
+  scene.background=_skyTmp.copy(SKY_FINE).lerp(SKY_WET,r);
+  scene.fog.density=mix(0.00055,0.00145,r);
+  scene.fog.color=_fogTmp.copy(FOG_FINE).lerp(FOG_WET,r);
+  waterU.uFog.value.copy(_fogTmp);
+  waterU.uRain.value=r;
+
+  // streaks
+  rainMesh.visible=r>0.06;
+  if(rainMesh.visible){
+    rainMesh.material.opacity=0.16+0.5*r;
+    rainCentre.copy(mode==='iso'?isoTarget:PL.pos);
+    const p=rainGeo.attributes.position, fall=(300+420*r)*dt;
+    for(let i=0;i<RAIN_N;i++){
+      let y=p.array[i*6+1]-fall;
+      let x=p.array[i*6], z=p.array[i*6+2];
+      if(y<rainCentre.y-140){
+        y=rainCentre.y+300+rnd()*120;
+        x=rainCentre.x+(rnd()-.5)*RAIN_BOX;
+        z=rainCentre.z+(rnd()-.5)*RAIN_BOX;
+      }
+      p.array[i*6]=x; p.array[i*6+1]=y; p.array[i*6+2]=z;
+      p.array[i*6+3]=x+1.5; p.array[i*6+4]=y+12+8*r; p.array[i*6+5]=z;
+    }
+    p.needsUpdate=true;
+  }
+
+  // burrows fill, then drain slowly once it stops
+  for(const b of burrows){
+    const target=r*0.95;
+    b.flood+=(target-b.flood)*Math.min(1,dt*(target>b.flood?0.30:0.11));
+    if(Math.abs(b.flood-b.shownFlood)>0.015){
+      b.shownFlood=b.flood;
+      b.wmesh.visible=b.flood>0.02;
+      if(b.wmesh.visible)
+        shapeTube(b.wgeo,b.radii,Math.max(0.04,b.flood*0.97),null,-(1-b.flood)*0.5);
+    }
+  }
+  if(PL.burrow&&PL.burrow.flood>0.55&&!floodedNoted){
+    floodedNoted=true;
+    showCard('Flooded','The tunnel is filling',
+      'Do not panic. A worm can sit in water for hours \u2014 oxygen still crosses wet skin. What worms cannot do is dry out. This is why they come up in the rain: the whole surface is safe while it is wet.',
+      '','Everyone else is coming up too. Go and see.');
+  }
+  elWx.textContent = WX.mode==='rain'?'raining' : WX.mode==='overcast'?'clouding over':'fine';
+  elWxDot.style.background = WX.mode==='rain'?'#6fb6c8' : WX.mode==='overcast'?'#9a9584':'#e0b357';
+}
+
+/* ================= widening a tunnel =================
+   A worm does not push soil aside. It eats through it, and the tunnel
+   gets wider because the soil leaves down the other end.              */
+function widen(dt){
+  if(!PL.burrow||!INP.widen) return;
+  const b=PL.burrow, c=PL.bt*TSEG, maxR=b.def.r*1.9;
+  let changed=false;
+  for(let i=Math.max(0,Math.floor(c)-5);i<=Math.min(TSEG,Math.ceil(c)+5);i++){
+    const k=1-Math.abs(i-c)/6;
+    if(k<=0) continue;
+    if(b.radii[i]<maxR){ b.radii[i]=Math.min(maxR,b.radii[i]+dt*9*k); changed=true; }
+  }
+  if(changed){
+    b.dirty=true; PL.castings+=dt*1.6;
+    if(PL.castings>9) unlock('castings');
+  }
+}
+function flushTunnels(){
+  for(const b of burrows) if(b.dirty){
+    shapeTube(b.geo,b.radii,1,soilWall);
+    if(b.wmesh.visible) shapeTube(b.wgeo,b.radii,Math.max(0.04,b.flood*0.97),null,-(1-b.flood)*0.5);
+    b.dirty=false;
+  }
+}
+
+/* ================= VR =================
+   The rig is scaled right down, so a standing adult's eye lands about
+   two centimetres off the ground and the grass goes up like bamboo.  */
+const VR_SCALE=1/64;
+const rig=new THREE.Group(); rig.add(wormCam); scene.add(rig);
+let xrOn=false, vrYaw=0, snapCool=0, vrPanel=null, vrPanelTex=null, vrPanelCtx=null;
+let vrShowNotes=false, vrPanelT=0;
+const vrBtnPrev={};
+
+function buildVRPanel(){
+  const cv=document.createElement('canvas'); cv.width=640; cv.height=440;
+  vrPanelCtx=cv.getContext('2d');
+  vrPanelTex=new THREE.CanvasTexture(cv);
+  vrPanelTex.colorSpace=THREE.SRGBColorSpace;
+  const g=new THREE.PlaneGeometry(0.30,0.206);
+  vrPanel=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:vrPanelTex,transparent:true}));
+  vrPanel.position.set(0.02,0.05,-0.10);
+  vrPanel.rotation.set(-0.85,0,0);
+  vrPanel.visible=false;
+  return vrPanel;
+}
+function drawVRPanel(){
+  if(!vrPanelCtx) return;
+  const g=vrPanelCtx, W=640, H=440;
+  g.clearRect(0,0,W,H);
+  const grd=g.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,'#241505'); grd.addColorStop(.45,'#3d2811');
+  grd.addColorStop(.78,'#6f4517'); grd.addColorStop(1,'#8d5b28');
+  g.fillStyle=grd; g.fillRect(0,0,W,H);
+  g.strokeStyle='#c89346'; g.lineWidth=6; g.strokeRect(3,3,W-6,H-6);
+  g.textBaseline='top';
+  if(vrShowNotes){
+    g.fillStyle='#dca956'; g.font='bold 30px "Bookman Old Style",Georgia,serif';
+    let got=0; NOTES.forEach(n=>{if(n.got)got++;});
+    g.fillText('Field notes  '+got+'/'+NOTES.length,22,18);
+    g.font='19px "Trebuchet MS",sans-serif';
+    let y=62;
+    NOTES.forEach(n=>{
+      if(y>H-28) return;
+      g.fillStyle=n.got?'#91bb3d':'#7d6647';
+      g.fillText(n.got?'\u2713':'\u25a1',24,y);
+      g.fillStyle=n.got?'#efe0c0':'#8a7250';
+      g.fillText(n.got?n.title:'\u2014 not yet \u2014',56,y);
+      y+=26;
+    });
+  }else{
+    const surf=heightAt(PL.pos.x,PL.pos.z), d=surf-PL.pos.y;
+    g.fillStyle='#dca956'; g.font='bold 30px "Bookman Old Style",Georgia,serif';
+    g.fillText(d>2?Math.round(d)+' cm down':'at the surface',22,18);
+    g.font='18px "Courier New",monospace'; g.fillStyle='#c0ab86';
+    g.fillText('horizon '+horizonKey(PL.pos.y)+'   \u00b7   '+WX.mode,22,56);
+    // moisture bar
+    g.fillStyle='#160d04'; g.fillRect(22,92,W-44,26);
+    g.fillStyle=PL.moist<0.4?'#c86a34':'#10aaa9';
+    g.fillRect(24,94,(W-48)*PL.moist,22);
+    g.fillStyle='#efe0c0'; g.font='17px "Trebuchet MS",sans-serif';
+    g.fillText('skin moisture '+Math.round(PL.moist*100)+'%',28,96);
+    // last card
+    g.fillStyle='#dca956'; g.font='bold 23px "Bookman Old Style",Georgia,serif';
+    g.fillText(vrCardTitle||'',22,140);
+    g.fillStyle='#efe0c0'; g.font='19px "Trebuchet MS",sans-serif';
+    wrapText(g,vrCardBody||'Trigger to look at things. Grip to go down a hole. Hold B or Y underground to eat the tunnel wider.',22,176,W-44,25);
+  }
+  vrPanelTex.needsUpdate=true;
+}
+function wrapText(g,text,x,y,maxW,lh){
+  const words=String(text).replace(/<[^>]*>/g,'').split(' ');
+  let line='', yy=y;
+  for(const w of words){
+    const t=line?line+' '+w:w;
+    if(g.measureText(t).width>maxW){ g.fillText(line,x,yy); line=w; yy+=lh; if(yy>410)return; }
+    else line=t;
+  }
+  if(line) g.fillText(line,x,yy);
+}
+let vrCardTitle='', vrCardBody='';
+
+const ctrls=[];
+function setupVR(){
+  if(!VRButton||typeof navigator==='undefined'||!navigator.xr) return;
+  renderer.xr.enabled=true;
+  const btn=VRButton.createButton(renderer);
+  Object.assign(btn.style,{zIndex:'40',left:'16px',right:'auto',bottom:'16px',top:'auto',
+    width:'auto',minWidth:'112px',padding:'10px 16px',transform:'none',
+    background:'#241505',border:'2px solid #c89346',borderRadius:'3px',
+    color:'#dca956',font:'14px "Bookman Old Style",Georgia,serif',letterSpacing:'.4px',
+    opacity:'1',boxShadow:'0 6px 20px rgba(0,0,0,.5)'});
+  document.body.appendChild(btn);
+
+  for(let i=0;i<2;i++){
+    const c=renderer.xr.getController(i); rig.add(c); ctrls.push(c);
+    const nub=new THREE.Mesh(new THREE.SphereGeometry(0.012,10,8),
+      new THREE.MeshBasicMaterial({color:0xd29173}));
+    c.add(nub);
+  }
+  const grip=renderer.xr.getControllerGrip(0); rig.add(grip);
+  grip.add(buildVRPanel());
+
+  renderer.xr.addEventListener('sessionstart',()=>{
+    xrOn=true;
+    if(mode==='iso') toggleMode();
+    // XR depth planes are given in metres; the rig scale does the rest
+    wormCam.near=0.02; wormCam.far=500; wormCam.updateProjectionMatrix();
+    rig.scale.setScalar(VR_SCALE);
+    vrYaw=lookYaw; camDistWant=0;
+    vrPanel.visible=true;
+    renderer.domElement.style.filter='none';
+    showCard('Headset on','You are down there now',
+      'Left stick to crawl, right stick to turn. Trigger looks at things, grip goes down a burrow, and B or Y widens a tunnel while you are in one.','','');
+  });
+  renderer.xr.addEventListener('sessionend',()=>{
+    xrOn=false;
+    rig.scale.setScalar(1); rig.position.set(0,0,0); rig.rotation.set(0,0,0);
+    wormCam.near=0.35; wormCam.far=4200; wormCam.updateProjectionMatrix();
+    if(vrPanel) vrPanel.visible=false;
+  });
+}
+setupVR();
+
+function edge(id,down){ const was=!!vrBtnPrev[id]; vrBtnPrev[id]=down; return down&&!was; }
+
+function pollXR(dt){
+  const s=renderer.xr.getSession(); if(!s) return;
+  let mx=0,my=0,turn=0,widening=false;
+  snapCool=Math.max(0,snapCool-dt);
+  for(const src of s.inputSources){
+    const gp=src.gamepad; if(!gp) continue;
+    const h=src.handedness==='right'?'r':'l';
+    const ax=gp.axes, bt=gp.buttons;
+    const sx=(ax.length>2?ax[2]:ax[0])||0, sy=(ax.length>3?ax[3]:ax[1])||0;
+    if(h==='l'){ mx=sx; my=-sy; } else { turn=sx; }
+    if(bt[0]&&edge(h+'trig',bt[0].pressed)) interact();
+    if(bt[1]&&edge(h+'grip',bt[1].pressed)) burrowToggle();
+    if(bt[4]&&edge(h+'a',bt[4].pressed)){ vrShowNotes=!vrShowNotes; drawVRPanel(); }
+    if(bt[5]&&bt[5].pressed) widening=true;
+  }
+  if(Math.hypot(mx,my)<0.15){ mx=0; my=0; }
+  INP.side=mx; INP.fwd=my; INP.sprint=false; INP.widen=widening;
+  if(Math.abs(turn)>0.72&&snapCool<=0){ vrYaw-=Math.sign(turn)*Math.PI/6; snapCool=0.28; }
+}
+
+function updateVRPanel(dt){
+  if(!xrOn||!vrPanel) return;
+  vrPanelT+=dt;
+  if(vrPanelT>0.22){ vrPanelT=0; drawVRPanel(); }
+}
+/* ================= points =================
+   Notes are the objective; leaf scraps are the reason to wander. */
+const SCORE={pts:0, leaves:0};
+const PT_NOTE=100, PT_FIND=250, PT_LEAF=25, PT_DIG=1;
+
+/* ---- leaf scraps: a nightcrawler's whole job is dragging these home ---- */
+const LEAF_TOTAL=30;
+const leaves=[];
+{
+  const geo=gLeaf();
+  const mat=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide,
+    emissive:0x3a2408, emissiveIntensity:0.55});
+  let n=0, tries=0;
+  while(n<LEAF_TOTAL-4&&tries<9000){
+    tries++;
+    const a=rnd()*TAU, rr=(.18+Math.sqrt(rnd())*.70)*R;
+    const x=Math.cos(a)*rr, z=Math.sin(a)*rr;
+    if(slopeAt(x,z)>.40) continue;
+    const y=heightAt(x,z);
+    if(y<6) continue;
+    let clash=false;
+    for(const L of leaves) if(L.pos.distanceTo(_v3.set(x,y,z))<70){clash=true;break;}
+    if(clash) continue;
+    const m=new THREE.Mesh(geo,mat);
+    m.position.set(x,y+5,z); m.scale.setScalar(1.7); m.castShadow=true;
+    scene.add(m);
+    leaves.push({mesh:m,pos:m.position.clone(),got:false,ph:rnd()*TAU,tunnel:null});
+    n++;
+  }
+  // four more tucked down the pre-made burrows
+  const spots=[['shaft',.62],['gallery',.30],['rootrun',.55],['sipe',.44]];
+  spots.forEach(([id,t])=>{
+    const b=burrows.find(b=>b.def.id===id); if(!b) return;
+    const p=b.curve.getPointAt(t); p.y-=b.def.r*0.5;
+    const m=new THREE.Mesh(geo,mat);
+    m.position.copy(p); m.scale.setScalar(1.7); scene.add(m);
+    leaves.push({mesh:m,pos:p.clone(),got:false,ph:rnd()*TAU,tunnel:id});
+  });
+}
+NOTES.push({id:'dig',tag:'Doing',title:'Head first, mouth first',
+ body:'A worm does not dig with claws or a shovel \u2014 it has neither. It forces the front of its body into a crack, swells it up to push the soil apart, then hauls the rest along on tiny bristles. In loose soil it simply eats a path and the soil comes out behind as castings.',
+ hint:'Stand on open ground and press space. Make a tunnel of your own.',got:false});
+NOTES.push({id:'midden',tag:'Find',title:'The pile by the door',
+ body:'A nightcrawler drags leaves back to its burrow mouth and stacks them in a little heap called a midden. The pile plugs the hole against the cold, hides the entrance from birds, and leaves the leaves to soften up until they are worth eating.',
+ hint:'Collect leaf scraps and work out why a worm would bother.',got:false});
+
+function updateLeaves(t,dt){
+  for(const L of leaves){
+    if(L.got) continue;
+    L.mesh.rotation.y=t*0.7+L.ph;
+    L.mesh.position.y=L.pos.y+Math.sin(t*1.6+L.ph)*1.1;
+    const inside=!!(PL.burrow||PL.dig);
+    if(!!L.tunnel!==inside) continue;
+    if(PL.pos.distanceTo(L.pos)<14){
+      L.got=true; L.mesh.visible=false;
+      SCORE.leaves++; addPoints(PT_LEAF);
+      if(SCORE.leaves>=8) unlock('midden');
+      elLeafCount.textContent=SCORE.leaves+'/'+leaves.length;
+    }
+  }
+}
+function addPoints(n){
+  SCORE.pts+=n;
+  elPts.textContent=SCORE.pts.toLocaleString();
+  elScore.classList.add('bump');
+  clearTimeout(addPoints._t); addPoints._t=setTimeout(()=>elScore.classList.remove('bump'),450);
+}
+
+/* ================= digging your own tunnel =================
+   Six reusable tunnel slots. Each new dig writes rings into the next
+   slot with parallel-transport frames, so only the new ring is touched. */
+const DIG_SLOTS=6, DIG_RINGS=300, DIG_RADIAL=10, DIG_R=8.5;
+const digSlots=[];
+for(let i=0;i<DIG_SLOTS;i++){
+  const g=new THREE.BufferGeometry();
+  const N=DIG_RINGS*DIG_RADIAL;
+  g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(N*3),3));
+  g.setAttribute('normal',new THREE.BufferAttribute(new Float32Array(N*3),3));
+  g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(N*3),3));
+  const idx=new Uint32Array((DIG_RINGS-1)*DIG_RADIAL*6);
+  for(let r=0;r<DIG_RINGS-1;r++)for(let s=0;s<DIG_RADIAL;s++){
+    const o=(r*DIG_RADIAL+s)*6;
+    const a=r*DIG_RADIAL+s, b=r*DIG_RADIAL+(s+1)%DIG_RADIAL;
+    const c=(r+1)*DIG_RADIAL+s, d=(r+1)*DIG_RADIAL+(s+1)%DIG_RADIAL;
+    idx[o]=a; idx[o+1]=b; idx[o+2]=c; idx[o+3]=b; idx[o+4]=d; idx[o+5]=c;
+  }
+  g.setIndex(new THREE.BufferAttribute(idx,1));
+  g.setDrawRange(0,0);
+  g.boundingSphere=new THREE.Sphere(new THREE.Vector3(),4000);
+  const m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({
+    vertexColors:true, side:THREE.BackSide}));
+  m.frustumCulled=false; m.visible=false; scene.add(m);
+  digSlots.push({geo:g,mesh:m,rings:0,pts:[],nrm:new THREE.Vector3(0,1,0)});
+}
+let digSlotNext=0;
+
+/* The tube is written behind the worm, so without this there is simply no
+   geometry in front of your face and you see straight out of the world.
+   This is the soil you are pressing into: an inward-facing dome that rides
+   the head and takes the colour of whatever horizon you are chewing. */
+const digFaceMat=new THREE.MeshLambertMaterial({color:0x6f4517,side:THREE.BackSide});
+const digFace=new THREE.Mesh(new THREE.SphereGeometry(DIG_R*1.5,16,12),digFaceMat);
+digFace.frustumCulled=false; digFace.visible=false; scene.add(digFace);
+
+/* worms are blind, but the player is not */
+const headLamp=new THREE.PointLight(0xffd8a4,1500,150,2.0);
+headLamp.visible=false; scene.add(headLamp);
+const _hl={r:0,g:0,b:0};
+const _dt1=new THREE.Vector3(), _dn=new THREE.Vector3(), _db=new THREE.Vector3(),
+      _dp=new THREE.Vector3(), _dc={r:0,g:0,b:0};
+
+function digRing(slot,P,tangent){
+  if(slot.rings>=DIG_RINGS) return false;
+  // parallel transport: keep the reference normal as steady as possible
+  _dn.copy(slot.nrm).addScaledVector(tangent,-slot.nrm.dot(tangent));
+  if(_dn.lengthSq()<1e-6) _dn.set(1,0,0).addScaledVector(tangent,-tangent.x);
+  _dn.normalize(); slot.nrm.copy(_dn);
+  _db.crossVectors(tangent,_dn).normalize();
+  const pos=slot.geo.attributes.position, nor=slot.geo.attributes.normal,
+        col=slot.geo.attributes.color;
+  const base=slot.rings*DIG_RADIAL;
+  const wob=1+0.14*Math.sin(slot.rings*0.9);
+  for(let s=0;s<DIG_RADIAL;s++){
+    const a=s/DIG_RADIAL*TAU, cx=Math.cos(a)*DIG_R*wob, cy=Math.sin(a)*DIG_R*wob;
+    _dp.copy(P).addScaledVector(_dn,cx).addScaledVector(_db,cy);
+    pos.setXYZ(base+s,_dp.x,_dp.y,_dp.z);
+    _dp.set(0,0,0).addScaledVector(_dn,cx).addScaledVector(_db,cy).normalize();
+    nor.setXYZ(base+s,_dp.x,_dp.y,_dp.z);
+    soilWall(P.y+_dn.y*cx+_db.y*cy,P.x,P.z,_dc);
+    col.setXYZ(base+s,_dc.r,_dc.g,_dc.b);
+  }
+  slot.rings++;
+  slot.pts.push(P.clone());
+  pos.needsUpdate=nor.needsUpdate=col.needsUpdate=true;
+  pos.updateRanges=[]; // let three upload the whole buffer; it is small
+  slot.geo.setDrawRange(0,Math.max(0,(slot.rings-1)*DIG_RADIAL*6));
+  return true;
+}
+function startDig(){
+  const g=heightAt(PL.pos.x,PL.pos.z);
+  if(PL.pos.y>g+8){ pip('you need to be on the ground to dig in'); return false; }
+  const slot=digSlots[digSlotNext]; digSlotNext=(digSlotNext+1)%DIG_SLOTS;
+  slot.rings=0; slot.pts.length=0; slot.nrm.set(1,0,0);
+  slot.mesh.visible=true;
+  PL.dig={slot, last:new THREE.Vector3(PL.pos.x,g-1,PL.pos.z), full:false};
+  PL.pos.set(PL.pos.x,g-2,PL.pos.z);
+  PL.pitch=-0.55; lookPitch=-0.55;
+  _dt1.set(0,-1,0); digRing(slot,PL.dig.last,_dt1);
+  addPoints(0);
+  unlock('dig');
+  showCard('Digging','Head first, mouth first',
+    'You are eating your way through, not pushing. Look where you want to go and crawl \u2014 the tunnel appears behind you. Come back up to the surface to stop. Hold <kbd>Q</kbd> to widen any tunnel you are already in.',
+    '','Every centimetre you dig turns into castings.');
+  return true;
+}
+function stopDig(surfaced){
+  if(!PL.dig) return;
+  PL.dig=null; digFace.visible=false; headLamp.visible=false;
+  const g=heightAt(PL.pos.x,PL.pos.z);
+  PL.pos.y=g+PL.thick;
+  if(surfaced) showCard('Back up','Your tunnel stays behind you',
+    'Real burrows last. A nightcrawler will use the same one for its whole life, lining the walls with castings until they set hard.','','');
+}
+function underground(){ return !!(PL.dig||PL.burrow); }
+function updateUnderground(){
+  headLamp.visible=underground();
+  if(headLamp.visible) headLamp.position.copy(PL.pos).setY(PL.pos.y+2.5);
+  digFace.visible=!!PL.dig;
+  if(PL.dig){
+    digFace.position.copy(PL.pos);
+    horizonRGB(PL.pos.y,0,_hl);
+    digFaceMat.color.setRGB(_hl.r*1.15,_hl.g*1.15,_hl.b*1.15);
+  }
+}
+function updateDig(dt){
+  const D=PL.dig; if(!D) return;
+  const g=heightAt(PL.pos.x,PL.pos.z);
+  if(PL.pos.y>g-1.5){ stopDig(true); return; }
+  if(PL.pos.distanceTo(D.last)>4){
+    _dt1.subVectors(PL.pos,D.last).normalize();
+    if(!digRing(D.slot,PL.pos,_dt1)){
+      if(!D.full){ D.full=true; toast('Tunnel full','That burrow is as long as it goes. Surface and start another.'); }
+    }else{
+      D.last.copy(PL.pos);
+      PL.castings+=0.55; addPoints(PT_DIG);
+      if(PL.castings>9) unlock('castings');
+    }
+  }
+}
+/* free three-dimensional movement while inside soil */
+function moveDig(dt){
+  const spd=(INP.sprint?26:17)*(PL.moist<0.34?0.65:1)*(xrOn?0.62:1);
+  const l=Math.hypot(INP.side,INP.fwd);
+  PL.speed=l>0?spd*Math.min(1,l):0;
+  if(l>0){
+    const yaw=headingYaw(), pit=xrOn?xrPitch():lookPitch;
+    _fwd.set(-Math.sin(yaw)*Math.cos(pit),Math.sin(pit),-Math.cos(yaw)*Math.cos(pit));
+    _rgt.set(-Math.cos(yaw),0,Math.sin(yaw));
+    _tmp.set(0,0,0).addScaledVector(_fwd,INP.fwd/l).addScaledVector(_rgt,INP.side/l).normalize();
+    const step=spd*dt;
+    const nx=PL.pos.x+_tmp.x*step, ny=PL.pos.y+_tmp.y*step, nz=PL.pos.z+_tmp.z*step;
+    const q=Math.pow(Math.pow(Math.abs(nx),4)+Math.pow(Math.abs(nz),4),.25);
+    if(q<R*1.02 && ny>-88 && ny<heightAt(nx,nz)+2){ PL.pos.set(nx,ny,nz); }
+  }
+}
+function xrPitch(){ wormCam.getWorldDirection(_hv); return Math.asin(clamp(_hv.y,-1,1)); }
+
+/* ================= camera occlusion =================
+   Nothing should ever be visible through the ground. Underground the
+   camera rides the tunnel axis; on the surface it walks the ray from
+   the worm's head and stops before it would pass into soil.          */
+const _cw=new THREE.Vector3(), _cs=new THREE.Vector3();
+function safeSurfaceCam(head,want,out){
+  const steps=16;
+  out.copy(head);
+  for(let i=1;i<=steps;i++){
+    _cs.lerpVectors(head,want,i/steps);
+    if(_cs.y < heightAt(_cs.x,_cs.z)+3.2) break;
+    out.copy(_cs);
+  }
+  return out;
+}
+function undergroundCam(dist,out){
+  if(PL.burrow){
+    const b=PL.burrow, back=clamp(PL.bt-PL.bdir*(dist/b.len),0.004,0.996);
+    b.curve.getPointAt(back,out);
+    out.y+=-burrowRadius(b,back)*0.30+PL.thick;
+    return out;
+  }
+  const pts=PL.dig.slot.pts;
+  if(!pts.length){ out.copy(PL.pos); return out; }
+  let acc=0;
+  for(let i=pts.length-1;i>0;i--){
+    const d=pts[i].distanceTo(pts[i-1]);
+    if(acc+d>=dist){ out.lerpVectors(pts[i],pts[i-1],(dist-acc)/d); return out; }
+    acc+=d;
+  }
+  out.copy(pts[0]); return out;
+}
+/* ---- loop ---- */
+let elapsed=0, lastT=(typeof performance!=='undefined'?performance.now():Date.now())/1000;
+function tick(){
+  const now=(typeof performance!=='undefined'?performance.now():Date.now())/1000;
+  const dt=Math.min(now-lastT,0.05); lastT=now;
+  elapsed+=dt;
+
+  if(mode==='worm'){
+    readKeys(); if(xrOn) pollXR(dt);
+    widen(dt);
+    if(PL.dig){ moveDig(dt); updateDig(dt); }
+    else if(PL.burrow) moveBurrow(dt);
+    else moveSurface(dt);
+    if(pipT>0) pipT-=dt;
+    updateUnderground();
+    updatePlayerBody(dt,elapsed);
+    placeCam(dt);
+    scanNear();
+    updateMoisture(dt);
+    updateGauge();
+  }else{
+    updatePlayerBody(dt,elapsed);
+    isoTarget.x*=0.995; isoTarget.z=mix(isoTarget.z,40,0.02);
+    const spin=isoSpin+(isoDrag?0:elapsed*0.012);
+    const d=new THREE.Vector3(Math.cos(EL)*Math.sin(AZ+spin),Math.sin(EL),Math.cos(EL)*Math.cos(AZ+spin));
+    isoCam.position.copy(isoTarget).addScaledVector(d,2200);
+    isoCam.lookAt(isoTarget);
+    playerMesh.visible=true;
+  }
+  updateWeather(dt);
+  updateNPCs(elapsed,dt,WX.rain);
+  updateAmbient(elapsed,dt);
+  updateLeaves(elapsed,dt);
+  updateVRPanel(dt);
+  flushTunnels();
+
+  if(cardT>0){cardT-=dt; if(cardT<=0)elCard.classList.remove('on');}
+  if(toastT>0){toastT-=dt; if(toastT<=0)elToast.classList.remove('on');}
+
+  renderer.render(scene,cam);
+}
+
+addEventListener('resize',()=>{
+  renderer.setSize(innerWidth,innerHeight);
+  wormCam.aspect=ASP(); wormCam.updateProjectionMatrix(); isoFrame();
+});
+
+/* ---- go ---- */
+function begin(){
+  const boot=$('boot');
+  $('bar').firstElementChild.style.width='100%';
+  boot.querySelector('.say').textContent='Ready';
+  setTimeout(()=>{boot.style.opacity='0'; setTimeout(()=>boot.remove(),750);},350);
+  elNotesBtn.classList.remove('hidden');
+  setTimeout(()=>showCard('Survey plot 4','You are the worm',
+    'Six patches of ground, each cut open so you can see how deep it goes. Read every marker, meet the neighbours, and find what is buried. Press <kbd>E</kbd> at any time to float up and look at the whole plot.',
+    '','Wheel pulls the camera back if you would rather see yourself.'),900);
+}
+renderer.setAnimationLoop(tick);
+begin();
+};
+</script>
+<script type="importmap">
+{"imports":{
+  "three":"https://unpkg.com/three@0.185.1/build/three.module.js",
+  "three/":"https://unpkg.com/three@0.185.1/"
+}}
+</script>
+<script type="module">
+  const bar=document.querySelector('#bar i'), say=document.querySelector('#boot .say');
+  bar.style.width='30%'; say.textContent='Fetching the toolkit';
+  try{
+    const THREE=await import('three');
+    bar.style.width='48%'; say.textContent='Laying down the horizons';
+    let VRButton=null;
+    try{ ({VRButton}=await import('three/examples/jsm/webxr/VRButton.js')); }
+    catch(e){ console.warn('VR button unavailable',e); }
+    bar.style.width='62%';
+    await new Promise(r=>setTimeout(r,30));
+    window.__BOOTGAME(THREE,VRButton);
+  }catch(err){
+    console.error(err);
+    document.getElementById('bootErr').style.display='block';
+    document.getElementById('bootErr').innerHTML =
+      '<b>Could not load the 3D toolkit.</b><br>This page pulls Three.js from the web, so it needs a connection the first time. '+
+      'If you are opening the file straight off disk and your browser is blocking it, run a tiny local server in the same folder '+
+      '(<code>python3 -m http.server</code>) and open <code>localhost:8000</code> instead.<br><br><code style="font-size:11px;opacity:.7">'+
+      (err&&err.message?err.message:err)+'</code>';
+    say.textContent='Stopped';
+    bar.style.width='100%'; bar.style.background='#8a4a2a';
+  }
+</script>
+</body>
+</html>

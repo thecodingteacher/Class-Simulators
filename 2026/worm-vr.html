@@ -1877,12 +1877,7 @@ function updateGauge(){
 
 /* ---- camera ---- */
 function placeCam(dt){
-  if(xrOn){
-    const head=playerPts[0];
-    rig.position.set(head.x-Math.sin(PL.yaw)*1.4, head.y+0.4, head.z-Math.cos(PL.yaw)*1.4);
-    rig.rotation.y=vrYaw;
-    return;
-  }
+  if(xrOn){ placeRigXR(dt); return; }
   camDist+=(camDistWant-camDist)*Math.min(1,dt*7);
   let baseYaw=lookYaw, basePitch=lookPitch;
   if(PL.burrow){
@@ -1931,7 +1926,7 @@ function updatePlayerBody(dt,time){
     playerPts[i].lerpVectors(a,b,k);
   }
   shapeWorm(playerGeo,playerPts,PL.thick,RINGS,SIDES,time*(6+PL.speed*0.16));
-  playerMesh.visible=xrOn?true:camDist>2.2;
+  playerMesh.visible=xrOn?false:camDist>2.2;
 }
 
 /* ---- ambient ---- */
@@ -2100,81 +2095,31 @@ function flushTunnels(){
 }
 
 /* ================= VR =================
-   The rig is scaled right down, so a standing adult's eye lands about
-   two centimetres off the ground and the grass goes up like bamboo.  */
-const VR_SCALE=1/64;
+   World units are centimetres; headset poses arrive in metres.
+   WORLD_PER_METRE converts one real metre of you into world cm.
+   At 1.7, a standing adult's eye (~1.6 m) sits ~2.7 cm off the
+   ground: proper worm height, with grass like bamboo overhead.  */
+const WORLD_PER_METRE=1.7;
 const rig=new THREE.Group(); rig.add(wormCam); scene.add(rig);
 let xrOn=false, vrYaw=0, snapCool=0, vrPanel=null, vrPanelTex=null, vrPanelCtx=null;
-let vrShowNotes=false, vrPanelT=0;
+let vrShowNotes=false, vrPanelT=0, vrSmoothTurn=true, vrHeight=0;
 const vrBtnPrev={};
+const _xrDir=new THREE.Vector3(), _rigTarget=new THREE.Vector3();
 
 function buildVRPanel(){
   const cv=document.createElement('canvas'); cv.width=640; cv.height=440;
   vrPanelCtx=cv.getContext('2d');
   vrPanelTex=new THREE.CanvasTexture(cv);
   vrPanelTex.colorSpace=THREE.SRGBColorSpace;
-  const g=new THREE.PlaneGeometry(0.30,0.206);
-  vrPanel=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:vrPanelTex,transparent:true}));
-  vrPanel.position.set(0.02,0.05,-0.10);
+  const g=new THREE.PlaneGeometry(0.24,0.165);   // metres: controller-local space
+  vrPanel=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:vrPanelTex,transparent:true,
+    depthTest:false}));
+  vrPanel.renderOrder=30;
+  vrPanel.position.set(0,0.06,-0.08);
   vrPanel.rotation.set(-0.85,0,0);
   vrPanel.visible=false;
   return vrPanel;
 }
-function drawVRPanel(){
-  if(!vrPanelCtx) return;
-  const g=vrPanelCtx, W=640, H=440;
-  g.clearRect(0,0,W,H);
-  const grd=g.createLinearGradient(0,0,0,H);
-  grd.addColorStop(0,'#241505'); grd.addColorStop(.45,'#3d2811');
-  grd.addColorStop(.78,'#6f4517'); grd.addColorStop(1,'#8d5b28');
-  g.fillStyle=grd; g.fillRect(0,0,W,H);
-  g.strokeStyle='#c89346'; g.lineWidth=6; g.strokeRect(3,3,W-6,H-6);
-  g.textBaseline='top';
-  if(vrShowNotes){
-    g.fillStyle='#dca956'; g.font='bold 30px "Bookman Old Style",Georgia,serif';
-    let got=0; NOTES.forEach(n=>{if(n.got)got++;});
-    g.fillText('Field notes  '+got+'/'+NOTES.length,22,18);
-    g.font='19px "Trebuchet MS",sans-serif';
-    let y=62;
-    NOTES.forEach(n=>{
-      if(y>H-28) return;
-      g.fillStyle=n.got?'#91bb3d':'#7d6647';
-      g.fillText(n.got?'\u2713':'\u25a1',24,y);
-      g.fillStyle=n.got?'#efe0c0':'#8a7250';
-      g.fillText(n.got?n.title:'\u2014 not yet \u2014',56,y);
-      y+=26;
-    });
-  }else{
-    const surf=heightAt(PL.pos.x,PL.pos.z), d=surf-PL.pos.y;
-    g.fillStyle='#dca956'; g.font='bold 30px "Bookman Old Style",Georgia,serif';
-    g.fillText(d>2?Math.round(d)+' cm down':'at the surface',22,18);
-    g.font='18px "Courier New",monospace'; g.fillStyle='#c0ab86';
-    g.fillText('horizon '+horizonKey(PL.pos.y)+'   \u00b7   '+WX.mode,22,56);
-    // moisture bar
-    g.fillStyle='#160d04'; g.fillRect(22,92,W-44,26);
-    g.fillStyle=PL.moist<0.4?'#c86a34':'#10aaa9';
-    g.fillRect(24,94,(W-48)*PL.moist,22);
-    g.fillStyle='#efe0c0'; g.font='17px "Trebuchet MS",sans-serif';
-    g.fillText('skin moisture '+Math.round(PL.moist*100)+'%',28,96);
-    // last card
-    g.fillStyle='#dca956'; g.font='bold 23px "Bookman Old Style",Georgia,serif';
-    g.fillText(vrCardTitle||'',22,140);
-    g.fillStyle='#efe0c0'; g.font='19px "Trebuchet MS",sans-serif';
-    wrapText(g,vrCardBody||'Trigger to look at things. Grip to go down a hole. Hold B or Y underground to eat the tunnel wider.',22,176,W-44,25);
-  }
-  vrPanelTex.needsUpdate=true;
-}
-function wrapText(g,text,x,y,maxW,lh){
-  const words=String(text).replace(/<[^>]*>/g,'').split(' ');
-  let line='', yy=y;
-  for(const w of words){
-    const t=line?line+' '+w:w;
-    if(g.measureText(t).width>maxW){ g.fillText(line,x,yy); line=w; yy+=lh; if(yy>410)return; }
-    else line=t;
-  }
-  if(line) g.fillText(line,x,yy);
-}
-let vrCardTitle='', vrCardBody='';
 
 const ctrls=[];
 function setupVR(){
@@ -2190,7 +2135,7 @@ function setupVR(){
 
   for(let i=0;i<2;i++){
     const c=renderer.xr.getController(i); rig.add(c); ctrls.push(c);
-    const nub=new THREE.Mesh(new THREE.SphereGeometry(0.012,10,8),
+    const nub=new THREE.Mesh(new THREE.SphereGeometry(0.008,10,8),
       new THREE.MeshBasicMaterial({color:0xd29173}));
     c.add(nub);
   }
@@ -2200,14 +2145,15 @@ function setupVR(){
   renderer.xr.addEventListener('sessionstart',()=>{
     xrOn=true;
     if(mode==='iso') toggleMode();
-    // XR depth planes are given in metres; the rig scale does the rest
-    wormCam.near=0.02; wormCam.far=500; wormCam.updateProjectionMatrix();
-    rig.scale.setScalar(VR_SCALE);
-    vrYaw=lookYaw; camDistWant=0;
+    /* near/far are in eye space (metres). The rig scale maps them into
+       the world, so ordinary human values are correct here. */
+    wormCam.near=0.03; wormCam.far=1200; wormCam.updateProjectionMatrix();
+    rig.scale.setScalar(WORLD_PER_METRE);
+    vrYaw=PL.yaw; camDistWant=0; vrHeight=0;
     vrPanel.visible=true;
     renderer.domElement.style.filter='none';
-    showCard('Headset on','You are down there now',
-      'Left stick to crawl, right stick to turn. Trigger looks at things, grip goes down a burrow, and B or Y widens a tunnel while you are in one.','','');
+    showCard('Headset on','You are two centimetres tall',
+      'Left stick crawls the way you are looking. Right stick turns — click it to switch between smooth and snap. Push the right stick forward to hurry. Trigger examines, grip enters a burrow or digs in, B or Y eats a tunnel wider, A or X flips your wrist notebook.','','');
   });
   renderer.xr.addEventListener('sessionend',()=>{
     xrOn=false;
@@ -2219,27 +2165,62 @@ function setupVR(){
 setupVR();
 
 function edge(id,down){ const was=!!vrBtnPrev[id]; vrBtnPrev[id]=down; return down&&!was; }
+/* response curve: dead zone, then ease in, so small pushes creep */
+function stickCurve(v){
+  const a=Math.abs(v);
+  if(a<0.12) return 0;
+  const t=(a-0.12)/0.88;
+  return Math.sign(v)*t*t*(3-2*t);
+}
 
 function pollXR(dt){
   const s=renderer.xr.getSession(); if(!s) return;
-  let mx=0,my=0,turn=0,widening=false;
+  let mx=0,my=0,turn=0,widening=false,sprint=false;
   snapCool=Math.max(0,snapCool-dt);
   for(const src of s.inputSources){
     const gp=src.gamepad; if(!gp) continue;
     const h=src.handedness==='right'?'r':'l';
     const ax=gp.axes, bt=gp.buttons;
     const sx=(ax.length>2?ax[2]:ax[0])||0, sy=(ax.length>3?ax[3]:ax[1])||0;
-    if(h==='l'){ mx=sx; my=-sy; } else { turn=sx; }
+    if(h==='l'){ mx=stickCurve(sx); my=-stickCurve(sy); }
+    else{ turn=stickCurve(sx);
+      // push the right stick forward/back to sprint / creep
+      if(-sy>0.55) sprint=true; }
     if(bt[0]&&edge(h+'trig',bt[0].pressed)) interact();
     if(bt[1]&&edge(h+'grip',bt[1].pressed)) burrowToggle();
+    // A / X: flip the wrist panel · B / Y: widen · stick click: turn style
     if(bt[4]&&edge(h+'a',bt[4].pressed)){ vrShowNotes=!vrShowNotes; drawVRPanel(); }
     if(bt[5]&&bt[5].pressed) widening=true;
+    if(bt[3]&&edge(h+'stick',bt[3].pressed)){ vrSmoothTurn=!vrSmoothTurn;
+      vrCardTitle='Turning: '+(vrSmoothTurn?'smooth':'snap');
+      vrCardBody=vrSmoothTurn?'Right stick turns continuously. Click the stick again for snap turning if smooth makes you queasy.'
+                             :'Right stick clicks round in 30\u00b0 steps \u2014 the comfortable option.'; }
   }
-  if(Math.hypot(mx,my)<0.15){ mx=0; my=0; }
-  INP.side=mx; INP.fwd=my; INP.sprint=false; INP.widen=widening;
-  if(Math.abs(turn)>0.72&&snapCool<=0){ vrYaw-=Math.sign(turn)*Math.PI/6; snapCool=0.28; }
+  INP.side=mx; INP.fwd=my; INP.sprint=sprint; INP.widen=widening;
+  if(vrSmoothTurn){
+    vrYaw-=turn*dt*2.4;                      // ~140°/s at full push
+  }else if(Math.abs(turn)>0.62&&snapCool<=0){
+    vrYaw-=Math.sign(turn)*Math.PI/6; snapCool=0.30;
+  }
 }
 
+/* The rig is the worm's position on the ground; your head then moves
+   freely on top of it, tracked in full 6DoF. Nothing here ever writes
+   to the camera, which is what keeps head tracking alive.            */
+function placeRigXR(dt){
+  let gy;
+  if(PL.burrow){
+    gy=PL.pos.y-PL.thick;
+  }else if(PL.dig){
+    gy=PL.pos.y-PL.thick;
+  }else{
+    gy=Math.max(heightAt(PL.pos.x,PL.pos.z),-0.6);
+  }
+  vrHeight+=(gy-vrHeight)*Math.min(1,dt*10);
+  _rigTarget.set(PL.pos.x,vrHeight,PL.pos.z);
+  rig.position.lerp(_rigTarget,Math.min(1,dt*14));
+  rig.rotation.y=vrYaw;
+}
 function updateVRPanel(dt){
   if(!xrOn||!vrPanel) return;
   vrPanelT+=dt;
@@ -2523,7 +2504,7 @@ function tick(){
   if(cardT>0){cardT-=dt; if(cardT<=0)elCard.classList.remove('on');}
   if(toastT>0){toastT-=dt; if(toastT<=0)elToast.classList.remove('on');}
 
-  renderer.render(scene,cam);
+  renderer.render(scene, xrOn?wormCam:cam);
 }
 
 addEventListener('resize',()=>{

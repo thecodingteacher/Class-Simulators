@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Under the Garden v0.8 — a worm's survey of the soil</title>
+<title>Under the Garden v0.85 — a worm's survey of the soil</title>
 <style>
 :root{
   --soil-o:#241505; --soil-a:#3d2811; --soil-b:#6f4517; --soil-c:#c89346;
@@ -189,7 +189,7 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 <body>
 <div id="stage"></div>
 
-<div id="brand"><h2>Under the Garden</h2><p>v0.8 · soil survey · you are the worm</p></div>
+<div id="brand"><h2>Under the Garden</h2><p>v0.85 · soil survey · you are the worm</p></div>
 
 <div id="gauge" class="hidden">
   <div class="col" id="gcol"></div>
@@ -235,7 +235,7 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 
 <div id="boot"><div class="in">
   <h1>Under the Garden</h1>
-  <div class="sub">v0.8 · Soil survey · plot 4</div>
+  <div class="sub">v0.85 · Soil survey · plot 4</div>
   <div id="bar"><i></i></div>
   <div class="say">Waking the worm</div>
   <div class="err" id="bootErr" style="display:none"></div>
@@ -787,7 +787,7 @@ TUNNELS.forEach(T=>{
 
 /* a soft glow at every mouth so you can find your way back out */
 burrows.forEach(b=>b.mouths.forEach(m=>{
-  const l=new THREE.PointLight(0xffe0a8,900,90,2.0);
+  const l=new THREE.PointLight(0xffe0a8,240,55,2.0);
   l.position.copy(m.p).setY(m.p.y+6); scene.add(l);
 }));
 
@@ -1536,7 +1536,7 @@ FINDS.forEach(f=>{
     mesh=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:f.col,emissive:f.col,emissiveIntensity:.16}));
   }
   mesh.position.copy(p); mesh.castShadow=true; scene.add(mesh);
-  const halo=new THREE.PointLight(0xffdca0,f.tunnel?300:260,f.tunnel?52:70,2.0);
+  const halo=new THREE.PointLight(0xffdca0,f.tunnel?170:230,f.tunnel?40:65,2.0);
   halo.position.copy(p).setY(p.y+7); scene.add(halo);
   f.mesh=mesh; f.pos=p; f.halo=halo; f.got=false;
   findObjs.push(f);
@@ -1706,6 +1706,28 @@ function setKeys(){
     : '<b>WASD</b> crawl &nbsp;·&nbsp; <b>shift</b> hurry &nbsp;·&nbsp; <b>wheel</b> pull the view back &nbsp;·&nbsp; <b>space</b> dig in / enter a burrow &nbsp;·&nbsp; <b>F</b> look at something &nbsp;·&nbsp; <b>Q</b> eat the tunnel wider &nbsp;·&nbsp; <b>M</b> sound &nbsp;·&nbsp; <b>R</b> make it rain &nbsp;·&nbsp; <b>N</b> notes &nbsp;·&nbsp; <b>E</b> survey chart';
 }
 setKeys();
+
+/* one button, always the right verb: examine, collect, enter, exit,
+   dig in, or surface — whatever is in front of the worm right now */
+function contextAction(){
+  if(nearThing){ interact(); return; }
+  burrowToggle();
+}
+function contextLabel(){
+  if(nearThing){
+    return nearThing.kind==='sign'?'read the marker'
+      :nearThing.kind==='worm'?'talk to '+nearThing.o.sp.common.toLowerCase()
+      :(nearThing.o.got?'look again':'look closer');
+  }
+  if(nearMouth) return 'go down the burrow';
+  if(PL.burrow) return 'climb out';
+  if(PL.dig){
+    const g=heightAt(PL.pos.x,PL.pos.z);
+    return (g-PL.pos.y<26)?'surface':'dig upward to surface';
+  }
+  if(PL.pos.y-heightAt(PL.pos.x,PL.pos.z)<8) return 'dig in';
+  return '';
+}
 
 function toggleRain(){
   if(WX.forced==='rain'){ setWeather(null);
@@ -2067,7 +2089,7 @@ const rainMesh=new THREE.LineSegments(rainGeo,new THREE.LineBasicMaterial({
 rainMesh.frustumCulled=false; rainMesh.visible=false; scene.add(rainMesh);
 const rainCentre=new THREE.Vector3();
 
-function setWeather(m){ WX.forced=m; WX.mode=m; wxT=0; }
+function setWeather(m){ WX.forced=m; if(m) WX.mode=m; wxT=0; }
 function updateWeather(dt){
   if(WX.forced===null){
     wxT+=dt;
@@ -2245,7 +2267,7 @@ function drawVRPanel(){
   // status strip: version, fps, size, live stick values, any caught error
   g.font='15px "Courier New",monospace';
   g.fillStyle='#c0ab86';
-  g.fillText('v0.8  '+(typeof FPS!=='undefined'?FPS:'?')+' fps  '
+  g.fillText('v0.85  '+(typeof FPS!=='undefined'?FPS:'?')+' fps  '
     +VR_SIZES[vrSize].k+'  L '+INP.side.toFixed(1)+','+INP.fwd.toFixed(1)
     +'  '+(vrSmoothTurn?'smooth':'snap'),22,H-52);
   if(typeof LASTERR!=='undefined'&&LASTERR){
@@ -2283,6 +2305,96 @@ function drawVRPanel(){
     wrapText(g,vrCardBody||'Trigger: examine \u00b7 Grip: dig or burrow \u00b7 A: rain \u00b7 X: this notebook \u00b7 B/Y: widen \u00b7 stick clicks: size / turning.',22,176,W-44,25,H-72);
   }
   vrPanelTex.needsUpdate=true;
+}
+
+/* ================= full-view VR HUD =================
+   Two slim bars in eye space: score and objective across the top,
+   context prompt, controls and vitals along the bottom. Head-locked
+   but thin and at 1 m, so it reads as a visor, not a billboard.    */
+let hudTop=null, hudBot=null, hudTopCtx=null, hudBotCtx=null,
+    hudTopTex=null, hudBotTex=null, hudT=0, lastAward=null;
+function mkHudPlane(w,h,y){
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  const tex=new THREE.CanvasTexture(cv); tex.colorSpace=THREE.SRGBColorSpace;
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w/900,h/900),
+    new THREE.MeshBasicMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false}));
+  m.position.set(0,y,-1.0); m.renderOrder=45; m.visible=false;
+  wormCam.add(m);
+  return {mesh:m,ctx:cv.getContext('2d'),tex,W:w,H:h};
+}
+{
+  const t=mkHudPlane(880,120, 0.40); hudTop=t.mesh; hudTopCtx=t.ctx; hudTopTex=t.tex;
+  const b=mkHudPlane(880,190,-0.40); hudBot=b.mesh; hudBotCtx=b.ctx; hudBotTex=b.tex;
+}
+function plate(g,x,y,w,h){
+  g.fillStyle='rgba(26,15,5,0.78)'; g.fillRect(x,y,w,h);
+  g.strokeStyle='#c89346'; g.lineWidth=3; g.strokeRect(x+1,y+1,w-2,h-2);
+}
+function drawHUD(){
+  { // ---- top: points · leaves · objective ----
+    const g=hudTopCtx, W=880, H=120;
+    g.clearRect(0,0,W,H);
+    plate(g,0,0,W,H);
+    g.textBaseline='top';
+    g.fillStyle='#dca956'; g.font='bold 44px "Bookman Old Style",Georgia,serif';
+    g.fillText(SCORE.pts.toLocaleString(),22,16);
+    g.font='15px "Courier New",monospace'; g.fillStyle='#c0ab86';
+    g.fillText('POINTS',24,66);
+    g.fillText(SCORE.leaves+'/'+leaves.length+' LEAVES',24,88);
+    lastAward=window.__award||lastAward;
+    if(lastAward&&lastAward.t>0){
+      g.fillStyle='#91bb3d'; g.font='bold 30px "Bookman Old Style",Georgia,serif';
+      g.fillText('+'+lastAward.n,190,24);
+    }
+    let got=0,next=null;
+    NOTES.forEach(n=>{ if(n.got)got++; else if(!next)next=n; });
+    g.fillStyle='#91bb3d'; g.font='13px "Courier New",monospace';
+    g.fillText('OBJECTIVE  '+got+'/'+NOTES.length,300,16);
+    g.fillStyle='#efe0c0'; g.font='19px "Trebuchet MS",sans-serif';
+    wrapText(g,next?next.hint:'All notes ticked. Stand in the rain.',300,38,W-320,24,H-14);
+    hudTopTex.needsUpdate=true;
+  }
+  { // ---- bottom: context prompt · controls · vitals ----
+    const g=hudBotCtx, W=880, H=190;
+    g.clearRect(0,0,W,H);
+    plate(g,0,0,W,H);
+    g.textBaseline='top';
+    const label=contextLabel();
+    if(label){
+      g.fillStyle='#20140a'; g.fillRect(20,16,52,40);
+      g.fillStyle='#dca956'; g.strokeStyle='#dca956'; g.lineWidth=2; g.strokeRect(20,16,52,40);
+      g.font='bold 26px "Courier New",monospace'; g.fillText('B',37,23);
+      g.fillStyle='#efe0c0'; g.font='bold 26px "Trebuchet MS",sans-serif';
+      g.fillText(label,88,22);
+    }else{
+      g.fillStyle='#8a7250'; g.font='20px "Trebuchet MS",sans-serif';
+      g.fillText('crawl with the left stick \u2014 look where you want to go',22,24);
+    }
+    g.fillStyle='#c0ab86'; g.font='15px "Courier New",monospace';
+    g.fillText((PL.burrow||PL.dig)
+      ? 'GRIP hold: eat it wider   A: rain   X: notebook'
+      : 'A: rain   X: notebook   GRIP: dig in   sticks: size / turn',22,70);
+    // vitals
+    const surf=heightAt(PL.pos.x,PL.pos.z), d=surf-PL.pos.y;
+    g.fillText((d>2?Math.round(d)+' CM DOWN \u00b7 '+horizonKey(PL.pos.y):'SURFACE')
+      +'   \u00b7   '+String(WX.mode||'fine').toUpperCase(),22,100);
+    g.fillStyle='#160d04'; g.fillRect(22,128,W-44,20);
+    g.fillStyle=PL.moist<0.4?'#c86a34':'#10aaa9';
+    g.fillRect(24,130,(W-48)*PL.moist,16);
+    g.fillStyle='#efe0c0'; g.font='13px "Trebuchet MS",sans-serif';
+    g.fillText('skin moisture '+Math.round(PL.moist*100)+'%',28,130);
+    g.fillStyle='#c0ab86'; g.font='13px "Courier New",monospace';
+    g.fillText('v0.85  '+(typeof FPS!=='undefined'?FPS:'?')+' fps  '+VR_SIZES[vrSize].k
+      +(typeof LASTERR!=='undefined'&&LASTERR?'  ERR '+LASTERR.slice(0,30):''),22,160);
+    hudBotTex.needsUpdate=true;
+  }
+}
+function updateHUD(dt){
+  if(!xrOn){ if(hudTop){hudTop.visible=false; hudBot.visible=false;} return; }
+  hudTop.visible=true; hudBot.visible=true;
+  if(window.__award&&window.__award.t>0) window.__award.t-=dt;
+  hudT+=dt;
+  if(hudT>0.20){ hudT=0; drawHUD(); }
 }
 
 const ctrls=[];
@@ -2356,7 +2468,7 @@ function enterVR(){
     elScore.classList.remove('hidden'); elObj.classList.remove('hidden');
   }catch(e){}
   showCard('Headset on','Mouse view \u2014 grass at shoulder height',
-    'Left stick crawls the way you are looking, right stick snap-turns. Trigger examines and collects, grip digs in or takes a burrow, B or Y eats a tunnel wider, A calls the rain, X flips your wrist notebook, stick clicks change size and turning.','','');
+    'One button does the work: B (or trigger) reads, collects, digs in, enters and leaves burrows — the prompt on your visor always says what it will do. Hold GRIP underground to eat the tunnel wider. A calls the rain, X flips your wrist notebook, stick clicks change size and turning.','','');
 }
 function exitVR(){
   xrOn=false;
@@ -2391,14 +2503,17 @@ function pollXR(dt){
     else{ turn=stickCurve(sx);
       // push the right stick forward/back to sprint / creep
       if(-sy>0.55) sprint=true; }
-    if(bt[0]&&edge(h+'trig',bt[0].pressed)) interact();
-    if(bt[1]&&edge(h+'grip',bt[1].pressed)) burrowToggle();
+    if(bt[0]&&edge(h+'trig',bt[0].pressed)) contextAction();
+    if(bt[1]){
+      if(PL.burrow||PL.dig){ if(bt[1].pressed) widening=true; }
+      else if(edge(h+'grip',bt[1].pressed)) contextAction();
+    }
     // X: wrist notebook · A: rain · B/Y: widen · stick clicks: size / turn style
     if(bt[4]&&edge(h+'a',bt[4].pressed)){
       if(h==='l'){ vrShowNotes=!vrShowNotes; drawVRPanel(); }
       else toggleRain();
     }
-    if(bt[5]&&bt[5].pressed) widening=true;
+    if(bt[5]&&edge(h+'b',bt[5].pressed)) contextAction();
     if(bt[3]&&edge(h+'stick',bt[3].pressed)){
       if(h==='r'){ vrSmoothTurn=!vrSmoothTurn;
         vrCardTitle='Turning: '+(vrSmoothTurn?'smooth':'snap');
@@ -2510,6 +2625,7 @@ function updateLeaves(t,dt){
 }
 function addPoints(n){
   SCORE.pts+=n;
+  if(n>0) window.__award={n,t:1.6};
   elPts.textContent=SCORE.pts.toLocaleString();
   elScore.classList.add('bump');
   clearTimeout(addPoints._t); addPoints._t=setTimeout(()=>elScore.classList.remove('bump'),450);
@@ -2552,7 +2668,7 @@ const digFace=new THREE.Mesh(new THREE.SphereGeometry(DIG_R*1.5,16,12),digFaceMa
 digFace.frustumCulled=false; digFace.visible=false; scene.add(digFace);
 
 /* worms are blind, but the player is not */
-const headLamp=new THREE.PointLight(0xffd8a4,1500,150,2.0);
+const headLamp=new THREE.PointLight(0xffd8a4,520,110,2.0);
 headLamp.visible=false; scene.add(headLamp);
 const _hl={r:0,g:0,b:0};
 const _dt1=new THREE.Vector3(), _dn=new THREE.Vector3(), _db=new THREE.Vector3(),
@@ -2619,7 +2735,7 @@ function updateUnderground(){
   if(PL.dig){
     digFace.position.copy(PL.pos);
     horizonRGB(PL.pos.y,0,_hl);
-    digFaceMat.color.setRGB(_hl.r*1.15,_hl.g*1.15,_hl.b*1.15);
+    digFaceMat.color.setRGB(_hl.r*0.92,_hl.g*0.92,_hl.b*0.92);
   }
 }
 function updateDig(dt){
@@ -2900,7 +3016,7 @@ function reportErr(e){
   try{
     const eb=document.getElementById('errbox');
     eb.style.display='block';
-    eb.textContent='v0.8 caught: '+LASTERR+' — still running; tell Adam\u2019s Claude this text';
+    eb.textContent='v0.85 caught: '+LASTERR+' — still running; tell Adam\u2019s Claude this text';
   }catch(_){}
 }
 function frame(dt){
@@ -2936,6 +3052,7 @@ function frame(dt){
     updateAmbient(elapsed,dt*(xrOn?2:1));
   }
   updateVRPanel(dt);
+  updateHUD(dt);
   flushTunnels();
   SND.update(dt,{
     under:!!(PL.burrow||PL.dig),

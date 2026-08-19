@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Under the Garden v0.96 — a worm's survey of the soil</title>
+<title>Under the Garden v0.98 — a worm's survey of the soil</title>
 <style>
 :root{
   --soil-o:#241505; --soil-a:#3d2811; --soil-b:#6f4517; --soil-c:#c89346;
@@ -189,7 +189,7 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 <body>
 <div id="stage"></div>
 
-<div id="brand"><h2>Under the Garden</h2><p>v0.96 · soil survey · you are the worm</p></div>
+<div id="brand"><h2>Under the Garden</h2><p>v0.98 · soil survey · you are the worm</p></div>
 
 <div id="gauge" class="hidden">
   <div class="col" id="gcol"></div>
@@ -235,7 +235,7 @@ kbd{font-family:var(--util);background:var(--sand);color:var(--ink);border-radiu
 
 <div id="boot"><div class="in">
   <h1>Under the Garden</h1>
-  <div class="sub">v0.96 · Soil survey · plot 4</div>
+  <div class="sub">v0.98 · Soil survey · plot 4</div>
   <div id="bar"><i></i></div>
   <div class="say">Waking the worm</div>
   <div class="err" id="bootErr" style="display:none"></div>
@@ -281,6 +281,7 @@ const BARREN = {x:-19,z:-219,r:58,heal:0};
    grey, bare, wormless. Digging through it brings it back. Life
    clings on only in rings around the old burrow mouths — refugia,
    which is exactly how real recolonisation starts.               */
+const GOODSOIL={x:-213,z:53,r:80,visited:false};
 const DEAD={a0:96,a1:224,heal:0};
 function deadWeight(x,z){
   const y=heightAt?0:0;             // (height checked by callers)
@@ -594,14 +595,31 @@ tGeo.rotateX(-Math.PI/2);
     g=mix(g,mix(WET.g,DEEP.g,sstep(-6,-34,y)),uw);
     b=mix(b,mix(WET.b,DEEP.b,sstep(-6,-34,y)),uw);
 
+    // the rich patch: the darkest, crumbliest ground on the plot
+    { const gd=Math.hypot(x-GOODSOIL.x,z-GOODSOIL.z);
+      if(gd<GOODSOIL.r+10&&y>70){
+        const w=1-sstep(GOODSOIL.r*0.72,GOODSOIL.r+10,gd);
+        if(w>0.02){
+          const fleck=fbm(x*.14+7,z*.14+44,3);
+          const humus=lin(0x1e1206), moss=lin(0x3a5a14);
+          const k=w*0.85;
+          r=mix(r,mix(humus.r,moss.r,sstep(0.62,0.8,fleck))*(1+j*.5),k);
+          g=mix(g,mix(humus.g,moss.g,sstep(0.62,0.8,fleck))*(1+j*.5),k);
+          b=mix(b,mix(humus.b,moss.b,sstep(0.62,0.8,fleck))*(1+j*.5),k);
+        }
+      }
+    }
     // deadlands: everything on that side goes grey and bare
     const dw=(y>4)?deadWeight(x,z):0;
     if(dw>0.02){
       const dust=fbm(x*.06+55,z*.06+31,3);
-      const grey=lin(0x9a8d72), grey2=lin(0x7d7460);
-      const dr=mix(r,mix(grey2.r,grey.r,dust)*(1+j*.3),dw*0.88);
-      const dg=mix(g,mix(grey2.g,grey.g,dust)*(1+j*.3),dw*0.88);
-      const db=mix(b,mix(grey2.b,grey.b,dust)*(1+j*.3),dw*0.88);
+      const crack=fbm(x*.15+83,z*.15+12,3);
+      // parched, cracked earth — dry brown, not stone grey
+      const dry1=lin(0xb0906a), dry2=lin(0x8a6a48);
+      const seam=(crack>0.64?0.70:1);           // dark drought cracks
+      const dr=mix(r,mix(dry2.r,dry1.r,dust)*seam*(1+j*.3),dw*0.88);
+      const dg=mix(g,mix(dry2.g,dry1.g,dust)*seam*(1+j*.3),dw*0.88);
+      const db=mix(b,mix(dry2.b,dry1.b,dust)*seam*(1+j*.3),dw*0.90);
       DEAD_VERTS.push({i:v,hr:clamp(r,0,1),hg:clamp(g,0,1),hb:clamp(b,0,1),
                        br:clamp(dr,0,1),bg:clamp(dg,0,1),bb:clamp(db,0,1)});
       r=dr; g=dg; b=db;
@@ -1145,6 +1163,81 @@ place('reeds',        gReed(),     54,{living:true,zone:['creek'],maxSlope:.7,s0
 place('root masses',  gRoots(),    70,{living:true,zone:['root','topsoil','subsoil','compost'],
                                        maxSlope:3.0,minSlope:0.55,s0:1.3,s1:2.8,minY:12,maxY:90,onPath:true});
 
+/* dead stubble all over the deadlands: dry tufts that vanish as you heal */
+function gDeadTuft(){
+  const ps=[];
+  for(let i=0;i<4;i++){
+    const a=i/4*TAU+rnd();
+    ps.push({g:blade(8+rnd()*5,1.1,5+rnd()*3,4),c:i%2?C.litter4:C.litter2,
+      m:mat4(Math.cos(a),0,Math.sin(a),0,a,(rnd()-.5)*.8)});
+  }
+  return ps.length?mergeParts(ps):null;
+}
+const deadTufts={list:[],im:null};
+{
+  const N=190;
+  const im=new THREE.InstancedMesh(gDeadTuft(),
+    new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}),N);
+  im.receiveShadow=true;
+  let n=0,tries=0;
+  while(n<N&&tries<N*120){
+    tries++;
+    const a=(DEAD.a0+6+rnd()*(DEAD.a1-DEAD.a0-12))*D2R;
+    const rr=(0.20+Math.sqrt(rnd())*0.64)*R;
+    const x=Math.sin(a)*rr, z=-Math.cos(a)*rr;
+    if(heightAt(x,z)<10||slopeAt(x,z)>0.45) continue;
+    if(deadWeight(x,z)<0.35) continue;
+    const sc=0.8+rnd()*0.8;
+    _m4.compose(new THREE.Vector3(x,heightAt(x,z),z),
+      _q.setFromEuler(new THREE.Euler(0,rnd()*TAU,0)),new THREE.Vector3(sc,sc,sc));
+    im.setMatrixAt(n,_m4);
+    deadTufts.list.push({x,z,m:_m4.clone()});
+    n++;
+  }
+  im.count=n; im.instanceMatrix.needsUpdate=true;
+  scene.add(im); deadTufts.im=im; CNT['dead stubble']=n;
+}
+function tuftsRemoveNear(x,z,r){
+  const im=deadTufts.im, L=deadTufts.list;
+  for(let i=im.count-1;i>=0;i--){
+    if(Math.hypot(L[i].x-x,L[i].z-z)<r){
+      // swap-remove: the last visible tuft takes its slot
+      const last=im.count-1;
+      if(i!==last){ im.setMatrixAt(i,L[last].m); const t=L[i]; L[i]=L[last]; L[last]=t; }
+      im.count--; 
+    }
+  }
+  im.instanceMatrix.needsUpdate=true;
+}
+
+/* the good-soil patch is planted to bursting: the contrast IS the lesson */
+{
+  const defs=[[gGrass(),110],[gDaisy(),34],[gFlower(),26],[gShrub(),26],[gMushroom(),12],[gFern(),14]];
+  defs.forEach(([geo,N])=>{
+    const im=new THREE.InstancedMesh(geo,
+      new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}),N);
+    im.castShadow=true; im.receiveShadow=true;
+    const col=new THREE.Color(); let n=0,tries=0;
+    while(n<N&&tries<N*80){
+      tries++;
+      const a=rnd()*TAU, rr=Math.sqrt(rnd())*GOODSOIL.r*0.9;
+      const x=GOODSOIL.x+Math.cos(a)*rr, z=GOODSOIL.z+Math.sin(a)*rr;
+      if(heightAt(x,z)<70||slopeAt(x,z)>0.4) continue;
+      const sc=0.8+rnd()*0.9;
+      _m4.compose(new THREE.Vector3(x,heightAt(x,z),z),
+        _q.setFromEuler(new THREE.Euler(0,rnd()*TAU,0)),
+        new THREE.Vector3(sc,sc,sc));
+      im.setMatrixAt(n,_m4);
+      const b=.9+rnd()*.3; col.setRGB(b,b,b); im.setColorAt(n,col);
+      n++;
+    }
+    im.instanceMatrix.needsUpdate=true;
+    if(im.instanceColor) im.instanceColor.needsUpdate=true;
+    im.count=n; scene.add(im);
+  });
+  CNT['rich-patch flourish']=222;
+}
+
 /* lily pads sit on the water, not the ground */
 {
   const geo=gLilyPad(), mat=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
@@ -1246,6 +1339,23 @@ ZONES.forEach(Z=>{
   signs.push({zone:Z,pos:new THREE.Vector3(px,py+30,pz),grp});
   KEEPOUT.push({x:px,z:pz,r:26});
 });
+{
+  const spot=findFlat(160,{maxSlope:.34,minY:22});
+  const grp=new THREE.Group(); grp.position.set(spot.x,spot.y,spot.z);
+  grp.rotation.y=160*D2R+Math.PI;
+  const posts=new THREE.Mesh(mergeParts([
+    {g:P.cyl(1.5,1.9,34,6),c:C.wood,m:mat4(-9,17,0)},
+    {g:P.cyl(1.5,1.9,34,6),c:C.wood,m:mat4( 9,17,0)},
+  ]),new THREE.MeshLambertMaterial({vertexColors:true}));
+  posts.castShadow=true; grp.add(posts);
+  const board=new THREE.Mesh(new THREE.BoxGeometry(30,8.2,1.6),
+    [0,1,2,3,4,5].map(i=>new THREE.MeshLambertMaterial(
+      i===4?{map:signTexture('Dead Ground')}:{color:0x5e3d17})));
+  board.position.y=32; board.castShadow=true; grp.add(board);
+  scene.add(grp);
+  signs.push({zone:{id:'dead',name:'Dead Ground'},pos:new THREE.Vector3(spot.x,spot.y+30,spot.z),grp});
+  KEEPOUT.push({x:spot.x,z:spot.z,r:26});
+}
 CNT['signs']=signs.length;
 
 /* ---------------- particles ---------------- */
@@ -1501,6 +1611,22 @@ const RETURNERS=[];
     RETURNERS.push(w);
   }
 }
+{
+  const S=SPECIES[0];
+  for(let k=0;k<2;k++){
+    const a=rnd()*TAU, rr=Math.sqrt(rnd())*GOODSOIL.r*0.6;
+    const x=GOODSOIL.x+Math.cos(a)*rr, z=GOODSOIL.z+Math.sin(a)*rr;
+    const geo=buildWormGeo(RINGS,SIDES,S.cA,S.cB,S.clA,S.clB);
+    const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true}));
+    mesh.castShadow=true; scene.add(mesh);
+    const pts=[]; for(let i=0;i<RINGS;i++)pts.push(new THREE.Vector3());
+    const gy=heightAt(x,z);
+    const w={sp:S,mesh,geo,pts,home:new THREE.Vector2(x,z),gy,ax:x,az:z,
+      face:rnd()*TAU,em:0.12,ph:rnd()*TAU,sp2:.32+rnd()*.3,rad:14+rnd()*16,fact:0,trail:[]};
+    for(let i=0;i<60;i++)w.trail.push(new THREE.Vector3(x,gy+S.thick*.8,z));
+    npcs.push(w);
+  }
+}
 function wakeReturners(){
   RETURNERS.forEach(w=>{ if(w.dormant){ w.dormant=false; w.mesh.visible=true; npcs.push(w); }});
 }
@@ -1544,6 +1670,8 @@ const ZONE_TEXT={
   'The middle of a compost heap can pass 50\u00B0C. That is not the sun \u2014 it is billions of microbes working. The steam coming off it is real.'],
  subsoil:['B horizon \u2014 subsoil',
   'Minerals washed down from the layers above collect here. Fewer roots, fewer creatures, and iron turns the colour orange.'],
+ dead:['This ground can be saved',
+  'Nothing grows here and no worms live here — the soil is packed shut, and rain runs straight off it. But dead ground is not finished ground. Dig tunnels through it. Watch what follows you up.'],
  creek:['Where the bank gives way',
   'Running water carries loose soil away. Roots knit the bank together and hold it. Where the roots stop, the bank slumps into the creek.'],
 };
@@ -1794,6 +1922,7 @@ let dykI=0;
 function factCard(){
   const f=DIDYOUKNOW[dykI%DIDYOUKNOW.length]; dykI++;
   showCard('From the field notes · did you know?',f[0],f[1],'','Press again for another.');
+  speakAt(PL.pos,13);
 }
 
 /* one button, always the right verb: examine, collect, enter, exit,
@@ -1848,6 +1977,7 @@ function burrowToggle(){
     SND.play(PL.burrow.flood>0.45?'splash':'burrow');
     unlock('zone:'+ (b.def.zone==='root'?'root':'subsoil'));
     showCard('Burrow', b.def.name, b.def.label,'','Use W and S to follow the tunnel. Q widens it. Space to climb out.');
+    if(window.__threat){ const th=window.__threat; window.__threat=null; escapedFrom(th); }
     return;
   }
   startDig();
@@ -1859,19 +1989,22 @@ function interact(){
   const T=nearThing;
   if(T.kind==='sign'){
     const z=T.o.zone.id, t=ZONE_TEXT[z];
-    unlock('zone:'+z);
+    if(z!=='dead') unlock('zone:'+z); else unlock('restore');
     showCard('Survey marker \u2014 '+T.o.zone.name,t[0],t[1],'','');
+    speakAt(T.o.pos,14);
   }else if(T.kind==='worm'){
     const S=T.o.sp;
     const i=T.o.fact; T.o.fact=(i+1)%S.facts.length;
     unlock('sp:'+S.key);
     showCard(S.group,S.common,S.facts[i],S.sci, S.facts.length>1?'Ask again for another answer.':'');
+    speakAt(T.o.pts[0],9);
   }else if(T.kind==='find'){
     const f=T.o;
     if(!f.got){ f.got=true; unlock('find:'+f.id);
       if(f.halo){f.halo.intensity=0;}
     }
     showCard('Found',f.title,f.body,'','');
+    speakAt(f.pos,11);
   }
 }
 
@@ -2256,7 +2389,7 @@ function widen(dt){
   if(changed){
     b.dirty=true; PL.castings+=dt*1.6;
     if(PL.castings>9) unlock('castings');
-    if(deadWeight(PL.pos.x,PL.pos.z)>0.25) addDeadHeal(dt*0.010);
+    if(deadWeight(PL.pos.x,PL.pos.z)>0.25){ addDeadHeal(dt*0.010); deadRevealNear(PL.pos.x,PL.pos.z,52); }
   }
 }
 function flushTunnels(){
@@ -2359,7 +2492,7 @@ function drawVRPanel(){
   // status strip: version, fps, size, live stick values, any caught error
   g.font='15px "Courier New",monospace';
   g.fillStyle='#c0ab86';
-  g.fillText('v0.96  '+(typeof FPS!=='undefined'?FPS:'?')+' fps  '
+  g.fillText('v0.98  '+(typeof FPS!=='undefined'?FPS:'?')+' fps  '
     +VR_SIZES[vrSize].k+'  L '+INP.side.toFixed(1)+','+INP.fwd.toFixed(1)
     +'  '+(vrSmoothTurn?'smooth':'snap'),22,H-52);
   if(typeof LASTERR!=='undefined'&&LASTERR){
@@ -2426,8 +2559,9 @@ function hudContent(){
   const award=window.__award&&window.__award.t>0;
   const dry=PL.moist<0.42;
   const digging=!!PL.dig;
-  if(!(label||danger||award||dry||digging)) return null;
-  return {label,danger:danger?H:null,award,dry,digging};
+  const onDead=!digging&&!PL.burrow&&DEAD.heal<1&&deadWeight(PL.pos.x,PL.pos.z)>0.5;
+  if(!(label||danger||award||dry||digging||onDead)) return null;
+  return {label,danger:danger?H:null,award,dry,digging,onDead};
 }
 function drawHUD(){
   const g=hudBotCtx, W=880, H=210;
@@ -2452,6 +2586,10 @@ function drawHUD(){
     g.fillStyle='#91bb3d'; g.font='bold 38px "Bookman Old Style",Georgia,serif';
     g.fillText('+'+window.__award.n+'   \u00b7   '+SCORE.pts.toLocaleString()+' pts',22,y); y+=50;
   }
+  if(c.onDead){
+    g.fillStyle='#d8b890'; g.font='bold 30px "Trebuchet MS",sans-serif';
+    g.fillText('DEAD GROUND — dig tunnels to heal it · '+Math.round(DEAD.heal*100)+'%',22,y); y+=44;
+  }
   if(c.digging){
     const dpt=Math.max(0,Math.round(heightAt(PL.pos.x,PL.pos.z)-PL.pos.y));
     g.fillStyle='#c0ab86'; g.font='bold 26px "Courier New",monospace';
@@ -2468,7 +2606,7 @@ function drawHUD(){
 function updateHUD(dt){
   if(!xrOn){ if(hudBot)hudBot.visible=false; if(cardPlane)cardPlane.visible=false; return; }
   if(cardPlane){
-    cardPlane.visible=cardT>0&&!mapOn;
+    cardPlane.visible=cardT>0&&!mapOn&&!(bubble&&bubble.visible);
     if(cardPlane.visible){
       const sig=vrCardTitle+'|'+(vrCardBody||'').slice(0,40);
       if(sig!==cardDrawn){ cardDrawn=sig; drawVRCard(); }
@@ -2508,6 +2646,55 @@ function drawVRCard(){
   cardTex.needsUpdate=true;
 }
 let vrCardWho='';
+/* a world-space speech bubble above whoever is talking: the words
+   live at the worm, not on a distant panel. Billboarded each frame. */
+let bubble=null, bubbleCtx=null, bubbleTex=null, bubbleAnchor=new THREE.Vector3(), bubbleUp=8;
+{
+  const cv=document.createElement('canvas'); cv.width=560; cv.height=330;
+  bubbleCtx=cv.getContext('2d');
+  bubbleTex=new THREE.CanvasTexture(cv); bubbleTex.colorSpace=THREE.SRGBColorSpace;
+  bubble=new THREE.Mesh(new THREE.PlaneGeometry(56,33),
+    new THREE.MeshBasicMaterial({map:bubbleTex,transparent:true,depthTest:false,depthWrite:false}));
+  bubble.renderOrder=44; bubble.visible=false; scene.add(bubble);
+}
+function drawBubble(){
+  const g=bubbleCtx, W=560, H=330;
+  g.clearRect(0,0,W,H);
+  // rounded plate with a tail pointing down at the speaker
+  g.fillStyle='rgba(243,231,205,0.96)';
+  g.strokeStyle='#6f4a1c'; g.lineWidth=6;
+  g.beginPath();
+  g.moveTo(24,10); g.lineTo(W-24,10); g.quadraticCurveTo(W-8,10,W-8,26);
+  g.lineTo(W-8,H-66); g.quadraticCurveTo(W-8,H-50,W-24,H-50);
+  g.lineTo(W/2+26,H-50); g.lineTo(W/2,H-8); g.lineTo(W/2-26,H-50);
+  g.lineTo(24,H-50); g.quadraticCurveTo(8,H-50,8,H-66);
+  g.lineTo(8,26); g.quadraticCurveTo(8,10,24,10);
+  g.closePath(); g.fill(); g.stroke();
+  g.textBaseline='top';
+  g.fillStyle='#6d8a1e'; g.font='bold 17px "Courier New",monospace';
+  g.fillText((vrCardWho||'').toUpperCase().slice(0,44),28,24);
+  g.fillStyle='#20140a'; g.font='bold 30px "Bookman Old Style",Georgia,serif';
+  g.fillText((vrCardTitle||'').slice(0,30),26,46);
+  g.fillStyle='#3a2a14'; g.font='22px "Trebuchet MS",sans-serif';
+  wrapText(g,vrCardBody||'',28,90,W-56,29,H-78);
+  bubbleTex.needsUpdate=true;
+}
+function speakAt(pos,lift){
+  bubbleAnchor.copy(pos); bubbleUp=lift||10;
+  bubble.visible=true; drawBubble();
+}
+function updateBubble(dt){
+  if(!bubble) return;
+  if(cardT<=0||mapOn){ bubble.visible=false; return; }
+  if(!bubble.visible) return;
+  bubble.position.copy(bubbleAnchor);
+  bubble.position.y+=bubbleUp+Math.sin((typeof elapsed!=='undefined'?elapsed:0)*1.4)*0.8;
+  bubble.quaternion.copy((xrOn?wormCam:cam).quaternion);
+  const d=bubble.position.distanceTo((xrOn?wormCam:cam).getWorldPosition(_hv2));
+  const s=clamp(d/95,0.55,2.6);            // readable near, sane far
+  bubble.scale.setScalar(s);
+}
+const _hv2=new THREE.Vector3();
 const ctrls=[];
 let vrBtnEl=null;
 function setupVR(){
@@ -2865,6 +3052,7 @@ function startDig(){
   showCard('Digging','Head first, mouth first',
     'You are eating your way through, not pushing. Look where you want to go and crawl \u2014 the tunnel appears behind you. Come back up to the surface to stop. Hold <kbd>Q</kbd> to widen any tunnel you are already in.',
     '','Every centimetre you dig turns into castings.');
+  if(window.__threat){ const th=window.__threat; window.__threat=null; escapedFrom(th); }
   return true;
 }
 const mounds=[]; let moundI=0;
@@ -2917,7 +3105,7 @@ function updateDig(dt){
       PL.castings+=0.55; addPoints(PT_DIG);
       if(PL.castings>9) unlock('castings');
       if(Math.hypot(PL.pos.x-BARREN.x,PL.pos.z-BARREN.z)<BARREN.r) addHeal(0.016);
-      if(deadWeight(PL.pos.x,PL.pos.z)>0.25) addDeadHeal(0.0065);
+      if(deadWeight(PL.pos.x,PL.pos.z)>0.25){ addDeadHeal(0.0065); deadRevealNear(PL.pos.x,PL.pos.z,52); }
     }
   }
 }
@@ -2977,8 +3165,8 @@ const deadVeg=[];
     const im=new THREE.InstancedMesh(geo,
       new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}),N);
     im.castShadow=true; im.receiveShadow=true;
-    const col=new THREE.Color(); let n=0,tries=0;
-    while(n<N&&tries<N*160){
+    const pool=[]; let tries=0;
+    while(pool.length<N&&tries<N*160){
       tries++;
       const a=(DEAD.a0+6+rnd()*(DEAD.a1-DEAD.a0-12))*D2R;
       const rr=(0.22+Math.sqrt(rnd())*0.62)*R;
@@ -2990,21 +3178,40 @@ const deadVeg=[];
       _m4.compose(new THREE.Vector3(x,heightAt(x,z),z),
         _q.setFromEuler(new THREE.Euler(0,rnd()*TAU,0)),
         new THREE.Vector3(sc2,sc2,sc2));
-      im.setMatrixAt(n,_m4);
-      const b=.85+rnd()*.3; col.setRGB(b,b,b); im.setColorAt(n,col);
-      n++;
+      pool.push({x,z,m:_m4.clone(),b:.85+rnd()*.3});
     }
-    im.instanceMatrix.needsUpdate=true;
-    if(im.instanceColor) im.instanceColor.needsUpdate=true;
-    im.count=0; scene.add(im); deadVeg.push({im,N:n});
+    im.count=0; scene.add(im);
+    deadVeg.push({im,N:pool.length,pool,shown:0});
   });
 }
 let deadMilestone=0;
+const _dvc=new THREE.Color();
+function deadRevealNear(x,z,r){
+  // plants sprout beside the tunnel you just ate, not at random
+  deadVeg.forEach(v=>{
+    let placed=0;
+    for(let i=v.shown;i<v.pool.length&&placed<2;i++){
+      const p=v.pool[i];
+      if(Math.hypot(p.x-x,p.z-z)>r) continue;
+      const q=v.pool[v.shown]; v.pool[v.shown]=p; v.pool[i]=q;
+      v.im.setMatrixAt(v.shown,p.m);
+      _dvc.setRGB(p.b,p.b,p.b); v.im.setColorAt(v.shown,p.b?_dvc:_dvc);
+      v.shown++; v.im.count=v.shown; placed++;
+    }
+    if(placed){ v.im.instanceMatrix.needsUpdate=true;
+      if(v.im.instanceColor) v.im.instanceColor.needsUpdate=true; }
+  });
+  if(typeof tuftsRemoveNear==='function') tuftsRemoveNear(x,z,r*1.1);
+}
 function addDeadHeal(a){
   if(DEAD.heal>=1) return;
   DEAD.heal=clamp(DEAD.heal+a,0,1);
   applyDeadColours();
-  deadVeg.forEach(v=>{ v.im.count=Math.floor(DEAD.heal*DEAD.heal*v.N); });
+  if(DEAD.heal>=1) deadVeg.forEach(v=>{      // the finale fills every gap
+    for(let i=v.shown;i<v.pool.length;i++){ v.im.setMatrixAt(i,v.pool[i].m); }
+    v.shown=v.pool.length; v.im.count=v.shown;
+    v.im.instanceMatrix.needsUpdate=true;
+  });
   unlock('restore');
   if(DEAD.heal>=0.25&&deadMilestone<1){ deadMilestone=1;
     toast('The grey is fading','Around your tunnels, the ground is darkening. Water is getting in.'); }
@@ -3089,12 +3296,17 @@ const HAZARDS=[
 HAZARDS.forEach(H=>NOTES.push({id:'haz:'+H.id,tag:H.note.tag,title:H.note.title,
   body:H.note.body,hint:H.note.hint,got:false}));
 
-const GOODSOIL={x:-213,z:53,r:55,visited:false};
 NOTES.push({id:'richsoil',tag:'Horizon',title:'What good soil looks like',
  body:'Compare this ground with the hardpan: dark, crumbly, full of holes, and it smells alive. The crumbs are glued by worm mucus and fungi, the holes carry air and rain, and a handful holds more living things than there are people on Earth. Worms did not just live here — they built it.',
  hint:'Near the compost is a patch of the best soil on the plot. Stand in it, then visit the hardpan.',got:false});
 let SPAWN_P=PL.pos.clone(), invuln=0, hazVisitT=0, goodVisitT=0;
 
+function escapedFrom(H){
+  window.__threat=null; addPoints(75); SND.play('note');
+  showCard('Escaped · +75',H.name+' cannot follow',
+    'This is the oldest worm trick there is: nothing on the surface can reach you down here. Real worms feel a blackbird\u2019s footsteps or a mower\u2019s roar through the ground and dive exactly like you just did.','','');
+  speakAt(PL.pos,12);
+}
 function respawn(msg,body){
   PL.burrow=null;
   if(PL.dig){ PL.dig=null; digFace.visible=false; headLamp.visible=false; }
@@ -3104,6 +3316,9 @@ function respawn(msg,body){
   PL.moist=1; invuln=3;
   SND.play('death');
   toast(msg,body+' No points lost \u2014 back at the start, wiser.');
+  showCard('Caught \u00b7 respawned',msg,body+' Next time: the ground itself is the way out \u2014 dig.','','');
+  speakAt(PL.pos,12);
+  if(typeof vignette!=='undefined'&&vignette){ vigNow=1; vignette.material.opacity=0.95; }
 }
 
 /* ---- the centipede: segmented, low, fast, and it chases ---- */
@@ -3308,6 +3523,15 @@ function hazardAt(){
 function updateHazards(dt,t){
   if(invuln>0) invuln-=dt;
   updateCentipede(dt,t); updateBird(dt,t); updateMower(dt,t);
+  // is anything actively after you right now?
+  window.__threat=null;
+  if(!(PL.burrow||PL.dig)&&invuln<=0){
+    if(bird.state==='dive'||bird.watch>0.5) window.__threat=HAZARDS[0];
+    else if(Math.hypot(PL.pos.x-centi.x,PL.pos.z-centi.z)<55
+      &&Math.hypot(PL.pos.x-HAZARDS[1].x,PL.pos.z-HAZARDS[1].z)<HAZARDS[1].r) window.__threat=HAZARDS[1];
+    else if(Math.hypot(PL.pos.x-mower.mesh.position.x,PL.pos.z-mower.mesh.position.z)<95
+      &&Math.hypot(PL.pos.x-HAZARDS[2].x,PL.pos.z-HAZARDS[2].z)<HAZARDS[2].r) window.__threat=HAZARDS[2];
+  }
   const H=hazardAt();
   if(H&&!(PL.burrow||PL.dig)){
     hazVisitT+=dt;
@@ -3613,7 +3837,7 @@ function reportErr(e){
   try{
     const eb=document.getElementById('errbox');
     eb.style.display='block';
-    eb.textContent='v0.96 caught: '+LASTERR+' — still running; tell Adam\u2019s Claude this text';
+    eb.textContent='v0.98 caught: '+LASTERR+' — still running; tell Adam\u2019s Claude this text';
   }catch(_){}
 }
 function frame(dt){
@@ -3652,6 +3876,7 @@ function frame(dt){
   updateHazards(dt,elapsed);
   updateMap(dt);
   updateVRPanel(dt);
+  updateBubble(dt);
   updateHUD(dt);
   flushTunnels();
   SND.update(dt,{

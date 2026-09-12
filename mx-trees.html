@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en-AU">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#163c32"><meta name="description" content="A self-contained, controller-free WebXR mixed-reality forest garden for Meta Quest. Plant seeds and water trees using hand tracking."><title>Classroom Forest — 2 · Reach. Grab. Grow.</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#163c32"><meta name="description" content="A single-file, hands-only Australian mixed-reality ecosystem for Meta Quest. Grow forest layers, shape creeks, investigate rain and reconnect kangaroo habitat."><title>Australian Creeklands — Classroom Forest 3.0</title>
 <style>
 :root{--ink:#193d32;--muted:#657769;--cream:#f6f3e8;--leaf:#b8d898;--line:#d7decc;--teal:#7cc8cc}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}body{font-family:Arial,Helvetica,sans-serif;background:#eef0e4;color:var(--ink)}button,input,summary{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent}button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #76a9a5;outline-offset:4px}button:disabled{opacity:.65;cursor:wait}button{touch-action:manipulation}.icon{width:24px;height:24px;display:inline-block;vertical-align:middle;flex-shrink:0}#world{position:fixed;right:0;top:0;width:65%;height:100%;display:block;touch-action:none;outline:none}#landing{position:relative;width:41%;height:100%;overflow-y:auto;overscroll-behavior:contain;padding:36px clamp(26px,4.2vw,67px) 28px;background:linear-gradient(90deg,#f6f5eb 93%,#f6f5ebee 98%,transparent);scrollbar-width:thin;z-index:2}.brand{display:flex;align-items:center;gap:12px;font-size:13px;font-weight:700;line-height:1.25;letter-spacing:2px}.brand-mark{display:grid;place-items:center;width:41px;height:41px;border:1px solid #b7c6aa;border-radius:50%;background:#e8eedc}.brand-mark svg{width:26px;height:26px}.eyebrow{font-size:10px;letter-spacing:2.1px;font-weight:700;display:flex;gap:8px;align-items:center;margin:38px 0 20px}.live-dot{width:7px;height:7px;background:#76a968;border-radius:50%;display:inline-block}h1{font-family:Georgia,'Times New Roman',serif;font-weight:400;letter-spacing:-2.8px;font-size:clamp(48px,5.0vw,79px);line-height:1.02;margin:0 0 21px}h1 em{font-style:italic;color:#68916a}.lead{font-size:clamp(15px,1.21vw,18px);line-height:1.57;max-width:370px;margin:0;color:#5b7062}.ritual{display:flex;align-items:center;margin:26px 0 27px;gap:13px;font-size:12px;font-weight:700}.ritual span{display:flex;align-items:center;gap:7px}.ritual b{font-size:14px;font-weight:400;color:#97aa8f}.ritual .icon{width:20px;height:20px}.primary,.secondary{border-radius:13px;width:100%;padding:17px 17px;border:1px solid var(--ink);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:12px}.primary{background:var(--ink);color:#fff6d9;box-shadow:0 5px 14px #183c3214}.primary:hover{background:#285242}.secondary{background:transparent;border-color:#bdcab6;color:var(--ink);margin-top:10px}.secondary:hover{background:#e6ebda}.support{font-size:11px;line-height:1.5;color:#738172;margin:11px 1px 17px}.support[data-ready=true]{color:#3b7c4b}.settings{display:flex;flex-wrap:wrap;gap:10px 17px;font-size:11px;color:#576d5c;margin-bottom:17px}.settings label{display:flex;align-items:center;gap:5px;cursor:pointer}.settings input{accent-color:#326947;width:15px;height:15px;margin:0}details{border-top:1px solid #d7dfcd;padding-top:13px;font-size:12px;line-height:1.58;margin-top:11px}summary{font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between}summary:after{content:'+';font-size:17px;line-height:1}details[open] summary:after{content:'−'}details p{color:#62735f;font-size:12px;line-height:1.6;margin:11px 0}.steps{display:grid;grid-template-columns:25px 1fr;gap:9px 5px;margin:14px 0}.steps b{color:#507c51}.steps span{color:#52654f}.fineprint{font-size:10px;color:#8a9582;line-height:1.5;margin-top:17px}.fineprint a{color:inherit}.preview-stamp{position:fixed;right:27px;top:27px;z-index:1;border:1px solid #c9d4c2;background:#f6f4e6e8;border-radius:13px;padding:13px 16px;box-shadow:0 8px 28px #45674708;backdrop-filter:blur(10px)}.preview-stamp strong{font-size:10px;letter-spacing:1.7px;display:block}.preview-stamp p{font-size:11px;margin:5px 0 0;color:#617563}.species-stamp{position:fixed;right:27px;bottom:26px;background:#f8f4e7ec;padding:16px 21px;border-radius:14px;border:1px solid #cbd3be;z-index:1;display:flex;gap:20px;font-size:12px;color:#4b6653}.species-stamp i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.species-stamp .gum{background:#6ba080}.species-stamp .wattle{background:#d4ad4c}.species-stamp .banksia{background:#ac7c45}#errorBox{background:#f2e8d7;border:1px solid #d7bfa7;border-radius:12px;padding:14px;margin-top:15px;font-size:12px;line-height:1.6}#errorBox strong{display:block;color:#855534;margin-bottom:4px}#errorBox span{color:#785e45}#errorBox[hidden]{display:none}
 #previewUI{display:none;position:fixed;inset:0;pointer-events:none;z-index:4}#previewUI button{pointer-events:auto}.topbar{position:absolute;top:22px;left:25px;right:25px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px}.preview-brand{padding:12px 16px;background:#f8f6ebec;border:1px solid #ccd7c2;border-radius:14px;backdrop-filter:blur(9px);display:flex;gap:12px;align-items:center}.preview-brand strong{font-size:12px;letter-spacing:1px}.preview-brand small{display:block;font-size:10px;color:#798b75;letter-spacing:0;margin-top:5px}.top-actions{display:flex;gap:8px}.light-btn{border:1px solid #c0cfb7;border-radius:10px;background:#f8f4e8ee;color:#325744;padding:12px 15px;font-size:12px}.light-btn:hover{background:#dbe8cb}.goalcard{position:absolute;top:24px;left:50%;transform:translateX(-50%);width:320px;border:1px solid #d0d9c6;background:#f9f5e8ee;border-radius:16px;padding:16px 20px}.goalcard header{display:flex;justify-content:space-between;font-size:11px;color:#6b8067;font-weight:700;letter-spacing:1.2px}.goalcard #count{font-size:24px;font-family:Georgia,serif;letter-spacing:-.5px;color:#264e3b}.goalcard p{font-size:11px;line-height:1.5;margin:10px 0 0;color:#6a7e61}.track{height:5px;background:#dbe3cc;border-radius:5px;margin-top:10px;overflow:hidden}.track i{display:block;width:0;height:100%;background:#73a162;border-radius:5px;transition:width .5s}#typeCount{font-size:10px;letter-spacing:.4px}.seedbar{position:absolute;left:50%;bottom:25px;transform:translateX(-50%);padding:10px;display:flex;gap:7px;background:#fbf7e9f0;border:1px solid #c5d2b9;border-radius:22px;box-shadow:0 8px 35px #183c3214;backdrop-filter:blur(12px)}.seedbar button{border:0;border-radius:14px;padding:12px 15px;background:transparent;color:#4a6e53;min-width:88px;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:6px}.seedbar button .icon{width:25px;height:25px}.seedbar button.selected{background:#254b39;color:#f5edca}.seedbar button[data-tool=water]{border-left:1px solid #cfdbc0;border-radius:0 14px 14px 0;margin-left:3px;padding-left:18px}.seedbar button[data-tool=water].selected{background:#367f84;border-left:1px solid transparent}.screen-hint{position:absolute;left:50%;bottom:137px;transform:translateX(-50%);padding:9px 16px;background:#f5f2e4d9;white-space:nowrap;border:1px solid #d1dac6;border-radius:22px;font-size:12px;color:#506b4f}.camera-tools{position:absolute;right:25px;bottom:25px;display:grid;grid-template-columns:repeat(2,39px);gap:6px}.camera-tools button{background:#f9f6e8ee;border:1px solid #c7d4bb;border-radius:10px;padding:10px;font-size:16px;color:#43684e}.camera-tools small{grid-column:1/3;text-align:center;font-size:10px;line-height:1.5;color:#678260}#toast{position:fixed;left:50%;top:160px;transform:translate(-50%,-15px);z-index:10;background:#214b3bef;border:1px solid #94b481;color:#fff2cc;border-radius:16px;padding:16px 24px;width:max-content;max-width:min(90vw,650px);text-align:center;pointer-events:none;opacity:0;transition:.25s;box-shadow:0 12px 35px #173c3215}#toast.show{opacity:1;transform:translate(-50%,0)}#toast strong{display:block;font-size:17px}#toast span{display:block;font-size:12px;line-height:1.6;margin-top:7px;color:#c8dab7}
@@ -12,6 +12,7 @@ body[data-mode=preview] #world{width:100%;height:100%}body[data-mode=preview] #l
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 .v2settings{display:grid;gap:10px;font-size:12px;padding:12px 13px;background:#e7eddf;border:1px solid #cedbc1;border-radius:13px;margin:10px 0 15px}.v2settings label{display:block;cursor:pointer;line-height:1.4;font-weight:700}.v2settings input{accent-color:#235841;margin:0 7px 0 0;vertical-align:middle;width:16px;height:16px}.v2settings small{display:block;margin-left:25px;font-size:11px;color:#5e745f;font-weight:400}.top-actions{flex-wrap:wrap;justify-content:flex-end}.species-stamp{bottom:24px}.fineprint strong{letter-spacing:1px}.settings{margin-bottom:10px}@media(min-width:851px){h1{font-size:clamp(48px,4.7vw,73px)}.eyebrow{margin-top:28px}}
 @media(max-width:850px){.topbar{gap:8px}.preview-brand{max-width:165px}.top-actions{display:grid;grid-template-columns:repeat(2,1fr)}.goalcard{top:100px}#toast{top:215px}}
+#ecoDesktop,#ecoDashboard{display:none}body[data-mode=preview] #ecoDesktop,body[data-mode=preview] #ecoDashboard{display:block}body[data-mode=preview] .seedbar,body[data-mode=preview] .goalcard{display:none}#ecoDesktop{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:6;width:min(790px,calc(100% - 170px));padding:13px;background:#f8f4e9f5;border:1px solid #becdb9;border-radius:20px;box-shadow:0 12px 42px #193d321c;backdrop-filter:blur(14px)}#ecoTabs{display:flex;gap:5px;border-bottom:1px solid #cbd5c0;padding-bottom:9px}#ecoTabs button{flex:1;padding:10px 5px;font-size:10px;letter-spacing:1px;border:0;background:transparent;color:#4b6752;border-radius:9px;font-weight:700}#ecoTabs button.active,#ecoTools button.active{background:#234c3d;color:#f9ebc9}#ecoTools{display:flex;gap:8px;padding:10px 0}#ecoTools button{flex:1;border:1px solid #c2d0b9;background:#e9eedf;color:#355b43;border-radius:13px;padding:8px;font-size:10px;letter-spacing:.8px;font-weight:700}#ecoTools button span{display:block;font-family:Georgia,serif;font-size:28px;height:35px}#ecoActions{display:flex;flex-wrap:wrap;gap:6px}#ecoActions button{font-size:11px;color:#3a6352;background:#fffdf4;border:1px solid #c4cfba;border-radius:7px;padding:8px 11px}#ecoActions button:hover,#ecoTabs button:hover{background:#d7e5c8}#ecoDashboard{position:fixed;left:25px;top:100px;z-index:5;width:365px;padding:18px 20px;background:#faf7edeb;border:1px solid #c9d5c0;border-radius:16px;backdrop-filter:blur(12px)}#ecoDashboard small{font-size:9px;letter-spacing:1.7px;color:#6c8167}#ecoDashboard h2{font-size:16px;line-height:1.3;margin:11px 0;color:#254d3b}#ecoDashboard p{font-size:12px;line-height:1.55;margin:7px 0;color:#5b7359}#ecoTasks{font-size:10px!important}body[data-mode=preview] .screen-hint{bottom:245px;max-width:72vw;text-align:center;white-space:normal;font-size:11px}#notebook{max-width:750px;width:calc(100vw - 35px);max-height:85vh;background:#f9f5e9;color:#254b39;border:1px solid #afc09f;border-radius:20px;padding:24px}#notebook::backdrop{background:#102c2590;backdrop-filter:blur(5px)}#notebook header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}#notebook header small{letter-spacing:2px;font-size:10px}#notebook h2{font-family:Georgia,serif;font-weight:400;font-size:30px;margin:8px 0 20px}#notebook h3{font-size:16px}#notebook p{font-size:13px;line-height:1.65}#notebook button{border:1px solid #aebd9d;border-radius:8px;padding:9px;background:#e7ecd9;color:#254b39}#notebook table{border-collapse:collapse;width:100%;font-size:13px}#notebook td,#notebook th{border-bottom:1px solid #d5dbc9;padding:10px;text-align:left}.trialCard{border:1px solid #d4dbc5;border-radius:12px;padding:14px;margin:14px 0}.modelNote{color:#76836d}#toast{top:82px}body[data-mode=preview] .preview-brand small{font-size:0}body[data-mode=preview] .preview-brand small:after{content:'CREEKLANDS 3.0 · DESKTOP';font-size:10px}.preview-stamp p{max-width:220px}.species-stamp{display:none}@media(max-width:850px){#ecoDesktop{bottom:10px;width:calc(100% - 20px);padding:9px}#ecoDashboard{left:12px;top:107px;width:min(340px,calc(100vw - 24px));padding:11px 14px}#ecoDashboard h2{font-size:13px}#ecoDashboard p{font-size:10px}#ecoTabs button{font-size:8px;letter-spacing:.3px;padding:9px 3px}#ecoTools button{font-size:8px;padding:6px 2px}#ecoActions button{font-size:10px;padding:7px}body[data-mode=preview] .screen-hint{bottom:255px;max-width:94vw}.camera-tools{bottom:320px}.topbar{z-index:8}#toast{top:300px;max-width:92vw}}@media(max-height:650px) and (min-width:851px){#ecoDashboard{top:85px;width:320px}#ecoDesktop{bottom:10px}#ecoDashboard p{font-size:10px}#ecoDashboard h2{font-size:13px}}
 </style>
 </head>
 <body data-mode="landing">
@@ -26,37 +27,41 @@ body[data-mode=preview] #world{width:100%;height:100%}body[data-mode=preview] #l
 <canvas id="world" aria-label="Interactive 3D classroom forest preview"></canvas>
 <main id="landing">
  <div class="brand"><span class="brand-mark"><svg><use href="#i-tree"/></svg></span><span>CLASSROOM<br>FOREST</span></div>
- <div class="eyebrow"><i class="live-dot"></i> VERSION 2.0 &nbsp; / &nbsp; REACH · GRAB · GROW</div>
- <h1>Make room<br>for a <em>forest.</em></h1>
- <p class="lead">Reach for a seedling. Close your hand. Grow a living woodland throughout your real classroom.</p>
+ <div class="eyebrow"><i class="live-dot"></i> VERSION 3.0 &nbsp; / &nbsp; AUSTRALIAN CREEKLANDS</div>
+ <h1>A little rain.<br>A living <em>world.</em></h1>
+ <p class="lead">Restore an Australian woodland in your classroom. Shape a creek, grow every layer, reconnect habitats—and toss virtual grass to the kangaroos.</p>
  <div class="ritual"><span><svg class="icon"><use href="#i-hand"/></svg>Grab</span><b>→</b><span><svg class="icon"><use href="#i-seed"/></svg>Plant</span><b>→</b><span><svg class="icon"><use href="#i-drop"/></svg>Grow</span></div>
  <button id="enter" class="primary"><svg class="icon"><use href="#i-headset"/></svg>Enter mixed reality</button>
  <button id="preview" class="secondary">Explore desktop preview <span aria-hidden="true">↗</span></button>
  <p id="support" class="support" role="status">Checking this browser for passthrough support…</p>
  <div class="settings"><label><input type="checkbox" id="sound" checked> Gentle sound</label><label title="Use available mapped surfaces for approximate occlusion and placement. This is optional, and it is not a collision-safety system."><input type="checkbox" id="surfaces"> Optional room occlusion</label></div>
  <div class="v2settings"><label><input id="autoWater" type="checkbox" checked> Easy watering <small>Hold the can near a thirsty tree. No precise tilt.</small></label><label><input id="followTools" type="checkbox" checked> Bring tools along <small>The nursery catches up after you walk and stop.</small></label><label><input id="debugHands" type="checkbox"> Hand diagnostics <small>Show tracking, pinch and grab status in the headset.</small></label></div><div id="errorBox" hidden role="alert"><strong>Mixed reality could not start</strong><span></span></div>
- <details><summary>How to play — no controllers</summary>
+ <details open><summary>New in Creeklands 3.0 — hands only</summary><p><strong>PLANT:</strong> grab a gum, wattle or grass. MORE PLANTS offers banksia, sedge and litter. Open over a clear patch to plant; hold the blue can nearby to establish it.</p><p><strong>CREEK:</strong> drop blue stones to extend the channel. Enable EDIT MAP, grab an existing miniature blue stone and release it elsewhere to reshape the creek. Waterholes must connect to the channel.</p><p><strong>RAIN LAB:</strong> plant ground cover in plot B, predict which plot will lose more soil, then run a fair test. Compare simulated runoff, infiltration and soil loss. Clouds also let you rain locally.</p><p><strong>CONNECT:</strong> establish ground cover in the four gold approach rings, place the bridge at the gold road crossing, and test the wildlife route. Shrubs at the outer approaches add shelter for the model skink route.</p><p><strong>KANGAROOS:</strong> grab a grass bundle, make a gentle underarm toss and open your hand. Kangaroos approach reachable food and eat it. Feeding is pretend play only—do not feed or throw objects at real wildlife.</p><p><strong>EDIT MAP:</strong> the miniature is linked to the room. Release a building tool above a miniature location to work at a distance. Blue control stones are editable on the CREEK page. No extra walking or crouching is required.</p></details>
+ <details><summary>How grabbing and watering work</summary>
 <div class="steps"><b>01</b><span><strong>Reach and close.</strong> Reach for the root plug or anywhere on the blue can. Pinch, or close your fingers as though picking it up. A bright halo and a soft note confirm your target.</span><b>02</b><span><strong>Open to plant.</strong> Move the seedling away from its shelf. A green ring shows the planting spot. Open your hand; the seedling floats down. No bending or throwing.</span><b>03</b><span><strong>Hold to water.</strong> Bring the can near a thirsty tree. In Easy watering mode it tips and pours automatically. A blue ring confirms the target. Keep holding until the tree grows, then open your hand to return the can.</span></div>
 <p><strong>Walk, then stop:</strong> the tools catch up when you move away and lower your empty hands. The forest stays planted. To call your tools, hold an empty open palm facing upwards at waist height for one second, away from objects. The gold rail also moves the nursery.</p>
 <p><strong>Brief tracking loss:</strong> the game pauses pouring and holds your item temporarily, instead of dropping it. Bring your hand back into view. After a longer loss it safely returns the item without planting it.</p>
 <p><strong>Room view:</strong> touch and hold the wide ROOM VIEW tile to hide the forest. Touch again to resume. RESET requires a two-second hold. Buttons use a visible progress indicator; objects do not require a button.</p></details>
 <details><summary>Quest / ManageXR setup &amp; room scale</summary><p>Host this HTML on your existing HTTPS GitHub Pages site and launch it from the configured WebXR browser. Enable hand tracking and select <strong>Enter mixed reality</strong>. Opening a normal browser tab is not entering mixed reality.</p><p>The game uses floor-relative tracking, with <strong>no fixed arena or starting-point radius</strong>. Walk only inside a clear, supervised area approved by your school. The headset’s safety boundary remains in charge. A stationary boundary must be changed by your authorised administrator for classroom-sized movement; this page cannot expand or disable it.</p><p>Keep your floor height calibrated. Optional room surfaces help with occlusion and warn about mapped obstacles; they do not reliably detect all furniture or people. Missing floor scans do not lock planting to a tiny patch. Never lean on virtual objects. Keep hands in view and use ROOM VIEW before moving through a cluttered area.</p></details>
-<details><summary>What’s new in version 2</summary><p><strong>Controls first:</strong> larger root plugs and a whole-can grab area, continuous grab detection, pinch or fist, hand-size-aware thresholds, deliberate release, tracking-loss grace, target halos and automatic watering.</p><p><strong>A fuller forest:</strong> up to 48 trees; branching gums, feathery wattles and serrated banksia foliage; butterflies, bees, dragonflies, ladybirds, parrots, kookaburras, magpies, skinks, echidnas and wombats. Wildlife is stylised and decorative. Growth and wildlife arrival are deliberately sped up.</p><p>Each headset has its own forest. No multiplayer, accounts, camera recording or analytics. Only settings and your best tree count are stored locally. Forest positions are not saved across XR sessions. Art, sound and code are embedded in this single file.</p></details>
-<div class="fineprint"><span id="best">A hands-only mixed-reality garden</span><br><strong>CLASSROOM FOREST 2.0</strong> · No runtime downloads<br>Independent educational prototype · Hardware test required before class</div>
+<details><summary>Learning model, sources and limitations</summary><p>Plants and wildlife are stylised examples of an Australian eucalypt woodland / creek mosaic, not an exact reconstruction of a named ecological community. Growth is accelerated. Existing trees do not count as newly established layers.</p><p>Rainfall trials use a simplified equal-area soil-cover model. Rain level, slope and initial soil moisture are held equal between plots; plant cover is sampled at the start. Percentages describe model water shares, and the soil-loss index is unitless—not measured litres, millimetres or real flood predictions. River flow follows the designed channel, not the real classroom floor slope. Vegetation does not prevent all flooding, and sediment colour is not a complete water-quality test.</p><p>The corridor challenge is a simplified connectivity exercise, not a wildlife engineering design. Feeding is a fictional interaction, not real wildlife-care advice. Read the <a href="https://australian.museum/learn/animals/mammals/eastern-grey-kangaroo/" target="_blank" rel="noopener">Australian Museum’s eastern grey kangaroo guide</a>, <a href="https://www.nsw.gov.au/regional-and-primary-industries/natural-resource-management/protecting-waterways-on-farms/managing-riparian-areas-on-private-property" target="_blank" rel="noopener">NSW riparian vegetation guidance</a> and <a href="https://www.waternsw.com.au/education/keeping-waterways-healthy/water-on-your-property" target="_blank" rel="noopener">WaterNSW vegetation-layer guidance</a>.</p><p>Each headset has its own landscape: no multiplayer or shared anchoring. No accounts, camera recording, analytics or runtime downloads. Settings stay locally in this browser. Plant positions and evidence reset with a new world or a new XR session. Optional room scans are not reliable obstacle detection. Keep the headset boundary enabled and supervise use.</p></details>
+<div class="fineprint"><span id="best">A hands-only mixed-reality garden</span><br><strong>AUSTRALIAN CREEKLANDS 3.0</strong> · No runtime downloads<br>Independent educational prototype · Hardware test required before class</div>
 </main>
-<div class="preview-stamp"><strong><i class="live-dot"></i> &nbsp; CLASSROOM FOREST 2.0</strong><p>Reach. Close your hand. Let it grow.</p></div>
+<div class="preview-stamp"><strong><i class="live-dot"></i> &nbsp; AUSTRALIAN CREEKLANDS 3.0</strong><p>Reach. Close your hand. Let it grow.</p></div>
 <div class="species-stamp"><span><i class="gum"></i>Gum</span><span><i class="wattle"></i>Wattle</span><span><i class="banksia"></i>Banksia</span></div>
 <section id="previewUI" aria-label="Desktop preview tools">
- <div class="topbar"><div class="preview-brand"><span class="brand-mark"><svg><use href="#i-tree"/></svg></span><div><strong>CLASSROOM FOREST</strong><small>V2.0 · DESKTOP PREVIEW</small></div></div><div class="top-actions"><button id="roomView" class="light-btn">Room view</button><button id="previewReset" class="light-btn">New forest</button><button id="previewDemo" class="light-btn">Full forest</button><button id="back" class="light-btn">← Home</button></div></div>
+ <div class="topbar"><div class="preview-brand"><span class="brand-mark"><svg><use href="#i-tree"/></svg></span><div><strong>CLASSROOM FOREST</strong><small>V3.0 · DESKTOP PREVIEW</small></div></div><div class="top-actions"><button id="roomView" class="light-btn">Room view</button><button id="previewReset" class="light-btn">New forest</button><button id="previewDemo" class="light-btn">Full forest</button><button id="back" class="light-btn">← Home</button></div></div>
  <div class="goalcard"><header><span>YOUR FOREST<br><small id="typeCount">0 / 3 plant types</small></span><strong id="count">0 / 6</strong></header><div class="track"><i id="progressBar"></i></div><p id="previewGoal">Grow six trees, including all three plant types.</p></div>
  <div class="screen-hint" id="mouseHint">Select a seedling, then click clear floor. Drag empty space to orbit.</div>
  <div class="seedbar"><button data-tool="plant" data-type="0" class="selected"><svg class="icon"><use href="#i-seed"/></svg>Gum</button><button data-tool="plant" data-type="1"><svg class="icon"><use href="#i-flower"/></svg>Wattle</button><button data-tool="plant" data-type="2"><svg class="icon"><use href="#i-tree"/></svg>Banksia</button><button data-tool="water"><svg class="icon"><use href="#i-drop"/></svg>Water</button></div>
  <div class="camera-tools"><button id="orbitLeft" aria-label="Rotate view left">↶</button><button id="orbitRight" aria-label="Rotate view right">↷</button><button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out">−</button><small>Camera view</small></div>
 </section>
+<aside id="ecoDesktop"><div id="ecoTabs"></div><div id="ecoTools"></div><div id="ecoActions"></div></aside>
+<section id="ecoDashboard"><small>AUSTRALIAN CREEKLANDS · 3.0</small><h2 id="ecoTitle">Restore your creekland</h2><p id="ecoLine"></p><p id="ecoSub"></p><div class="track"><i id="ecoProgress"></i></div><p id="ecoTasks"></p></section>
+<dialog id="notebook"><header><div><small>FIELD NOTEBOOK</small><h2>Your restoration evidence</h2></div><button onclick="document.getElementById('notebook').close()" aria-label="Close notebook">Close ×</button></header><div id="notebookBody"></div><p class="modelNote">All values are from a simplified teaching simulation. This notebook is kept in memory for this session only.</p></dialog>
 <div id="toast" role="status" aria-live="polite"><strong></strong><span></span></div>
 <noscript><p style="position:fixed;inset:20%;background:#fff;padding:30px;z-index:50">Enable JavaScript to run Classroom Forest.</p></noscript>
 <script>
-window.addEventListener('error',e=>{const b=document.getElementById('errorBox');if(b){b.hidden=false;b.querySelector('span').textContent='Version 2 error: '+e.message;}});
+window.addEventListener('error',e=>{const b=document.getElementById('errorBox');if(b){b.hidden=false;b.querySelector('span').textContent='Version 3 error: '+e.message;}});
 /* Classroom Forest — dependency-free WebGL2 / WebXR renderer. All dimensions are metres. */
 'use strict';
 const TAU=Math.PI*2, clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), mix=(a,b,t)=>a+(b-a)*t, smooth=(a,b,v)=>{let t=clamp((v-a)/(b-a),0,1);return t*t*(3-2*t)};
@@ -111,7 +116,7 @@ function seeded(seed){return ()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul
 
 
 /* All artwork is procedural and embedded. Dimensions are metres, not pixels. */
-const VERSION='2.0.0',MAX_TREES=48;
+const VERSION='3.0.0',MAX_TREES=96;
 const C={ink:0x193e32,fern:0x43845f,mint:0x9be0b1,cream:0xfaf1d6,gold:0xf6ce6b,teal:0x69b9be,soil:0x65503a,wood:0xc2a16c};
 const SPECIES=[
  {name:'Gum',tag:'Silver leaves',color:0x74a58b,seed:0x94c9a1,leaf:[0x71a88a,0x92bc9c,0x4e866c,0xadcbb0]},
@@ -397,8 +402,8 @@ function paintHUD(){let s=stats(),holdingSeed=hands.some(h=>h.held?.kind==='seed
  else if(state.canOwner){title='BRING THE CAN NEAR A THIRSTY TREE';sub=state.settings.autoWater?'Easy watering: it will tip and pour for you.':'Classic watering: tilt the spout down towards the roots.';}
  else if(s.planted>s.mature){title='GRAB ANY PART OF THE BLUE CAN';sub='Reach, close your hand, then hold it near a seedling.';}
  else{title=s.planted?'KEEP GROWING YOUR CLASSROOM FOREST':'REACH FOR A SEEDLING · CLOSE YOUR HAND';sub=s.planted?'Walk inside your safe area. The tools follow when you stop.':'Pinch or close your fingers. A gold halo shows your target.';}
- let key=[title,sub,s.mature,s.planted,s.types,state.settings.autoWater].join('|');if(key!==state.hudKey){state.hudKey=key;nursery.hud.paint((c,w,h)=>{c.fillStyle='#1b4437';rr(c,0,0,w,h,24);c.fill();c.fillStyle='#f4d28b';c.font='600 21px system-ui';c.fillText('CLASSROOM FOREST 2.0',24,35);c.textAlign='right';c.fillStyle='#d4e2bd';c.fillText(s.mature+' GROWN  /  '+s.planted+' PLANTED  ·  '+s.types+'/3 TYPES',w-24,35);c.textAlign='left';c.fillStyle='#fff3d5';c.font='600 31px system-ui';c.fillText(title,24,99,w-48);c.fillStyle='#ccdcbc';c.font='24px system-ui';c.fillText(sub,24,145,w-48);c.fillStyle='#557154';rr(c,24,180,w-48,9,4);c.fill();c.fillStyle='#adce87';rr(c,24,180,Math.max(9,(w-48)*Math.min(1,s.mature/6)),9,4);c.fill();});document.getElementById('count').textContent=state.goal?s.mature+' trees':s.mature+' / 6';document.getElementById('typeCount').textContent=s.types+' / 3 plant types';document.getElementById('progressBar').style.width=Math.min(100,s.mature/6*100)+'%';document.getElementById('previewGoal').textContent=state.goal?'Your forest is thriving. Keep planting and meeting wildlife.':'Grow six trees, including all three plant types.';}
- nursery.debug.visible=state.settings.debugHands&&state.mode==='xr';if(nursery.debug.visible&&state.time>state.debugAt){state.debugAt=state.time+.25;nursery.debug.paint((c,w,h)=>{c.fillStyle='#202d28';rr(c,0,0,w,h,15);c.fill();c.fillStyle='#d4e4be';c.font='23px monospace';hands.forEach((a,i)=>c.fillText(a.side.toUpperCase()+'  '+(!a.valid?'LOST '+a.miss.toFixed(1)+'s':(a.held?.kind||a.hover?.kind||'ready')+' · pinch '+Math.round(a.gap*1000)+'mm · grip '+Math.round(a.curl*100)+'%'),20,32+i*31));c.fillText('local-floor · '+Math.round(1000/state.frameMs)+' fps · '+(state.settings.autoWater?'AUTO WATER':'TILT WATER')+' · v2.0',20,106);});}
+ let key=[title,sub,s.mature,s.planted,s.types,state.settings.autoWater].join('|');if(key!==state.hudKey){state.hudKey=key;nursery.hud.paint((c,w,h)=>{c.fillStyle='#1b4437';rr(c,0,0,w,h,24);c.fill();c.fillStyle='#f4d28b';c.font='600 21px system-ui';c.fillText('AUSTRALIAN CREEKLANDS 3.0',24,35);c.textAlign='right';c.fillStyle='#d4e2bd';c.fillText(s.mature+' GROWN  /  '+s.planted+' PLANTED  ·  '+s.types+'/3 TYPES',w-24,35);c.textAlign='left';c.fillStyle='#fff3d5';c.font='600 31px system-ui';c.fillText(title,24,99,w-48);c.fillStyle='#ccdcbc';c.font='24px system-ui';c.fillText(sub,24,145,w-48);c.fillStyle='#557154';rr(c,24,180,w-48,9,4);c.fill();c.fillStyle='#adce87';rr(c,24,180,Math.max(9,(w-48)*Math.min(1,s.mature/6)),9,4);c.fill();});document.getElementById('count').textContent=state.goal?s.mature+' trees':s.mature+' / 6';document.getElementById('typeCount').textContent=s.types+' / 3 plant types';document.getElementById('progressBar').style.width=Math.min(100,s.mature/6*100)+'%';document.getElementById('previewGoal').textContent=state.goal?'Your forest is thriving. Keep planting and meeting wildlife.':'Grow six trees, including all three plant types.';}
+ nursery.debug.visible=state.settings.debugHands&&state.mode==='xr';if(nursery.debug.visible&&state.time>state.debugAt){state.debugAt=state.time+.25;nursery.debug.paint((c,w,h)=>{c.fillStyle='#202d28';rr(c,0,0,w,h,15);c.fill();c.fillStyle='#d4e4be';c.font='23px monospace';hands.forEach((a,i)=>c.fillText(a.side.toUpperCase()+'  '+(!a.valid?'LOST '+a.miss.toFixed(1)+'s':(a.held?.kind||a.hover?.kind||'ready')+' · pinch '+Math.round(a.gap*1000)+'mm · grip '+Math.round(a.curl*100)+'%'),20,32+i*31));c.fillText('local-floor · '+Math.round(1000/state.frameMs)+' fps · '+(state.settings.autoWater?'AUTO WATER':'TILT WATER')+' · v3.0',20,106);});}
 }
 function update(dt){state.time+=dt;updateTools(dt);watering(dt);updateTrees(dt);updateWildlife(dt);paintHUD();if(state.time>state.noticeUntil)document.getElementById('toast').classList.remove('show');notice.visible=state.mode==='xr'&&state.time<state.noticeUntil;notice.p.copy(nursery.p).add(new V(0,.83,-.12).applyQ(nursery.q));if(state.safe){waterMarker.visible=false;for(let n of waterDrops)n.visible=false;}}
 
@@ -432,11 +437,11 @@ async function enterXR(){if(requesting)return;if(!isSecureContext){showError('Op
   session=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['local-floor','hand-tracking'],optionalFeatures:document.getElementById('surfaces').checked?['plane-detection']:[]});
   if(session.environmentBlendMode==='opaque')throw Error('An opaque VR session was returned. Passthrough mixed reality is required.');let gl=renderer.gl;await gl.makeXRCompatible();let layer=new XRWebGLLayer(session,gl,{alpha:true,antialias:true,depth:true,stencil:false,framebufferScaleFactor:1});if(typeof layer.fixedFoveation==='number')layer.fixedFoveation=.55;session.updateRenderState({baseLayer:layer,depthNear:.03,depthFar:40});let ref=await session.requestReferenceSpace('local-floor');
   resetForest(false);state.mode='xr';state.session=session;state.ref=ref;state.occlusion=document.getElementById('surfaces').checked;state.homeSet=false;state.activeHands=0;state.stopTime=0;state.nurseryMoving=false;state.headSpeed=0;room.visible=false;notice.visible=false;document.body.dataset.mode='xr';for(let h of hands){h.pinch=false;h.grasp=false;h.closed=false;h.closeTime=0;h.openTime=0;h.armed=false;h.valid=false;h.miss=10;h.stable=0;h.recovery=0;h.held=null;}
-  ref.addEventListener('reset',()=>{resetForest(false);state.homeSet=false;toast('Room tracking was reset','Start a fresh forest so plants stay aligned to the classroom.',4)});
+  bindWorldReference(ref);
   session.addEventListener('end',()=>endXR(session),{once:true});session.addEventListener('visibilitychange',()=>{if(session.visibilityState!=='visible'){state.pouring=false;sound.water(false);for(let h of hands){h.valid=false;h.openTime=0;h.recallTime=0;h.buttonTime=0;}for(let n of waterDrops)n.visible=false;}});
   try{if(session.supportedFrameRates&&Array.from(session.supportedFrameRates).includes(72)&&session.updateTargetFrameRate)session.updateTargetFrameRate(72).catch(()=>{});}catch{}
   lastXR=0;requesting=false;session.requestAnimationFrame(xrFrame);
- }catch(error){if(session)try{await session.end()}catch{}let message=error?.message||String(error);if(error?.name==='NotSupportedError')message='Passthrough and articulated hand tracking were not both available. Check the managed WebXR browser, its version, hand tracking and permissions. v2.0 needs local-floor + hand-tracking.';else if(['NotAllowedError','SecurityError'].includes(error?.name))message='The browser or school policy blocked immersive access. Open the HTTPS page directly and allow the relevant permissions. Embedded previews can block WebXR.';showError(message);}
+ }catch(error){if(session)try{await session.end()}catch{}let message=error?.message||String(error);if(error?.name==='NotSupportedError')message='Passthrough and articulated hand tracking were not both available. Check the managed WebXR browser, its version, hand tracking and permissions. v3.0 needs local-floor + hand-tracking.';else if(['NotAllowedError','SecurityError'].includes(error?.name))message='The browser or school policy blocked immersive access. Open the HTTPS page directly and allow the relevant permissions. Embedded previews can block WebXR.';showError(message);}
 }
 function endXR(session){if(state.session!==session)return;for(let h of hands){releaseHand(h,false);h.valid=false;}state.session=null;state.ref=null;for(let s of state.planes.values())if(s.occluder)renderer.deleteOccluder(s.occluder);state.planes.clear();sound.water(false);makeDemo();document.getElementById('enter').disabled=false;document.getElementById('enter').textContent='Enter mixed reality';requesting=false;lastDesktop=performance.now();requestAnimationFrame(desktopFrame);}
 function xrFrame(now,frame){let session=state.session;if(!session||state.mode!=='xr')return;session.requestAnimationFrame(xrFrame);let elapsed=lastXR?Math.max(.001,(now-lastXR)/1000):1/72,dt=Math.min(elapsed,.05);lastXR=now;state.frameMs=mix(state.frameMs,Math.min(2000,elapsed*1000),.06);let gl=renderer.gl,layer=session.renderState.baseLayer;gl.bindFramebuffer(gl.FRAMEBUFFER,layer.framebuffer);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);let pose;try{pose=frame.getViewerPose(state.ref)}catch{}if(!pose){for(let h of hands)sampleHand(h,null,dt);state.pouring=false;sound.water(false);return;}
@@ -449,6 +454,479 @@ async function checkSupport(){let s=document.getElementById('support');if(!isSec
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();sound.water(false);if(state.session)state.session.end().catch(()=>{});showError('Graphics context lost. Reload this page. No classroom map or forest positions are stored.')});
 window.addEventListener('resize',resize);document.addEventListener('visibilitychange',()=>{if(document.hidden){sound.water(false);previewWatering=false;pointer.down=false;}});
 document.getElementById('enter').addEventListener('click',enterXR);document.getElementById('preview').addEventListener('click',()=>startPreview());document.getElementById('previewDemo').addEventListener('click',()=>startPreview(true));document.getElementById('back').addEventListener('click',makeDemo);document.getElementById('previewReset').addEventListener('click',()=>resetForest());document.getElementById('roomView').addEventListener('click',toggleRoom);document.getElementById('sound').addEventListener('change',()=>sound.init());document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>selectTool(b.dataset.tool,Number(b.dataset.type)||0)));document.getElementById('orbitLeft').addEventListener('click',()=>orbit.yaw+=.35);document.getElementById('orbitRight').addEventListener('click',()=>orbit.yaw-=.35);document.getElementById('zoomIn').addEventListener('click',()=>orbit.distance=clamp(orbit.distance-1,3.8,20));document.getElementById('zoomOut').addEventListener('click',()=>orbit.distance=clamp(orbit.distance+1,3.8,20));
+/* Creeklands v3: integrated hands-only learning. All art and logic stay in this HTML.
+   Hydrology is a deliberately simplified comparison model, not a flood forecast.
+   Wildlife feeding is pretend play: do not feed or throw objects at real wildlife. */
+const original = {seedModel,makeTree,plant,grow,validSpot,nearbyTarget,acquire,releaseHand,updateHeld,
+  sampleHand,handCaption,buttonNear,handleButton,updateTools,updateTrees,updateWildlife,update,
+  resetForest,toggleRoom,setNurseryAtHead,makeDemo,startPreview,paintHUD,selectTool,plantingTarget};
+SPECIES.push(
+  {name:'Native grass',tag:'Ground layer',color:0x8aa450,seed:0xb7ce73,leaf:[0x6a8b46,0xa0b967,0x829b55,0xc5cc83]},
+  {name:'Creek sedge',tag:'Riparian ground layer',color:0x508b71,seed:0x8fc6ad,leaf:[0x528d70,0x86b394,0x39785e,0xadca95]},
+  {name:'Leaf litter',tag:'Protect the soil',color:0xb99960,seed:0xd7b67d,leaf:[0xa6814f,0xcaaa73,0x94754b,0xe0c797]}
+);
+const ECO = {
+  time:0,ready:false,origin:new V(),q:new Q(),page:'grow',map:false,more:false,layerView:false,
+  river:[],riverWidth:.29,pools:[],creekDirty:true,miniDirty:true,miniAt:0,
+  bridge:false,routeTest:null,routeResult:null,food:[],fed:0,foodID:0,
+  rain:null,rainLevel:1,trial:null,history:[],prediction:null,reflection:false,
+  cloudOwner:null,undo:[],boardKey:'',waterBrown:0,routeAt:0,inspection:null,
+  sessionEvents:[],maxTravel:0,startHead:null,resetCount:0,reportReady:false,
+  plotA:new V(-1.08,0,.73),plotB:new V(1.08,0,.73)
+};
+const ecoRoot=new Node(),riverRoot=new Node(),groundRoot=new Node(),routeRoot=new Node(),rooRoot=new Node(),foodRoot=new Node(),rainRoot=new Node();
+root.add(ecoRoot);ecoRoot.add(riverRoot,groundRoot,routeRoot,rooRoot,foodRoot,rainRoot);
+const ew=p=>p.clone().applyQ(ECO.q).add(ECO.origin);
+const el=p=>p.clone().sub(ECO.origin).applyQ(ECO.q.clone().inverse());
+const horizontal=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
+const layerOf=t=>t.type===0?'Canopy':t.type<3?'Understorey':'Ground';
+function disposeTreeNode(n){if(n.texture)renderer.gl.deleteTexture(n.texture);for(const c of n.children)disposeTreeNode(c);}
+function emptyNode(n){for(const c of n.children){disposeTreeNode(c);c.parent=null;}n.children=[];}
+function recordAction(a){ECO.undo.push(a);if(ECO.undo.length>80)ECO.undo.shift();ECO.miniDirty=true;}
+function ecoMessage(a,b=''){toast(a,b,4);ECO.boardKey='';}
+function groundPlant(type,plug=false){
+  const n=new Node(),r=seeded(type*317+17);
+  if(plug)n.add(mesh('cylinder',0x65503b,[0,0,0],[.055,.085,.055]));
+  if(type===5){for(let i=0;i<(plug?10:30);i++){let a=i*2.399,rad=(plug?.08:.43)*Math.sqrt(r());n.add(mesh('leaf',SPECIES[5].leaf[i%4],[Math.sin(a)*rad,.012+r()*.026,Math.cos(a)*rad],[.10,.04,.16]).turn(0,a,.12));}return n;}
+  const count=plug?12:type===4?28:34;
+  for(let i=0;i<count;i++){let a=i*2.399,rad=(plug?.015:.17)*r(),len=(plug?.19:type===4?.55:.35)*(.55+r()*.55),p=new V(Math.sin(a)*rad,plug?.025:.012,Math.cos(a)*rad),end=p.clone().add(new V(Math.sin(a)*len*.28,len,Math.cos(a)*len*.28));
+    addStick(n,p,end,type===4?.0035:.0027,SPECIES[type].leaf[i%4]);
+    if(type===3){let leafn=mesh('leaf',SPECIES[type].leaf[i%4],[end.x*.7,end.y*.60,end.z*.7],[.035,.035,len]);leafn.turn(-1.15,a);n.add(leafn);}
+    if(type===4&&i%5===0)n.add(mesh('cylinder',0x7b6241,[end.x,end.y,end.z],[.009,.047,.009]));
+  }return n;
+}
+seedModel=function(type,scale=1){if(type<3)return original.seedModel(type,scale);return groundPlant(type,true).size(scale);};
+makeTree=function(type,id){
+  if(type<3){const t=original.makeTree(type,id);if(type>0){t.height*=.64;for(const c of t.model.children){c.p.scale(.64);c.s.scale(.64);}}return t;}
+  const base=new Node(),model=groundPlant(type),crown=new Node(),fine=new Node(),coarse=new Node(),floorDecor=new Node(),sprout=groundPlant(type,true);
+  model.add(crown);crown.add(fine,coarse);base.add(model,floorDecor,sprout);
+  const ring=mesh('ring',0x9ed7b6,[0,.028,0],[.27,.005,.27]),progress=label(.42,.105,()=>{});progress.at(0,.40,0);progress.billboard=true;base.add(ring,progress);
+  return {id,type,base,model,crown,fine,coarse,floorDecor,sprout,ring,progress,height:type===4?.58:.36,p:new V(),growth:0,displayGrowth:0,adult:false,pending:false,lastWater:-100,lastLabel:'',seed:id*.171,born:0};
+};
+// Core plant() was limited to three tree species. Every layer now shares its growth pipeline.
+plant=function(type,p,{demo=false,flight=null}={}){
+  if(state.trees.length>=MAX_TREES||!SPECIES[type]||![p.x,p.y,p.z].every(Number.isFinite))return null;
+  const t=makeTree(type,state.nextID++);t.p.copy(p);t.base.p.copy(p);t.growth=demo?1:type===5?1:0;t.displayGrowth=t.growth;t.adult=t.growth===1;t.born=state.time;t.pending=!!flight;t.base.visible=!flight;t.preexisting=!!demo;state.trees.push(t);forestRoot.add(t.base);paintTreeLabel(t);
+  if(flight)state.flights.push({n:flight.n,start:flight.from.clone(),end:p.clone().add(new V(0,.08,0)),u:0,tree:t});
+  if(!demo){recordAction({kind:'plant',id:t.id});burst(p.clone().add(new V(0,.1,0)),SPECIES[type].seed,10);sound.note(630,.18);ecoMessage(SPECIES[type].name+' planted',type===5?'Leaf litter covers exposed soil.':layerOf(t)+' layer · hold the can nearby to establish it.');}
+  ECO.miniDirty=true;return t;
+};
+grow=function(t,amount){if(!t||state.safe||t.adult||t.pending)return;const old=t.adult;t.growth=clamp(t.growth+amount,0,1);t.lastWater=state.time;t.adult=t.growth>=1;if(t.adult&&!old){sound.chime();burst(t.p.clone().add(new V(0,.3,0)),SPECIES[t.type].seed,12);ECO.miniDirty=true;ecoMessage(SPECIES[t.type].name+' established',layerOf(t)+' habitat is ready. Test what your planting changes.');}paintTreeLabel(t);};
+function onRoad(p){return Math.abs(p.x)<.32&&p.z>-2&&p.z<1.75;}
+function distanceToSegment(p,a,b){let dx=b.x-a.x,dz=b.z-a.z,u=clamp(((p.x-a.x)*dx+(p.z-a.z)*dz)/(dx*dx+dz*dz||1),0,1);return Math.hypot(p.x-a.x-u*dx,p.z-a.z-u*dz);}
+function riverDistance(p){let d=Infinity;for(let i=1;i<ECO.river.length;i++)d=Math.min(d,distanceToSegment(p,ECO.river[i-1],ECO.river[i]));return d;}
+validSpot=function(p,type=0){
+  if(![p.x,p.y,p.z].every(Number.isFinite))return {ok:false,msg:'Choose clear floor'};
+  if(state.safe)return {ok:false,msg:'Return to forest view'};
+  if(state.trees.length>=MAX_TREES)return {ok:false,msg:'Garden full: undo a planting first'};
+  if(horizontal(p,state.head)<.42)return {ok:false,msg:'Leave your standing space clear'};
+  const lp=el(p);if(ECO.ready&&onRoad(lp))return {ok:false,msg:'Road here: use the wildlife overpass'};
+  if(ECO.ready&&riverDistance(lp)<ECO.riverWidth*.72)return {ok:false,msg:'Plant on the bank, not in the channel'};
+  for(const t of state.trees){const gap=type>=3||t.type>=3?.20:.47;if(horizontal(t.p,p)<gap)return {ok:false,msg:'Leave a little room between plants'};}
+  if(state.occlusion)for(const s of state.planes.values())if(s.valid&&!s.floor&&s.horizontal&&s.matrix[13]>.18&&s.matrix[13]<2.1&&planeContains(s,p))return {ok:false,msg:'Mapped furniture: choose another patch'};
+  return {ok:true,msg:'OPEN HAND TO PLANT'};
+};
+
+// The planning tray is a real editable miniature, not a screenshot of the landscape.
+const miniature=new Node(),miniObjects=new Node();nursery.add(miniature);miniature.add(mesh('box',0x2d5549,[0,-.008,0],[1.09,.03,.70]),miniObjects);miniature.at(0,.09,.06);miniature.visible=false;
+const miniScale=.18;
+const toolsRoot=new Node(),tabsRoot=new Node();
+let ecoButtons=[],slotItems=[];
+const pages=[['grow','PLANT'],['creek','CREEK'],['rain','RAIN LAB'],['connect','CONNECT'],['roos','KANGAROOS']];
+const pageTools=()=>({grow:ECO.more?[{kind:'plant',type:2,name:'BANKSIA'},{kind:'plant',type:4,name:'SEDGE'},{kind:'plant',type:5,name:'LEAF LITTER'}]:[{kind:'plant',type:0,name:'GUM'},{kind:'plant',type:1,name:'WATTLE'},{kind:'plant',type:3,name:'NATIVE GRASS'}],
+  creek:[{kind:'river',name:'CREEK STONE'},{kind:'pool',name:'WATERHOLE'},{kind:'plant',type:4,name:'BANK SEDGE'}],
+  rain:[{kind:'cloud',name:'RAIN CLOUD'},{kind:'plant',type:3,name:'NATIVE GRASS'},{kind:'plant',type:5,name:'LEAF LITTER'}],
+  connect:[{kind:'plant',type:3,name:'GROUND COVER'},{kind:'plant',type:1,name:'SHRUB SHELTER'},{kind:'bridge',name:'WILDLIFE BRIDGE'}],
+  roos:[{kind:'food',name:'TOSS GRASS'},{kind:'plant',type:3,name:'GROW FOOD'},{kind:'food',name:'TOSS GRASS'}]})[ECO.page];
+function foodModel(){let n=new Node();for(let i=0;i<12;i++)n.add(mesh('leaf',[0x9cbd60,0xc2d784,0x688d4d][i%3],[(i%3-1)*.026,.02+(i%4)*.015,Math.sin(i)*.038],[.035,.04,.18]).turn(-.6,i*2.4));n.add(mesh('torus',0xd9c99a,[0,.014,0],[.052,.032,.044]).turn(Math.PI/2));return n;}
+function toolModel(t){if(t.kind==='plant')return seedModel(t.type,1.05);if(t.kind==='food')return foodModel();let n=new Node();
+  if(t.kind==='river'){n.add(mesh('sphere',0x75c9d3,[0,.035,0],[.092,.07,.075]),mesh('ring',0xe0f6db,[0,.09,0],[.055,.01,.055]));}
+  if(t.kind==='pool'){n.add(mesh('disc',0x437d7b,[0,.01,0],[.105,.018,.085]),mesh('disc',0x89dce0,[0,.022,0],[.08,.006,.064]));}
+  if(t.kind==='cloud'){for(let i=0;i<5;i++)n.add(mesh('sphere',i%2?0xf4f3df:0xd3e3df,[(i-2)*.046,.06+Math.sin(i)*.02,0],[.07,.058,.055]));for(let i=0;i<3;i++)n.add(mesh('sphere',0x7fcedb,[(i-1)*.057,-.026,0],[.009,.024,.009]));}
+  if(t.kind==='bridge'){n.add(mesh('box',0x9db96d,[0,.03,0],[.21,.05,.14]));for(const x of [-.085,.085])n.add(mesh('box',0xcbb891,[x,-.012,0],[.024,.08,.14]));}
+  return n;
+}
+function makeButton(id,text,x,y,w=.235){const n=textLabel(text,w,.085,{bg:id==='page:'+ECO.page?'#c9df9c':'#325a4c',fg:id==='page:'+ECO.page?'#173e32':'#fff0d1',size:24});n.at(x,y,.215);tabsRoot.add(n);ecoButtons.push({id,n,p:n.p.clone(),w,h:.085});return n;}
+function buildEcoNursery(){
+  // Retain core handles, can and familiar pickup positions; replace the crowded labels.
+  for(const n of [...nursery.children])if(![nursery.hud,nursery.debug].includes(n)){if(n!==miniature)disposeTreeNode(n);removeNode(n);}
+  nursery.add(mesh('box',0xddc69d,[.04,0,.01],[1.42,.045,.43]),mesh('box',0x264f42,[.04,-.03,.01],[1.46,.018,.47]),toolsRoot,tabsRoot,miniature);
+  addStick(nursery,new V(-.16,.055,.28),new V(.16,.055,.28),.019,0xe9c880);
+  removeNode(nursery.hud);disposeTreeNode(nursery.hud);nursery.hud=label(1.3,.30,()=>{});nursery.hud.at(0,.77,-.14);nursery.add(nursery.hud);nursery.debug.at(0,-.58,.08);
+  rebuildTools();
+}
+function rebuildTools(){emptyNode(toolsRoot);emptyNode(tabsRoot);ecoButtons=[];slotItems=[];
+  pageTools().forEach((tool,i)=>{let p=seedHomes[i].clone();if(ECO.map){p.y=.46;p.z=-.14;}const n=toolModel(tool);n.p.copy(p);toolsRoot.add(n);const halo=mesh('torus',0xf7d184,[p.x,p.y+.03,p.z],[.105,.13,.055]);halo.visible=false;toolsRoot.add(halo);const tag=textLabel(tool.name,.275,.07,{bg:'#e9e2c7',fg:'#294b38',size:25});tag.at(p.x,ECO.map?.34:.087,ECO.map?-.14:.155);toolsRoot.add(tag);slotItems.push({tool,n,p,halo});});
+  pages.forEach(([id,title],i)=>makeButton('page:'+id,title,(i-2)*.257,.59,.247));
+  makeButton('map',ECO.map?'MAP ON':'EDIT MAP',-.47,-.15,.28);makeButton('undo','UNDO',-.13,-.15,.22);makeButton('layers',ECO.layerView?'LAYERS ON':'LAYERS',.17,-.15,.24);makeButton('view',state.safe?'RESUME':'ROOM VIEW',.51,-.15,.29);
+  makeButton('reset','HOLD: NEW WORLD',.42,-.29,.42);
+  if(ECO.page==='grow')makeButton('more',ECO.more?'GUM / WATTLE / GRASS':'MORE PLANTS',-.30,-.29,.55);
+  if(ECO.page==='creek'){makeButton('width','WIDTH: '+['NARROW','MEDIUM','WIDE'][[.20,.29,.42].indexOf(ECO.riverWidth)],-.31,-.29,.53);}
+  if(ECO.page==='rain'){
+    makeButton('intensity',['LIGHT RAIN','STEADY RAIN','STORM'][ECO.rainLevel],-.40,-.29,.32);
+    makeButton('trial',ECO.trial?'STOP TEST':'FAIR TEST',-.035,-.29,.31);
+    const picks=ECO.history.length&&!ECO.trial&& !ECO.reflection?[['explain:cover','GROUND COVER'],['explain:trees','TREE COUNT'],['explain:colour','PLANT COLOUR']]:[['predict:a','A LOSES MORE'],['predict:b','B LOSES MORE'],['predict:same','SIMILAR LOSS']];
+    picks.forEach(([id,title],i)=>makeButton(id,title,(i-1)*.39,-.43,.37));
+  }
+  if(ECO.page==='connect'){makeButton('route','TEST WILDLIFE ROUTE',-.30,-.29,.56);}
+  if(ECO.page==='roos'){makeButton('rooinfo','ABOUT EASTERN GREYS',-.30,-.29,.56);}
+  miniature.visible=ECO.map;ECO.boardKey='';ECO.miniDirty=true;syncDesktop();
+}
+function choosePage(p){if(!pages.some(a=>a[0]===p))return;ECO.page=p;const first=pageTools()[0];desktopAction=first.kind;selectedType=first.type??0;ECO.desktopTool=first;rebuildTools();ecoMessage(({grow:'Build every vegetation layer',creek:'Shape your creek',rain:'Predict. Test. Restore.',connect:'Reconnect the woodland',roos:'A mob of eastern grey kangaroos'})[p],({grow:'Grab a plant. Open over the floor marker or the editable map.',creek:'Drop blue stones to extend the creek. Edit a map stone to reshape it.',rain:'Plant in plot B, predict the soil loss, then choose FAIR TEST.',connect:'Fill the four approach patches and place the wildlife bridge.',roos:'Grab a grass bundle. Gently toss and open your hand. Pretend feeding only.'})[p]);}
+function action(id){
+  if(id.startsWith('page:')){choosePage(id.slice(5));return;}
+  if(id==='view'){if(ECO.trackingUnknown){ecoMessage('Tracking alignment is unknown','Hold NEW WORLD to realign before resuming.');return;}toggleRoom();return;}
+  if(id==='map'){ECO.map=!ECO.map;rebuildTools();return;}
+  if(id==='reset'){resetForest();return;}
+  if(state.safe)return;
+  if(id==='undo'){undoEco();return;}
+  if(id==='layers'){ECO.layerView=!ECO.layerView;rebuildTools();return;}
+  if(id==='more'){ECO.more=!ECO.more;rebuildTools();return;}
+  if(id==='width'){recordAction({kind:'width',old:ECO.riverWidth});ECO.riverWidth=[.20,.29,.42][([.20,.29,.42].indexOf(ECO.riverWidth)+1)%3];ECO.creekDirty=true;rebuildTools();return;}
+  if(id==='intensity'){if(ECO.trial){ecoMessage('Finish this trial first','Rainfall is held constant during a fair test.');return;}ECO.rainLevel=(ECO.rainLevel+1)%3;rebuildTools();return;}
+  if(id.startsWith('predict:')){ECO.prediction=id.slice(8);ecoMessage('Prediction recorded',({a:'Plot A will lose more soil.',b:'Plot B will lose more soil.',same:'Both plots will lose a similar amount.'})[ECO.prediction]);return;}
+  if(id.startsWith('explain:')){ECO.reflection=id==='explain:cover';ecoMessage(ECO.reflection?'Evidence explained':'Look at the ground layer',ECO.reflection?'The model changes soil loss with ground cover. Tree count alone is not enough.':'Compare coverage of the soil, not the number or colour of plants.');rebuildTools();return;}
+  if(id==='trial'){if(ECO.trial){ECO.trial=null;ECO.rain=null;ecoMessage('Trial stopped','No result saved. Run a complete test for comparable evidence.');rebuildTools();}else startTrial();return;}
+  if(id==='route'){testRoute();return;}
+  if(id==='rooinfo'){ecoMessage('Eastern grey kangaroos','Grass-eating marsupials. A joey develops in its mother’s pouch. Game feeding is pretend.');}
+}
+
+function mapPosition(world){const p=world.clone().sub(nursery.p).applyQ(nursery.q.clone().inverse()).sub(miniature.p);if(!ECO.map||Math.abs(p.x)>.53||Math.abs(p.z)>.34||p.y<-.025||p.y>.46)return null;return ew(new V(p.x/miniScale,0,p.z/miniScale));}
+function floorTarget(h){let p=mapPosition(h.p);if(p)return {p,map:true};let d=h.p.clone().sub(state.head);d.y=0;const r=d.len();d=r>.08?d.scale(1/r):state.forward.clone();return {p:new V(state.head.x,0,state.head.z).add(d.scale(Math.max(.72,r+.34))),map:false};}
+plantingTarget=function(h){const t=floorTarget(h),kind=h.held?.tool;let check=kind?.kind==='plant'?validSpot(t.p,kind.type):{ok:!state.safe,msg:'OPEN HAND TO PLACE'};
+  if(h.source&&h.held?.kind==='eco'&&h.p.dist(h.source)<.13)check={ok:false,msg:'Move away from the shelf'};
+  if(h.recovery>0)check={ok:false,msg:'Tracking returned: hold still'};
+  return {...t,...check};
+};
+nearbyTarget=function(h){
+  if(state.time<state.resetCooldown||state.nurseryMoving)return null;
+  let best=original.nearbyTarget(h);if(best?.kind==='seed')best=null;
+  const add=(target,center,radius)=>{const score=Math.min(h.p.dist(center),h.palm.dist(center)+.025)/radius;if(score<1&&(!best||score<best.score))best={...target,center,radius,score};};
+  if(!state.safe)slotItems.forEach((s,i)=>{if(s.tool.kind==='cloud'&&ECO.cloudOwner)return;add({id:'eco'+i,kind:'eco',tool:s.tool},localWorld(s.p),.16);});
+  if(ECO.map&&!state.safe&&ECO.page==='creek')ECO.river.forEach((p,i)=>{const pos=new V(p.x*miniScale,.025,p.z*miniScale).add(miniature.p);add({id:'edit'+i,kind:'eco',tool:{kind:'editriver',index:i,name:'MOVE CREEK STONE'}},localWorld(pos),.045);});
+  return best;
+};
+acquire=function(h,t){if(t?.kind!=='eco')return original.acquire(h,t);if(h.held||state.time<h.cooldown||state.safe)return false;
+  const n=toolModel(t.tool.kind==='editriver'?{kind:'river'}:t.tool);n.p.copy(h.p);root.add(n);h.held={kind:'eco',tool:{...t.tool},n,age:0};h.source.copy(h.p);h.preview=null;h.lastGreen=null;h.motion=[];h.throwSample=null;h.hover=null;h.button=null;h.buttonTime=0;h.openTime=0;
+  if(t.tool.kind==='cloud')ECO.cloudOwner=h;sound.note(680,.13);return true;
+};
+function drawTarget(h,t){const m=groundMarkers[h.i];m.n.visible=!state.safe&&h.valid;m.n.p.copy(t.p);m.ghost.visible=false;m.dots.forEach(n=>n.visible=false);tint(m.ring,t.ok?0xa7dd92:0xe1ae79);const txt=t.ok?(t.map?'MAP → ':'')+({plant:'OPEN TO PLANT',river:'OPEN TO EXTEND CREEK',editriver:'OPEN TO MOVE STONE',pool:'OPEN TO ADD WATERHOLE',bridge:'OPEN TO PLACE BRIDGE',cloud:'OPEN TO LEAVE RAIN CLOUD'})[h.held.tool.kind]:t.msg;if(m.last!==txt){m.last=txt;m.tag.paint((c,w,hh)=>{c.fillStyle=t.ok?'#275544':'#845a3b';rr(c,0,0,w,hh,12);c.fill();c.fillStyle='#fff3d7';c.font='600 25px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(txt||'OPEN HAND',w/2,hh/2,w*.95);});}}
+updateHeld=function(h,dt){if(h.held?.kind!=='eco'){original.updateHeld(h,dt);return;}
+  const held=h.held;held.age+=dt;held.n.p.lerp(h.p,1-Math.exp(-38*dt));held.n.q.slerp(new Q().yaw(Math.atan2(-state.forward.x,-state.forward.z)),.18);
+  if(held.tool.kind==='food'){groundMarkers[h.i].n.visible=false;return;}
+  const t=plantingTarget(h);h.preview=t;drawTarget(h,t);
+  if(held.tool.kind==='cloud'&&held.age>.3&&t.ok&&!ECO.trial){ECO.rain={p:el(t.p),until:ECO.time+.18,level:ECO.rainLevel,held:true};}
+};
+function estimateThrow(h){const a=h.motion||[];if(a.length<2)return new V();const end=a[a.length-1];let start=a[0];for(const sample of a)if(end.t-sample.t>=.075)start=sample;const dt=end.t-start.t;if(dt<.015)return new V();const v=end.p.clone().sub(start.p).scale(1/dt);if(v.len()>5)v.norm().scale(5);return v;}
+sampleHand=function(h,sample,dt){
+  if(sample&&h.held?.kind==='eco'&&h.held.tool.kind==='food'){
+    h.motion=h.motion||[];h.motion.push({p:sample.p.clone(),t:state.time});while(h.motion.length>15||h.motion.length>2&&state.time-h.motion[0].t>.16)h.motion.shift();
+    const opened=sample.gap>clamp((sample.size||.085)*.75,.050,.078)&&(sample.curl||0)<.36;
+    if(opened&&!h.throwSample)h.throwSample={p:sample.p.clone(),v:estimateThrow(h)};if(!opened)h.throwSample=null;
+  }
+  original.sampleHand(h,sample,dt);
+  if(sample&&h.held?.kind==='eco'&&h.held.tool.kind==='food'&&h.openTime>.055&&h.throwSample&&h.recovery<=0&&h.stable>.17){releaseHand(h,true);h.closed=false;h.pinch=false;h.grasp=false;}
+  for(let i=0;i<slotItems.length;i++)slotItems[i].halo.visible=hands.some(a=>a.valid&&a.hover?.id==='eco'+i);
+};
+handCaption=function(h,text){if(h.held?.kind==='eco'){const k=h.held.tool.kind;text=k==='food'?'GENTLE TOSS · OPEN HAND':k==='cloud'?'HOLD TO RAIN · OPEN TO LEAVE CLOUD':'MOVE · OPEN TO PLACE'+(ECO.map?' · MAP AVAILABLE':'');}else if(h.hover?.kind==='eco')text='GRAB '+h.hover.tool.name;original.handCaption(h,text);};
+releaseHand=function(h,commit=true){const held=h.held;if(held?.kind!=='eco'){original.releaseHand(h,commit);return;}
+  const target=plantingTarget(h);h.held=null;h.hover=null;h.cooldown=state.time+.3;h.openTime=0;h.preview=null;groundMarkers[h.i].n.visible=false;
+  if(ECO.cloudOwner===h)ECO.cloudOwner=null;
+  if(commit&&h.valid&&h.recovery<=0&&!state.safe&&held.age>.15){
+    if(held.tool.kind==='food'){const s=h.throwSample||{p:h.p.clone(),v:estimateThrow(h)};throwFood(s.p,s.v,held.n);h.throwSample=null;return;}
+    if(target.ok){if(held.tool.kind==='plant'){const t=plant(held.tool.type,target.p,{flight:{n:held.n,from:held.n.p.clone()}});if(t)return;}else placeEco(held.tool,target.p);}
+    else ecoMessage('Tool returned safely',target.msg);
+  }
+  removeNode(held.n);h.throwSample=null;
+};
+buttonNear=function(h){if(h.closed||h.held||state.nurseryMoving)return null;const p=(h.sample?.index||h.p).clone().sub(nursery.p).applyQ(nursery.q.clone().inverse());for(const b of ecoButtons)if(Math.abs(p.x-b.p.x)<b.w/2&&Math.abs(p.y-b.p.y)<b.h/2+.014&&Math.abs(p.z-b.p.z)<.055)return {kind:b.id,pos:localWorld(b.p),required:b.id==='reset'?2:.48};return null;};
+handleButton=function(h,dt){const b=buttonNear(h);if(!b){h.button=null;h.buttonTime=0;h.buttonLatched=false;return;}if(h.button!==b.kind){h.button=b.kind;h.buttonTime=0;h.buttonLatched=false;}if(h.buttonLatched)return;h.buttonTime+=dt;touchRing.visible=true;touchRing.p.copy(b.pos).add(new V(0,0,.015).applyQ(nursery.q));touchRing.q.copy(nursery.q);const k=clamp(h.buttonTime/b.required,0,1);touchRing.size(.015+.032*k,.015+.032*k,.005);if(k>=1){h.buttonLatched=true;action(b.kind);sound.note(510,.1);}};
+
+function placeEco(tool,world){if(state.safe)return false;const p=el(world);p.y=0;if(![p.x,p.z].every(Number.isFinite))return false;
+  if(tool.kind==='river'){
+    if(ECO.river.length>=18){ecoMessage('Creek has 18 control stones','Move existing stones on the map, or undo one.');return false;}
+    if(ECO.river.some(a=>horizontal(a,p)<.23)){ecoMessage('Move the next stone further along','Leave space for a channel segment.');return false;}
+    recordAction({kind:'river',old:ECO.river.map(a=>a.clone())});ECO.river.push(p);ECO.creekDirty=true;ecoMessage('Creek extended','Water flows from the first stone towards the last.');
+  }else if(tool.kind==='editriver'){
+    if(!ECO.river[tool.index])return false;recordAction({kind:'river',old:ECO.river.map(a=>a.clone())});ECO.river[tool.index]=p;ECO.creekDirty=true;
+  }else if(tool.kind==='pool'){
+    if(ECO.pools.length>=6){ecoMessage('Waterhole limit reached','Undo a waterhole to move it.');return false;}
+    if(riverDistance(p)>.60){ecoMessage('Connect the waterhole to the creek','Place it close to an existing channel segment.');return false;}
+    recordAction({kind:'pool'});ECO.pools.push(p);ECO.creekDirty=true;
+  }else if(tool.kind==='bridge'){
+    if(ECO.bridge){ecoMessage('The wildlife bridge is already placed','Restore the four approach patches, then test the route.');return false;}
+    if(horizontal(p,new V(0,0,-.67))>1.0){ecoMessage('Aim at the gold crossing marker','Use EDIT MAP to reach it without walking across the room.');return false;}
+    recordAction({kind:'bridge'});ECO.bridge=true;buildRoute();ecoMessage('Wildlife overpass installed','Its entrances still need connected habitat.');
+  }else if(tool.kind==='cloud'){if(ECO.trial)return false;ECO.rain={p,until:ECO.time+8,level:ECO.rainLevel};ecoMessage('Rain cloud placed','Eight seconds of local rain. Use FAIR TEST for a controlled comparison.');}
+  ECO.miniDirty=true;return true;
+}
+function undoEco(){if(ECO.trial){ecoMessage('Finish or stop the trial first');return;}const a=ECO.undo.pop();if(!a){ecoMessage('Nothing to undo yet');return;}
+  if(a.kind==='plant'){const t=state.trees.find(t=>t.id===a.id);if(t){for(const f of state.flights.filter(f=>f.tree===t))removeNode(f.n);state.flights=state.flights.filter(f=>f.tree!==t);removeNode(t.base);disposeTreeNode(t.base);state.trees=state.trees.filter(x=>x!==t);}}
+  if(a.kind==='river')ECO.river=a.old;if(a.kind==='width')ECO.riverWidth=a.old;if(a.kind==='pool')ECO.pools.pop();if(a.kind==='bridge'){ECO.bridge=false;buildRoute();}
+  ECO.creekDirty=true;ECO.miniDirty=true;ecoMessage('Last build action undone');rebuildTools();
+}
+
+let riverSurfaces=[],flowLeaves=[],riverSamples=[],plotSigns=[],approachRings=[],floodSurfaces=[];
+const approachSites=[new V(-1.40,0,-.67),new V(-.77,0,-.67),new V(.77,0,-.67),new V(1.40,0,-.67)];
+function interpolateCreek(){const a=ECO.river,out=[];if(a.length<2)return a.map(p=>p.clone());for(let i=0;i<a.length-1;i++)for(let j=0;j<8;j++){const t=j/8,t2=t*t,t3=t2*t,p0=a[Math.max(0,i-1)],p1=a[i],p2=a[i+1],p3=a[Math.min(a.length-1,i+2)],v=new V();for(const k of ['x','z'])v[k]=.5*((2*p1[k])+(-p0[k]+p2[k])*t+(2*p0[k]-5*p1[k]+4*p2[k]-p3[k])*t2+(-p0[k]+3*p1[k]-3*p2[k]+p3[k])*t3);out.push(v);}out.push(a[a.length-1].clone());return out;}
+function buildRiver(){
+  emptyNode(riverRoot);riverSurfaces=[];flowLeaves=[];floodSurfaces=[];riverSamples=interpolateCreek();const r=ECO.riverWidth;
+  for(let i=1;i<riverSamples.length;i++){
+    const a=riverSamples[i-1],b=riverSamples[i],mid=a.clone().lerp(b,.5),length=horizontal(a,b),yaw=Math.atan2(b.x-a.x,b.z-a.z);
+    const flood=mesh('box',0x91aba0,[mid.x,.013,mid.z],[r*2.8,.007,length+.05]).turn(0,yaw);flood.color[3]=0;riverRoot.add(flood);floodSurfaces.push(flood);
+    riverRoot.add(mesh('box',0xaa9770,[mid.x,.009,mid.z],[r*2.45,.016,length+.08]).turn(0,yaw));
+    const w=mesh('box',0x61aeb6,[mid.x,.024,mid.z],[r*2,.010,length+.035]).turn(0,yaw);w.color[3]=.82;riverRoot.add(w);riverSurfaces.push(w);
+    if(i%2===0){const disc=mesh('disc',0x61aeb6,[b.x,.024,b.z],[r,.008,r]);disc.color[3]=.82;riverRoot.add(disc);riverSurfaces.push(disc);}
+    if(i%5===0)for(const side of [-1,1]){const x=mid.x+Math.cos(yaw)*r*1.3*side,z=mid.z-Math.sin(yaw)*r*1.3*side;riverRoot.add(mesh('sphere',i%3?0xb4ac93:0x8d9587,[x,.04,z],[.065,.045,.082]));}
+  }
+  for(const p of ECO.pools){riverRoot.add(mesh('disc',0xb1a17c,[p.x,.013,p.z],[.52,.014,.40]));const water=mesh('disc',0x61aeb6,[p.x,.028,p.z],[.46,.009,.35]);water.color[3]=.8;riverRoot.add(water);riverSurfaces.push(water);}
+  ECO.river.forEach((p,i)=>{riverRoot.add(mesh('sphere',0x83d4db,[p.x,.075,p.z],[.062,.05,.057]));if(i===0||i===ECO.river.length-1){const tag=textLabel(i===0?'UPSTREAM':'DOWNSTREAM',.43,.09,{bg:'#2b6f72',size:26});tag.at(p.x,.25,p.z);tag.billboard=true;riverRoot.add(tag);}});
+  for(let i=0;i<14;i++){const leaf=mesh('leaf',i%2?0xd6d9a3:0xc3eadf,[0,.045,0],[.06,.018,.11]);riverRoot.add(leaf);flowLeaves.push(leaf);}
+  ECO.creekDirty=false;ECO.miniDirty=true;
+}
+function buildGround(){emptyNode(groundRoot);plotSigns=[];
+  const road=mesh('box',0x5a625b,[0,.008,-.18],[.62,.014,3.72]);road.color[3]=.72;groundRoot.add(road);
+  for(let z=-1.85;z<1.65;z+=.38)groundRoot.add(mesh('box',0xe0d7aa,[0,.022,z],[.035,.008,.19]));
+  for(const [p,text] of [[ECO.plotA,'A · REFERENCE'],[ECO.plotB,'B · RESTORE HERE']]){
+    const soil=mesh('disc',0xa78657,[p.x,.012,p.z],[.54,.014,.54]);soil.color[3]=.77;groundRoot.add(soil,mesh('ring',0xead9a2,[p.x,.027,p.z],[.56,.006,.56]));
+    const tag=textLabel(text,.64,.12,{bg:'#5b634a',size:32});tag.at(p.x,.14,p.z+.56);tag.billboard=true;groundRoot.add(tag);plotSigns.push(tag);
+  }
+  for(const side of [-1,1]){const tag=textLabel('HABITAT '+(side<0?'A':'B'),.58,.12,{bg:'#426347',size:31});tag.at(side*2,.12,-1.42);tag.billboard=true;groundRoot.add(tag);}
+}
+function buildRoute(){emptyNode(routeRoot);approachRings=[];
+  approachSites.forEach((p,i)=>{const ring=mesh('ring',0xebc77e,[p.x,.037,p.z],[.255,.009,.255]);routeRoot.add(ring);approachRings.push(ring);});
+  if(!ECO.bridge){routeRoot.add(mesh('ring',0xf3d298,[0,.037,-.67],[.38,.006,.38]));const tag=textLabel('DROP WILDLIFE BRIDGE',.78,.11,{bg:'#795e3e',size:30});tag.at(0,.37,-.67);tag.billboard=true;routeRoot.add(tag);}
+  else{
+    for(let i=0;i<14;i++){const x=-.67+(i+.5)*1.34/14,y=.04+.26*Math.sin((i+.5)/14*Math.PI);routeRoot.add(mesh('box',0x99b06b,[x,y,-.67],[.104,.06,.51]));for(const side of [-1,1])routeRoot.add(mesh('box',0xcdb98f,[x,y+.08,-.67+side*.27],[.105,.16,.028]));}
+    for(const x of [-.34,.34])routeRoot.add(mesh('box',0xb8ab8c,[x,.115,-.67],[.10,.23,.51]));
+  }
+  ECO.miniDirty=true;
+}
+function establishedNear(p,r=.42,layer=null){return state.trees.filter(t=>!t.pending&&t.growth>=.6&&(!layer||layerOf(t)===layer)&&horizontal(el(t.p),p)<r);}
+function routeStatus(){const ground=approachSites.map(p=>establishedNear(p,.40,'Ground').length>0),shrub=approachSites.map(p=>establishedNear(p,.60,'Understorey').length>0);return {ground,shrub,roo:ECO.bridge&&ground.every(Boolean),skink:ECO.bridge&&ground.every(Boolean)&&[0,3].every(i=>shrub[i])};}
+function testRoute(){if(state.safe)return;const s=routeStatus();ECO.routeResult=s;ECO.routeTest={time:0,result:s};const missing=s.ground.filter(v=>!v).length;
+  ecoMessage(s.roo?'Kangaroo route connected!':'The habitat route is incomplete',!ECO.bridge?'Place a wildlife overpass at the gold road marker.':missing?missing+' approach patches need established ground cover.':s.skink?'Ground cover and shrub shelter also support the model skink route.':'Kangaroos can cross. Add shrub shelter at the outer approaches for skinks.');
+  if(s.roo){const r=roos[0];r.target=new V(2,0,-.8);r.routeDemo=true;r.foodTarget=null;}
+}
+function coverageAt(p){
+  // Sample equal-area plot cells, avoiding double-counting overlapping plants.
+  let protectedCells=0;const grid=9;for(let x=0;x<grid;x++)for(let z=0;z<grid;z++){
+    const cell=p.clone().add(new V((x/(grid-1)-.5)*.82,0,(z/(grid-1)-.5)*.82));let best=0;
+    for(const t of state.trees){if(t.pending)continue;const d=horizontal(el(t.p),cell),radius=t.type===5?.40:t.type>=3?.31:t.type===0?.29:.35;
+      if(d<radius)best=Math.max(best,(t.type>=3?1:.32)*t.growth*(1-.25*d/radius));}
+    protectedCells+=best;
+  }return clamp(protectedCells/(grid*grid),0,1);
+}
+function hydro(cover,level){
+  // Standardised initial soil moisture and slope. No measured mm/litres are claimed.
+  const runoff=clamp(.68+level*.08-cover*.47,.08,.94),infiltration=1-runoff,sediment=100*runoff*(1-cover*.88);
+  return {cover,runoff:Math.round(runoff*100),infiltration:Math.round(infiltration*100),sediment:Math.round(sediment)};
+}
+function startTrial(){if(state.safe||ECO.trial)return false;if(!ECO.prediction){ecoMessage('Make a prediction first','Choose A loses more, B loses more, or similar loss.');return false;}
+  ECO.trial={t:0,a:hydro(coverageAt(ECO.plotA),ECO.rainLevel),b:hydro(coverageAt(ECO.plotB),ECO.rainLevel),level:ECO.rainLevel,prediction:ECO.prediction};ECO.rain=null;ECO.reflection=false;rebuildTools();ecoMessage('Fair test running · 10 seconds','Same rain, slope and starting soil moisture. Plant cover is captured at the start.');return true;
+}
+function finishTrial(){const t=ECO.trial;if(!t)return;const actual=Math.abs(t.a.sediment-t.b.sediment)<5?'same':t.a.sediment>t.b.sediment?'a':'b';const result={...t,actual,number:ECO.history.length+1};ECO.history.push(result);if(ECO.history.length>6)ECO.history.shift();ECO.trial=null;ECO.prediction=null;ECO.waterBrown=(t.a.sediment+t.b.sediment)/200;ECO.reportReady=true;
+  ecoMessage('Soil-loss index: A '+t.a.sediment+' · B '+t.b.sediment,(actual===result.prediction?'Prediction matched. ':'Prediction differed—use the evidence. ')+'Which feature explains the result?');rebuildTools();
+}
+const rainCloud=toolModel({kind:'cloud'}).size(3.4),rainDrops=[],runoffDots=[];rainRoot.add(rainCloud);rainCloud.visible=false;
+for(let i=0;i<110;i++){const n=mesh('sphere',0xa8d9e1,[0,0,0],[.009,.038,.009]);rainRoot.add(n);n.visible=false;rainDrops.push(n);}
+for(let i=0;i<42;i++){const n=mesh('sphere',0x967444,[0,0,0],[.012,.007,.018]);rainRoot.add(n);n.visible=false;runoffDots.push(n);}
+function updateRain(dt){
+  if(ECO.rain&&ECO.time>ECO.rain.until)ECO.rain=null;
+  const active=!!ECO.trial||!!ECO.rain,level=ECO.trial?.level??ECO.rain?.level??0;
+  rainCloud.visible=active;const p=ECO.trial?new V(0,1.8,.73):ECO.rain?.p.clone().add(new V(0,1.8,0));if(p)rainCloud.p.copy(p);
+  const count=[45,80,110][level];rainDrops.forEach((n,i)=>{n.visible=active&&i<count;if(!n.visible)return;const centre=ECO.trial?(i%2?ECO.plotA:ECO.plotB):ECO.rain.p;const a=i*2.399,r=.53*Math.sqrt((i%29+1)/30),u=(ECO.time*(.9+level*.3)+i*.171)%1;n.p.set(centre.x+Math.sin(a)*r,.04+(1-u)*1.65,centre.z+Math.cos(a)*r);});
+  runoffDots.forEach((n,i)=>{n.visible=active;if(!active)return;const centre=ECO.trial?(i%2?ECO.plotA:ECO.plotB):ECO.rain.p,cover=ECO.trial?(i%2?ECO.trial.a.cover:ECO.trial.b.cover):coverageAt(centre),u=(ECO.time*.43+i*.127)%1;
+    n.visible=(i%21)/21<1-cover*.9;let nearest=riverSamples.reduce((best,p)=>horizontal(p,centre)<horizontal(best,centre)?p:best,riverSamples[0]||centre);n.p.copy(centre).lerp(nearest,u);n.p.x+=Math.sin(i*3)*.20*(1-u);n.p.y=.042;n.color=rgba(i%3?0xa58a62:0x9bd0ce);});
+  if(ECO.trial){ECO.trial.t+=dt;if(ECO.trial.t>=10)finishTrial();}
+  else if(ECO.rain){const centre=ECO.rain.p;for(const t of state.trees)if(horizontal(el(t.p),centre)<.65)grow(t,dt*.15);ECO.waterBrown=mix(ECO.waterBrown,hydro(coverageAt(centre),level).sediment/100,dt*.2);}
+  else ECO.waterBrown=Math.max(0,ECO.waterBrown-dt*.005);
+  const runoff=ECO.trial?(ECO.trial.a.runoff+ECO.trial.b.runoff)/200:ECO.rain?hydro(coverageAt(ECO.rain.p),level).runoff/100:0;
+  ECO.flood=mix(ECO.flood||0,active&&level===2?clamp((runoff-.35)*1.8,0,1):0,Math.min(1,dt*.8));
+  for(const n of floodSurfaces){n.s.x=ECO.riverWidth*(2.5+ECO.flood*2.0);n.color[3]=ECO.flood*.22;n.visible=ECO.flood>.02;}
+  for(const n of riverSurfaces){n.color=rgba([mix(.30,.53,ECO.waterBrown),mix(.64,.42,ECO.waterBrown),mix(.68,.24,ECO.waterBrown),.82]);}
+  flowLeaves.forEach((n,i)=>{n.visible=riverSamples.length>1;if(!n.visible)return;const u=(ECO.time*(.047+level*.005)+i/flowLeaves.length)%1*(riverSamples.length-1),index=Math.floor(u);n.p.copy(riverSamples[index]).lerp(riverSamples[Math.min(index+1,riverSamples.length-1)],u-index);n.p.y=.045;n.q.yaw(ECO.time*.3+i);});
+}
+
+function kangaroo(index,joey=false){
+  const n=new Node(),body=new Node(),head=new Node(),ears=[],legs=[],arms=[],fur=index%2?0x9d998a:0xa99b85,light=0xd6cbb2;n.add(body);
+  const shadow=mesh('disc',0x657358,[0,.016,-.04],[.34,.009,.48]);shadow.color[3]=.24;n.add(shadow);
+  body.add(mesh('sphere',fur,[0,.51,-.06],[.19,.32,.20]).turn(-.20),mesh('sphere',light,[0,.64,.098],[.126,.22,.094]).turn(-.20),mesh('sphere',fur,[0,.81,.05],[.13,.20,.125]).turn(-.22));
+  head.at(0,.96,.12);body.add(head);head.add(mesh('sphere',fur,[0,0,0],[.105,.12,.13]),mesh('sphere',fur,[0,-.045,.105],[.072,.070,.115]),mesh('sphere',0x3e4540,[0,-.05,.195],[.043,.035,.030]));
+  for(const side of [-1,1]){
+    head.add(mesh('sphere',0x242f29,[side*.088,.007,.062],[.016,.019,.012]),mesh('sphere',0xf3efdb,[side*.097,.013,.068],[.006,.007,.006]));
+    const ear=new Node().at(side*.061,.085,-.013).turn(0,0,-side*.19);ear.add(mesh('sphere',fur,[0,.15,0],[.043,.18,.040]),mesh('sphere',0xc7bca5,[0,.15,.028],[.023,.135,.016]));head.add(ear);ears.push(ear);
+    const leg=new Node().at(side*.145,.45,-.03);leg.add(mesh('sphere',fur,[0,-.05,0],[.119,.20,.13]).turn(-.35),mesh('cylinder',fur,[0,-.23,.013],[.036,.28,.036]).turn(-.30),mesh('sphere',0x817d6f,[0,-.38,.145],[.061,.052,.205]));body.add(leg);legs.push(leg);
+    const arm=new Node().at(side*.125,.77,.125);addStick(arm,new V(),new V(side*.023,-.19,.055),.026,fur);addStick(arm,new V(side*.023,-.19,.055),new V(side*.015,-.25,.13),.018,fur);arm.add(mesh('sphere',0x6e7065,[side*.015,-.25,.14],[.027,.025,.040]));body.add(arm);arms.push(arm);
+  }
+  let a=new V(0,.36,-.15);for(let i=0;i<7;i++){const b=new V(Math.sin(i*.12)*.035,.04+.23*Math.exp(-(i+1)*.7),-.15-(i+1)*.145);addStick(body,a,b,.087*(1-i/8),i>4?0x7b7d6e:fur);a=b;}
+  let baby=null;if(joey){body.add(mesh('sphere',0xb1a58a,[0,.59,.165],[.104,.105,.047]));baby=new Node().at(0,.65,.188);baby.add(mesh('sphere',0xb6aa8f,[0,.025,0],[.059,.066,.058]),mesh('sphere',0x45483d,[0,.005,.058],[.023,.018,.013]));for(const s of [-1,1])baby.add(mesh('sphere',0xb6aa8f,[s*.029,.106,-.01],[.020,.075,.019]).turn(0,0,-s*.15),mesh('sphere',0x28342c,[s*.045,.045,.034],[.008,.009,.009]));body.add(baby);}
+  const title=textLabel(joey?'EASTERN GREY + JOEY':'EASTERN GREY',.58,.095,{bg:'#3b5648',size:27});title.at(0,1.45,0);title.billboard=true;n.add(title);n.size(index===2?.67:.9);rooRoot.add(n);
+  return {n,body,head,ears,legs,arms,baby,title,index,phase:index*2.4,p:new V(index===1?1.8:-1.9,0,index===2?-.15:-1.1),target:null,foodTarget:null,eat:0,roamAt:0,routeDemo:false,waypoints:[]};
+}
+const roos=[kangaroo(0,true),kangaroo(1),kangaroo(2)];
+function canCrossRoad(a,b){if(a.x*b.x>=0)return true;return routeStatus().roo;}
+function setRooPath(r,target){r.target=target.clone();r.waypoints=[];if(r.p.x*target.x<0){const side=Math.sign(r.p.x)||-1;r.waypoints.push(new V(side*.72,0,-.67),new V(-side*.72,0,-.67));}r.waypoints.push(target.clone());}
+function throwFood(world,velocity,node=null,aim=null){
+  if(state.safe){if(node)removeNode(node);return null;}
+  const p=el(world),v=velocity.clone().applyQ(ECO.q.clone().inverse());
+  // Preserve the actual release velocity, with a gentle fallback toss for slow releases.
+  if(v.len()<.65){let forward=state.forward.clone().applyQ(ECO.q.clone().inverse());v.copy(forward).scale(1.7);v.y=1.8;}
+  if(aim){const t=.8,target=el(aim);v.copy(target).sub(p).scale(1/t);v.y=(target.y-p.y+4.905*t*t)/t;}
+  if(v.len()>6.5)v.norm().scale(6.5);
+  if(ECO.food.length>=14){const old=ECO.food.shift();removeNode(old.n);}
+  const n=node||foodModel();removeNode(n);foodRoot.add(n);n.p.copy(p);const f={id:++ECO.foodID,n,p,v,life:22,landed:false,claimed:null};ECO.food.push(f);sound.note(430,.1,0,.07);return f;
+}
+function updateFood(dt){
+  // Substeps avoid tunnelling when a frame stalls; pause doesn't consume food lifetime.
+  for(const f of [...ECO.food]){f.life-=dt;if(!f.landed){let left=dt;while(left>0){const step=Math.min(left,1/90);left-=step;f.v.y-=9.81*step;f.p.add(f.v.clone().scale(step));if(f.p.y<.06){f.p.y=.06;f.landed=true;f.v.set(0,0,0);break;}}f.n.q.yaw(ECO.time*4+f.id);}
+    f.n.p.copy(f.p);if(f.life<=0||Math.abs(f.p.x)>35||Math.abs(f.p.z)>35){removeNode(f.n);ECO.food=ECO.food.filter(a=>a!==f);}
+  }
+}
+function updateRoos(dt){const status=routeStatus();
+  for(const r of roos){
+    if(r.foodTarget&&!ECO.food.includes(r.foodTarget)){r.foodTarget=null;r.eat=0;r.target=null;r.waypoints=[];}
+    if(!r.foodTarget&&!r.routeDemo){const candidates=ECO.food.filter(f=>f.landed&&!f.claimed&&horizontal(r.p,f.p)<5&&canCrossRoad(r.p,f.p)&&!onRoad(f.p)&&riverDistance(f.p)>ECO.riverWidth*.7).sort((a,b)=>horizontal(a.p,r.p)-horizontal(b.p,r.p));if(candidates[0]){r.foodTarget=candidates[0];r.foodTarget.claimed=r.index+1;setRooPath(r,r.foodTarget.p);}}
+    if(r.routeDemo&&r.target&&!r.waypoints.length){setRooPath(r,r.target);}
+    if(r.waypoints.length&&r.p.x*r.waypoints[r.waypoints.length-1].x<0&&!status.roo){if(r.foodTarget)r.foodTarget.claimed=null;r.foodTarget=null;r.waypoints=[];r.target=null;r.routeDemo=false;}
+    if(!r.waypoints.length&&!r.foodTarget&&ECO.time>r.roamAt&&!r.routeDemo){const side=Math.sign(r.p.x)||-1;setRooPath(r,new V(side*(1.45+.50*Math.sin(ECO.time*.19+r.index)),0,-1.12+.43*Math.sin(ECO.time*.23+r.index*2)));r.roamAt=ECO.time+6+r.index;}
+    const goal=r.waypoints[0];let moving=false;
+    if(goal&&horizontal(goal,r.p)>.075){const d=goal.clone().sub(r.p);d.y=0;const distance=d.len(),worldP=ew(r.p),tooClose=state.mode==='xr'&&horizontal(worldP,state.head)<.7;
+      if(!tooClose){const step=Math.min(distance,dt*(r.foodTarget?1.0:.62));r.p.add(d.norm().scale(step));r.n.q.slerp(new Q().yaw(Math.atan2(d.x,d.z)),1-Math.exp(-6*dt));moving=true;}
+    }else if(goal){r.waypoints.shift();if(!r.waypoints.length){r.target=null;r.routeDemo=false;}}
+    const hop=moving?Math.max(0,Math.sin(ECO.time*10+r.phase)):0,bridgeHeight=ECO.bridge&&Math.abs(r.p.x)<.67&&Math.abs(r.p.z+.67)<.26?.04+.26*Math.sin((r.p.x+.67)/1.34*Math.PI):0;
+    r.n.p.copy(r.p);r.n.p.y=hop*.13+bridgeHeight;r.legs.forEach(l=>l.q.axis(new V(1,0,0),moving?Math.sin(ECO.time*10+r.phase)*.32:0));r.arms.forEach(a=>a.q.axis(new V(1,0,0),moving?-.18+hop*.18:0));
+    const eating=r.foodTarget&&r.waypoints.length===0&&horizontal(r.p,r.foodTarget.p)<.22;
+    if(eating){r.eat+=dt;r.head.q.axis(new V(1,0,0),.5+Math.sin(ECO.time*8)*.055);r.head.p.y=.89;r.body.q.axis(new V(1,0,0),.18);if(r.eat>2.2){const f=r.foodTarget;removeNode(f.n);ECO.food=ECO.food.filter(x=>x!==f);r.foodTarget=null;r.eat=0;ECO.fed++;r.roamAt=ECO.time+2;burst(ew(r.p).add(new V(0,.6,0)),0xaec979,9);ecoMessage('Munch! A kangaroo ate your grass','Virtual food only. Observe real kangaroos without feeding them.');}}
+    else{r.head.p.y=.96;r.head.q.axis(new V(0,1,0),Math.sin(ECO.time*.7+r.phase)*.12);r.body.q.axis(new V(1,0,0),moving?-.08:0);}
+    r.ears.forEach((e,i)=>e.q.axis(new V(0,0,1),(i?-.18:.18)+Math.sin(ECO.time*1.1+r.phase+i)*.06));if(r.baby)r.baby.p.y=.65+Math.sin(ECO.time*2.3)*.008;
+    r.title.visible=ECO.page==='roos';r.n.visible=horizontal(ew(r.p),state.head)>.40;
+  }
+}
+
+function updateMini(){if(!ECO.map||!ECO.miniDirty&&ECO.time<ECO.miniAt)return;ECO.miniDirty=false;ECO.miniAt=ECO.time+.45;emptyNode(miniObjects);
+  miniObjects.add(mesh('box',0x637161,[0,.012,-.18*miniScale],[.62*miniScale,.006,3.72*miniScale]));
+  for(let i=1;i<ECO.river.length;i++){const a=ECO.river[i-1].clone().scale(miniScale),b=ECO.river[i].clone().scale(miniScale),d=b.clone().sub(a),n=mesh('box',0x86cdd4,[(a.x+b.x)/2,.023,(a.z+b.z)/2],[ECO.riverWidth*2*miniScale,.007,d.len()+.017]).turn(0,Math.atan2(d.x,d.z));miniObjects.add(n);}
+  ECO.river.forEach(p=>miniObjects.add(mesh('sphere',0xc5eee6,[p.x*miniScale,.035,p.z*miniScale],[.014,.009,.014])));
+  for(const t of state.trees){const p=el(t.p).scale(miniScale);if(Math.abs(p.x)>.52||Math.abs(p.z)>.33)continue;const h=(t.type===0?.26:t.type<3?.13:.034)*(.2+.8*t.growth);miniObjects.add(mesh('cylinder',0xaa9770,[p.x,.023+h*.4,p.z],[.006,h*.8,.006]),mesh(t.type>=3?'disc':'sphere',SPECIES[t.type].color,[p.x,.027+h*.77,p.z],[t.type>=3?.037:.040,t.type>=3?.008:h*.3,.038]));}
+  if(ECO.bridge)miniObjects.add(mesh('box',0xcbe193,[0,.039,-.67*miniScale],[.24,.025,.09]));
+  for(const [p,c] of [[ECO.plotA,0xf0c78c],[ECO.plotB,0xa1d6af]])miniObjects.add(mesh('ring',c,[p.x*miniScale,.022,p.z*miniScale],[.10,.006,.10]));
+  roos.forEach(r=>miniObjects.add(mesh('sphere',0xe0caa6,[r.p.x*miniScale,.038,r.p.z*miniScale],[.016,.020,.02])));
+}
+
+const layerTags=new Map();
+updateTrees=function(dt){original.updateTrees(dt);const activeIDs=new Set(state.trees.map(t=>t.id));
+  for(const [id,n] of layerTags)if(!activeIDs.has(id)){removeNode(n);disposeTreeNode(n);layerTags.delete(id);}
+  for(const t of state.trees){
+    // Keep world positions stable. Only nearby visual opacity changes, never the coordinates.
+    const d=horizontal(t.p,state.head),alpha=state.mode==='xr'?smooth(.32,.85,d):1;
+    if(t._fade!==alpha){const set=n=>{if(n.geo)n.color[3]=alpha;for(const c of n.children)set(c);};set(t.base);t._fade=alpha;}
+    t.base.visible=!state.safe&&!t.pending&&d<35&&alpha>.015;
+    if(ECO.layerView){let tag=layerTags.get(t.id);if(!tag){tag=textLabel(layerOf(t).toUpperCase(),.48,.10,{bg:t.type===0?'#315f70':t.type<3?'#637542':'#946e42',size:28});tag.billboard=true;root.add(tag);layerTags.set(t.id,tag);}tag.p.copy(t.p).y=.6+Math.min(2.4,t.height*t.displayGrowth);tag.visible=!state.safe&&d<10;}
+  }if(!ECO.layerView)for(const n of layerTags.values())n.visible=false;
+};
+updateWildlife=function(dt){
+  // Use the existing detailed wildlife models, but do not perch birds on grass tufts.
+  original.updateWildlife(dt);for(const a of critters)if(['parrot','kookaburra','magpie'].includes(a.kind)){
+    const tall=state.trees.filter(t=>t.adult&&t.type===0);if(!tall.length){a.n.visible=false;continue;}const t=tall[a.index%tall.length];a.n.p.set(t.p.x+.25*Math.sin(a.phase),t.height*.68,t.p.z+.25*Math.cos(a.phase));
+  }
+};
+
+function clearEco(){ECO.trackingUnknown=false;ECO.flood=0;ECO.ready=false;ecoRoot.visible=false;ECO.river=[];ECO.pools=[];ECO.bridge=false;ECO.food=[];emptyNode(foodRoot);ECO.fed=0;ECO.rain=null;ECO.trial=null;ECO.history=[];ECO.prediction=null;ECO.reflection=false;ECO.routeResult=null;ECO.routeTest=null;ECO.undo=[];ECO.waterBrown=0;ECO.boardKey='';ECO.cloudOwner=null;ECO.reportReady=false;ECO.startHead=null;ECO.maxTravel=0;
+  for(const n of layerTags.values()){removeNode(n);disposeTreeNode(n);}layerTags.clear();roos.forEach((r,i)=>{r.p.set(i===1?1.8:-1.9,0,i===2?-.15:-1.1);r.target=null;r.foodTarget=null;r.waypoints=[];r.eat=0;r.routeDemo=false;r.roamAt=ECO.time+3;});
+}
+function bootEco(demo=false){
+  ECO.ready=true;ECO.origin.copy(state.mode==='xr'?state.head.clone().add(state.forward.clone().scale(2)):new V());ECO.origin.y=0;ECO.q.yaw(state.mode==='xr'?Math.atan2(-state.forward.x,-state.forward.z):0);ecoRoot.p.copy(ECO.origin);ecoRoot.q.copy(ECO.q);ecoRoot.visible=!state.safe;
+  ECO.river=[new V(-2.65,0,1.3),new V(-1.60,0,1.5),new V(-.5,0,1.34),new V(.70,0,1.53),new V(2.45,0,1.28)];ECO.riverWidth=.29;ECO.creekDirty=true;buildGround();buildRoute();
+  for(const [type,x,z] of [[0,-2.05,-1.05],[0,2.03,-1.1],[1,-2.36,-.1],[2,2.42,-.17]])plant(type,ew(new V(x,0,z)),{demo:true});
+  if(demo){for(const [type,x,z] of [[3,-1.5,-.3],[3,1.48,-.34],[4,-1.7,1.05],[4,1.9,.91],[5,-2.1,-.5]])plant(type,ew(new V(x,0,z)),{demo:true});}
+  ECO.startHead=state.head.clone();ECO.undo=[];ECO.miniDirty=true;rebuildTools();
+}
+resetForest=function(show=true){original.resetForest(false);clearEco();if(show)ecoMessage('A fresh creek landscape','Existing habitat remains at both ends. Your restoration starts in the gaps.');};
+setNurseryAtHead=function(immediate=true){original.setNurseryAtHead(immediate);if(!ECO.ready&&state.mode==='xr')bootEco(false);};
+toggleRoom=function(){for(const h of hands)if(h.held)releaseHand(h,false);original.toggleRoom();ecoRoot.visible=!state.safe;for(const n of layerTags.values())n.visible=!state.safe&&ECO.layerView;rebuildTools();};
+updateTools=function(dt){original.updateTools(dt);miniature.visible=ECO.map;};
+function objectiveStatus(){const planted=state.trees.filter(t=>t.adult&&!t.preexisting),layers=new Set(planted.map(layerOf)),route=routeStatus();return {layers,route,done:[layers.size===3,ECO.undo.some(a=>a.kind==='river'||a.kind==='pool'),ECO.history.length>0&&ECO.reflection,!!ECO.routeResult?.roo&&route.roo]};}
+function panelLines(){const s=objectiveStatus();if(state.safe)return ['ROOM VIEW · PAUSED','Your forest and wildlife are hidden.','Resume when ready. Keep the headset boundary enabled.'];
+  if(ECO.trial)return ['FAIR RAIN TEST · '+Math.ceil(10-ECO.trial.t)+'s remaining','Same rain, slope and initial moisture · cover held at start','Watch runoff travel from both plots towards the creek.'];
+  if(ECO.page==='rain'){const h=ECO.history[ECO.history.length-1];if(h)return ['RESULT '+h.number+' · SOIL LOSS A '+h.a.sediment+' / B '+h.b.sediment,'Runoff '+h.a.runoff+'% / '+h.b.runoff+'% · infiltration '+h.a.infiltration+'% / '+h.b.infiltration+'%',ECO.reflection?'Explained! Change the cover and make another prediction.':'What explains the difference? Choose below the shelf.'];return ['RAIN LAB · PREDICT BEFORE TESTING','Plant grass / litter in B. Keep A as the comparison.',ECO.prediction?'Prediction set. Touch FAIR TEST.':'Choose A, B or similar soil loss below.'];}
+  if(ECO.page==='connect'){const r=s.route;return ['CONNECT HABITAT A TO B',r.ground.filter(Boolean).length+'/4 ground-cover approaches · '+(ECO.bridge?'bridge placed':'bridge missing'),r.roo?(r.skink?'Kangaroo and skink model routes connected.':'Kangaroo route ready. Outer shrub shelter helps skinks.'):'Fill gold approach rings, water, then TEST WILDLIFE ROUTE.'];}
+  if(ECO.page==='roos')return ['TOSS VIRTUAL GRASS · '+ECO.fed+' eaten','Grab, gently swing your hand, then open to release.','Pretend feeding only. Do not feed or throw objects at real wildlife.'];
+  if(ECO.page==='creek')return ['BUILD A LIVING WATERWAY',ECO.river.length+' stones · '+ECO.pools.length+' waterholes · '+(ECO.riverWidth*2).toFixed(2)+'m model width','EDIT MAP: grab a blue map stone to reshape the creek.'];
+  return ['RESTORE AN AUSTRALIAN CREEKLAND',s.layers.size+'/3 new layers established · '+s.done.filter(Boolean).length+'/4 investigations complete','Canopy + understorey + ground. Water your new plantings.'];
+}
+paintHUD=function(){
+  const lines=panelLines(),s=objectiveStatus(),key=lines.join('|')+ECO.map;
+  if(key!==ECO.boardKey){ECO.boardKey=key;nursery.hud.paint((c,w,h)=>{c.fillStyle='#1c463a';rr(c,0,0,w,h,23);c.fill();c.fillStyle='#e5c98e';c.font='600 22px system-ui';c.fillText('CREEKLANDS 3.0   /   AUSTRALIAN WOODLAND',24,37);c.fillStyle='#fff2d2';c.font='600 32px system-ui';c.fillText(lines[0],24,92,w-48);c.font='26px system-ui';c.fillStyle='#d0e0c0';c.fillText(lines[1],24,143,w-48);c.font='23px system-ui';c.fillText(lines[2],24,189,w-48);c.fillStyle='#a9c98a';c.font='21px system-ui';c.fillText(ECO.map?'EDITABLE MAP · release tools above a miniature location':'REACH → CLOSE HAND → MOVE → OPEN',24,243,w-48);c.fillStyle='#bac8b0';c.font='17px system-ui';c.fillText('Accelerated growth · simplified simulations · no real room obstacle detection',24,276,w-48);});
+    document.getElementById('ecoTitle').textContent=lines[0];document.getElementById('ecoLine').textContent=lines[1];document.getElementById('ecoSub').textContent=lines[2];document.getElementById('ecoProgress').style.width=s.done.filter(Boolean).length*25+'%';document.getElementById('ecoTasks').textContent=s.done.map((v,i)=>(v?'✓ ':'○ ')+['Layers','Waterway','Rain evidence','Corridor'][i]).join('   ');
+  }
+  nursery.debug.visible=state.settings.debugHands&&state.mode==='xr';if(nursery.debug.visible&&state.time>state.debugAt){state.debugAt=state.time+.3;nursery.debug.paint((c,w,h)=>{c.fillStyle='#18342b';c.fillRect(0,0,w,h);c.fillStyle='#e3e8ce';c.font='20px monospace';c.fillText('Travel '+ECO.maxTravel.toFixed(1)+'m · '+(state.session?.visibilityState||'preview')+' · resets '+ECO.resetCount,16,30);c.fillText(hands.map(a=>a.side+': '+(a.valid?a.held?.tool?.kind||a.held?.kind||'ready':'tracking lost')).join('  '),16,66);c.fillText('v3.0 · '+Math.round(1000/state.frameMs)+' fps · local-floor',16,105);});}
+};
+update=function(dt){
+  if(!ECO.ready&&state.homeSet)bootEco(state.mode==='landing');
+  if(!state.safe){ECO.time+=dt;if(ECO.startHead)ECO.maxTravel=Math.max(ECO.maxTravel,horizontal(state.head,ECO.startHead));}
+  original.update(dt);ecoRoot.visible=ECO.ready&&!state.safe;
+  if(state.safe)return;
+  if(ECO.creekDirty)buildRiver();updateRain(dt);updateFood(dt);updateRoos(dt);updateMini();
+  if(ECO.time>ECO.routeAt){ECO.routeAt=ECO.time+.4;const r=routeStatus();approachRings.forEach((n,i)=>tint(n,r.ground[i]?0x95d8ae:0xebc77e));}
+};
+
+makeDemo=function(){state.mode='landing';state.head.set(0,1.65,3);state.forward.set(0,0,-1);resetForest(false);nursery.at(0,.85,1.8);nursery.q.yaw(0);can.p.copy(localWorld(canHome));can.q.copy(canRestQ());state.homeSet=true;room.visible=true;orbit.yaw=.46;orbit.pitch=.48;orbit.distance=10.3;orbit.target.set(0,.85,0);document.body.dataset.mode='landing';handVisuals.forEach(v=>v.n.visible=false);groundMarkers.forEach(v=>v.n.visible=false);notice.visible=false;touchRing.visible=false;bootEco(true);};
+startPreview=function(full=false){sound.init();state.mode='preview';state.head.set(0,1.65,3);state.forward.set(0,0,-1);resetForest(false);nursery.at(0,.85,1.8);nursery.q.yaw(0);can.p.copy(localWorld(canHome));can.q.copy(canRestQ());state.homeSet=true;room.visible=true;orbit.yaw=.35;orbit.pitch=.65;orbit.distance=10.5;orbit.target.set(0,.7,0);document.body.dataset.mode='preview';bootEco(full);choosePage('grow');selectTool('plant',0);resize();};
+selectTool=function(tool,type=0){if(tool==='plant'||tool==='water'){original.selectTool(tool,type);}else{desktopAction=tool;previewWatering=false;}syncDesktop();};
+
+function syncDesktop(){if(!document.getElementById('ecoTabs'))return;
+  const tabs=document.getElementById('ecoTabs');tabs.replaceChildren();for(const [id,title] of pages){const b=document.createElement('button');b.textContent=title;b.className=ECO.page===id?'active':'';b.onclick=()=>choosePage(id);tabs.append(b);}
+  const slots=document.getElementById('ecoTools');slots.replaceChildren();for(const [i,t] of pageTools().entries()){const b=document.createElement('button');const symbols={plant:t.type===0?'♠':t.type<3?'✿':'❧',river:'≈',pool:'◉',cloud:'☁',bridge:'⌒',food:'❧'};b.innerHTML='<span>'+symbols[t.kind]+'</span>'+t.name;b.className=desktopAction===t.kind&&(t.kind!=='plant'||selectedType===t.type)?'active':'';b.onclick=()=>{desktopAction=t.kind;selectedType=t.type??0;ECO.desktopTool=t;previewWatering=false;syncDesktop();};slots.append(b);}
+  const water=document.createElement('button');water.innerHTML='<span>♧</span>WATER';water.className=desktopAction==='water'?'active':'';water.onclick=()=>selectTool('water');slots.append(water);
+  const actions=document.getElementById('ecoActions');actions.replaceChildren();let ids=ECO.page==='grow'?[['more','More plants']]:ECO.page==='creek'?[['width','Width: '+(ECO.riverWidth*2).toFixed(2)+'m'],['editmode','Move creek stone']]:ECO.page==='rain'?[['intensity',['Light rain','Steady rain','Storm'][ECO.rainLevel]],['predict:a','Predict: A more'],['predict:b','Predict: B more'],['predict:same','Predict: similar'],['trial',ECO.trial?'Stop test':'Run fair test']]:ECO.page==='connect'?[['route','Test wildlife route']]:[['rooinfo','About eastern greys']];
+  if(ECO.page==='rain'&&ECO.history.length&&!ECO.reflection)ids.push(['explain:cover','Explain: ground cover'],['explain:trees','Explain: tree count'],['explain:colour','Explain: colour']);
+  ids.push(['undo','Undo'],['layers',ECO.layerView?'Hide layers':'Show layers'],['report','Field notebook']);
+  for(const [id,name] of ids){const b=document.createElement('button');b.textContent=name;b.onclick=()=>id==='report'?showNotebook():id==='editmode'?(desktopAction='editriver',ECO.editIndex=null,syncDesktop()):action(id);actions.append(b);}
+  const hints={plant:'Click clear floor to plant. Select Water and hold over the roots.',water:'Hold on a seedling to water. Right-drag to orbit.',river:'Click to add a creek stone downstream. Move creek stone edits existing points.',pool:'Click beside the existing creek to add a connected waterhole.',cloud:'Click a patch to leave an eight-second rain cloud.',bridge:'Click the gold crossing marker on the road to place the overpass.',food:'Click near a kangaroo to throw a virtual grass bundle. The kangaroo will approach it.',editriver:ECO.editIndex==null?'Click an existing blue creek stone, then click its new position.':'Click the new position for the selected creek stone.'};
+  document.getElementById('mouseHint').textContent=(hints[desktopAction]||'Choose a tool.')+' Drag to orbit · scroll to zoom';
+}
+function desktopEcoPlace(p){if(!p||state.safe)return;if(desktopAction==='editriver'){
+  const local=el(p);if(ECO.editIndex==null){let index=-1,d=.45;ECO.river.forEach((a,i)=>{if(horizontal(a,local)<d){d=horizontal(a,local);index=i;}});if(index>=0)ECO.editIndex=index;else ecoMessage('Select a blue creek stone first');}
+  else{placeEco({kind:'editriver',index:ECO.editIndex},p);ECO.editIndex=null;}syncDesktop();return;
+  }
+  if(desktopAction==='food'){const start=state.head.clone().add(state.forward.clone().scale(.42));start.y=1.05;throwFood(start,new V(),null,p);return;}
+  placeEco(ECO.desktopTool?.kind===desktopAction?ECO.desktopTool:{kind:desktopAction},p);
+}
+canvas.addEventListener('pointerup',e=>{if(state.mode==='preview'&&pointer.down&&!pointer.orbit&&pointer.tool!=='plant'&&pointer.tool!=='water'&&Math.hypot(e.clientX-pointer.startX,e.clientY-pointer.startY)<9)desktopEcoPlace(floorRay(e.clientX,e.clientY));},true);
+// Core previewPlant() shares the same validation and growth used in XR.
+previewPlant=function(p){if(!p)return;const result=validSpot(p,selectedType);if(result.ok)plant(selectedType,p);else ecoMessage('Choose another patch',result.msg);};
+// Recover known reference-space jumps without deleting the student's work.
+function bindWorldReference(base){
+  ECO.refOffsetP=new V();ECO.refOffsetQ=new Q();ECO.resetCount=0;ECO.trackingUnknown=false;
+  base.addEventListener('reset',event=>{
+    if(!state.session)return;ECO.resetCount++;
+    for(const h of hands){releaseHand(h,false);h.valid=false;h.armed=false;h.motion=[];}state.headSpeed=0;state.stopTime=0;
+    const delta=event.transform;
+    if(delta&&typeof base.getOffsetReferenceSpace==='function'){
+      const inv=new Q(delta.orientation.x,delta.orientation.y,delta.orientation.z,delta.orientation.w).inverse();
+      ECO.refOffsetP.sub(new V(delta.position.x,delta.position.y,delta.position.z)).applyQ(inv);
+      ECO.refOffsetQ=inv.mul(ECO.refOffsetQ).norm();
+      state.ref=base.getOffsetReferenceSpace(new XRRigidTransform(ECO.refOffsetP,ECO.refOffsetQ));
+      ecoMessage('Tracking recovered · work preserved','Tools and landscape retain their previous world coordinates.');
+    }else{
+      ECO.trackingUnknown=true;state.safe=true;state.homeSet=false;forestRoot.visible=false;wildRoot.visible=false;ecoRoot.visible=false;
+      ecoMessage('Room tracking needs realignment','Your work is hidden. Hold NEW WORLD to start safely in this location.');rebuildTools();
+    }
+  });
+}
+function showNotebook(){const dialog=document.getElementById('notebook'),body=document.getElementById('notebookBody');body.replaceChildren();const s=objectiveStatus(),p=document.createElement('p');p.textContent='Four investigations: '+s.done.map((v,i)=>(v?'complete':'in progress')+' — '+['vegetation layers','waterway design','rainfall evidence','habitat corridor'][i]).join('; ')+'.';body.append(p);
+  const detail=document.createElement('p');detail.textContent='New established layers: '+([...s.layers].join(', ')||'none yet')+'. Kangaroos have eaten '+ECO.fed+' virtual grass bundles.';body.append(detail);
+  if(!ECO.history.length){const empty=document.createElement('p');empty.textContent='No rainfall evidence yet. Open RAIN LAB, predict a result, and run a fair test.';body.append(empty);}
+  for(const h of ECO.history){const card=document.createElement('section');card.className='trialCard';const title=document.createElement('h3');title.textContent='Trial '+h.number+' · '+['light rain','steady rain','storm'][h.level];card.append(title);const table=document.createElement('table');table.innerHTML='<tr><th>Simulated measure</th><th>Plot A</th><th>Plot B</th></tr>'+[['Ground cover',Math.round(h.a.cover*100)+'%',Math.round(h.b.cover*100)+'%'],['Runoff share',h.a.runoff+'%',h.b.runoff+'%'],['Infiltration share',h.a.infiltration+'%',h.b.infiltration+'%'],['Soil-loss index',h.a.sediment,h.b.sediment]].map(row=>'<tr>'+row.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('');card.append(table);const result=document.createElement('p');result.textContent='Prediction: '+h.prediction+' · result: '+h.actual+'. Equal rain, slope and initial moisture. Vegetation was sampled at the start.';card.append(result);body.append(card);}
+  dialog.showModal();
+}
+
+document.getElementById('back').removeEventListener('click',original.makeDemo);document.getElementById('back').addEventListener('click',()=>makeDemo());
+document.getElementById('roomView').removeEventListener('click',original.toggleRoom);document.getElementById('roomView').addEventListener('click',()=>action('view'));
+buildEcoNursery();
+// Expose no student data to servers. Only an opt-in local QA interface is provided.
+if(new URLSearchParams(location.search).has('test'))window.__creek={ECO,ew,el,hydro,coverageAt,routeStatus,placeEco,action,choosePage,startTrial,finishTrial,testRoute,throwFood,updateFood,updateRoos,roos,slotItems:()=>slotItems,miniature,mapPosition,estimateThrow,objectiveStatus,undoEco,bootEco,ecoRoot,layerTags,panelLines,desktopEcoPlace};
 makeDemo();checkSupport();requestAnimationFrame(desktopFrame);
 // No diagnostics are transmitted. This opt-in test interface exercises the same code as the headset.
 if(new URLSearchParams(location.search).has('test'))window.__forest={VERSION,MAX_TREES,state,hands,V,Q,M,renderer,root,room,forestRoot,nursery,can,seedHomes,canHome,seedDisplays,targetHalos,handVisuals,groundMarkers,waterMarker,critters,localWorld,seedModel,makeTree,plant,validSpot,plantingTarget,markPlant,stats,resetForest,grow,update,watering,waterCandidate,nearbyTarget,acquire,releaseHand,sampleHand,extractHand,readHands,updateTools,setNurseryAtHead,toggleRoom,buttonNear,handleButton,updateWildlife,renderDesktop,startPreview,selectTool,makeDemo,enterXR,xrFrame,endXR,orbit,canvas,version:VERSION,simulatePointer:(p,down=true)=>{previewHit=p;previewWatering=down},project:(p)=>p.clone().applyM(currentVP)};

@@ -1854,6 +1854,190 @@ GLAB.year=1;GLAB.activity='free';geoHideForest();geoBuildShelf();geoUpdateBrief(
 if(new URLSearchParams(location.search).has('test'))window.__geometry={GLAB,GSHAPES,GYEARS,geoRoot,geoDesk,geoWorld,geoLocal,addGeoObject,geoClearObjects,geoSetYear,geoAction,geoCurrentChallenge,geoCheckChallenge,geoTarget,nearestGeoObject};
 
 
+/* ================================================================
+   GEOMETRY LAB 1.1 — precision desk + hand rotation + draw mode
+   - 5 cm snap grid for placement
+   - desk-local ray projection (works with detected plane rotation)
+   - full grab-relative hand rotation for 3D manipulatives
+   - pinch-to-draw freehand geometry on the desk
+   ================================================================ */
+
+GLAB.grid=.05;
+GLAB.interaction='place';
+GLAB.strokes=[];
+GLAB.drawColor=GCOL.gold;
+GLAB.drawWidth=.007;
+GLAB.currentStroke=null;
+GLAB.planeConfidence=0;
+
+const geoGridRoot=new Node(),geoDrawRoot=new Node(),geoSnapRoot=new Node();
+geoDesk.add(geoGridRoot);geoRoot.add(geoDrawRoot,geoSnapRoot);
+const geoSnapCell=mesh('box',GCOL.gold,[0,.026,0],[GLAB.grid*.88,.006,GLAB.grid*.88]);geoSnapCell.color[3]=.20;geoSnapCell.visible=false;geoSnapRoot.add(geoSnapCell);
+const geoSnapCrossA=mesh('box',0xfff2c9,[0,.033,0],[GLAB.grid*.72,.006,.006]);geoSnapCrossA.visible=false;geoSnapRoot.add(geoSnapCrossA);
+const geoSnapCrossB=mesh('box',0xfff2c9,[0,.033,0],[.006,.006,GLAB.grid*.72]);geoSnapCrossB.visible=false;geoSnapRoot.add(geoSnapCrossB);
+const geoDropGhosts=hands.map(()=>({type:null,n:null}));
+function geoGhostAlpha(n,a=.24){if(n.geo)n.color[3]=a;for(const c of n.children)geoGhostAlpha(c,a);}
+function geoShowDropGhost(h,type,t){const g=geoDropGhosts[h.i];if(g.type!==type){if(g.n){removeNode(g.n);disposeTreeNode(g.n);}g.type=type;g.n=makeGeoShape(type,1,false);geoGhostAlpha(g.n,.24);geoFX.add(g.n);}g.n.visible=!!t.ok;g.n.p.copy(t.p);g.n.q.copy(h.held?.previewLocalQ||new Q());}
+function geoHideDropGhost(h){const g=geoDropGhosts[h.i];if(g.n)g.n.visible=false;}
+
+function geoBuildFineGrid(){
+ emptyNode(geoGridRoot);
+ const step=GLAB.grid;
+ for(let x=-.65;x<=.6501;x+=step){const major=Math.abs(Math.round(x/step))%2===0,n=mesh('box',major?0xd4c17d:0x9bb2bf,[x,.034,0],[major?.006:.003,.004,.72]);n.color[3]=major?.28:.12;geoGridRoot.add(n);}
+ for(let z=-.35;z<=.3501;z+=step){const major=Math.abs(Math.round(z/step))%2===0,n=mesh('box',major?0xd4c17d:0x9bb2bf,[0,.034,z],[1.32,.004,major?.006:.003]);n.color[3]=major?.28:.12;geoGridRoot.add(n);}
+}
+geoBuildFineGrid();
+
+function geoSnapLocal(p){
+ const q=p.clone();q.x=Math.round(q.x/GLAB.grid)*GLAB.grid;q.z=Math.round(q.z/GLAB.grid)*GLAB.grid;
+ q.x=clamp(q.x,-GLAB.deskHalfX+.045,GLAB.deskHalfX-.045);q.z=clamp(q.z,-GLAB.deskHalfZ+.045,GLAB.deskHalfZ-.045);return q;
+}
+function geoQuatFromMatrix(m){
+ const m00=m[0],m01=m[4],m02=m[8],m10=m[1],m11=m[5],m12=m[9],m20=m[2],m21=m[6],m22=m[10],trace=m00+m11+m22,q=new Q();
+ if(trace>0){const s=Math.sqrt(trace+1)*2;q.w=.25*s;q.x=(m21-m12)/s;q.y=(m02-m20)/s;q.z=(m10-m01)/s;}
+ else if(m00>m11&&m00>m22){const s=Math.sqrt(1+m00-m11-m22)*2;q.w=(m21-m12)/s;q.x=.25*s;q.y=(m01+m10)/s;q.z=(m02+m20)/s;}
+ else if(m11>m22){const s=Math.sqrt(1+m11-m00-m22)*2;q.w=(m02-m20)/s;q.x=(m01+m10)/s;q.y=.25*s;q.z=(m12+m21)/s;}
+ else{const s=Math.sqrt(1+m22-m00-m11)*2;q.w=(m10-m01)/s;q.x=(m02+m20)/s;q.y=(m12+m21)/s;q.z=.25*s;}
+ return q.norm();
+}
+function geoYawFromQ(q){const d=new V(0,0,-1).applyQ(q);d.y=0;if(d.len()<.001)return 0;d.norm();return Math.atan2(-d.x,-d.z);}
+function geoLocalRot(o){if(!o.rot)o.rot=new Q().yaw(o.yaw||0);return o.rot;}
+function geoWorldRot(localQ){return GLAB.q.clone().mul(localQ).norm();}
+function geoLocalFromWorldRot(worldQ){return GLAB.q.clone().inverse().mul(worldQ).norm();}
+function geoTiltLift(type,q){const d=GSHAPES[type];if(!d||d.dim!==3)return 0;const up=new V(0,1,0).applyQ(q),tilt=Math.acos(clamp(up.y,-1,1)),radius=Math.max(...d.scale)*.55;return Math.sin(Math.min(Math.PI/2,tilt))*radius;}
+
+// Smaller stacking capture: shapes only stack when deliberately placed almost on top of one another.
+geoPlaceHeight=function(local,type,ignore=null){let y=.008;for(const o of GLAB.objects){if(o===ignore)continue;if(Math.hypot(o.p.x-local.x,o.p.z-local.z)<.072)y=Math.max(y,o.p.y+geoShapeHeight(o.type)+.006);}return y;};
+geoObjectWorldCenter=function(o){const q=geoLocalRot(o),centre=new V(0,geoShapeHeight(o.type)*.5,0).applyQ(q).add(o.p);return geoWorld(centre);};
+
+const geo11AddGeoObject=addGeoObject;
+addGeoObject=function(type,local,opts={}){
+ const snapped=geoSnapLocal(local),rot=opts.rot?.clone?.()||new Q().yaw(opts.yaw||0),yaw=geoYawFromQ(rot),o=geo11AddGeoObject(type,snapped,{...opts,yaw});
+ if(o){o.rot=GSHAPES[type].dim===2?new Q().yaw(yaw):rot;o.yaw=geoYawFromQ(o.rot);o.p.y=geoPlaceHeight(o.p,type,o)+geoTiltLift(type,o.rot);o.n.p.copy(o.p);o.n.q.copy(o.rot);}
+ return o;
+};
+
+function geoProjectRayLocal(ray){if(!ray)return null;const inv=GLAB.q.clone().inverse(),p=ray.p.clone().sub(GLAB.origin).applyQ(inv),d=ray.d.clone().applyQ(inv);if(Math.abs(d.y)<.025)return null;const t=-p.y/d.y;if(t<.06||t>3.4)return null;return p.add(d.scale(t));}
+function geoProjectHandLocal(h,{draw=false}={}){
+ // For drawing, a fingertip that is already close to the desk is more stable than a long ray.
+ if(draw){const tip=h.sample?.index;if(tip){const local=geoLocal(tip);if(Math.abs(local.y)<.16){local.y=0;return local;}}}
+ const ray=geoProjectRayLocal(h.ray);if(ray)return ray;
+ const local=geoLocal(h.sample?.index||h.p);local.y=0;return local;
+}
+
+geoTarget=function(h,type,ignore=null){let p=geoProjectHandLocal(h)||new V();p=geoSnapLocal(p);const ok=Math.abs(p.x)<=GLAB.deskHalfX-.025&&Math.abs(p.z)<=GLAB.deskHalfZ-.025&&!state.safe;p.y=geoPlaceHeight(p,type,ignore);return {p,world:geoWorld(p),ok,msg:ok?'OPEN HAND TO PLACE':'AIM AT THE GEOMETRY DESK'};};
+geoDrawTarget=function(h,t,type){const m=groundMarkers[h.i];m.n.visible=h.valid&&!state.safe;m.n.p.copy(geoWorld(new V(t.p.x,.028,t.p.z)));m.ghost.visible=false;m.dots.forEach(n=>n.visible=false);m.tag.visible=false;m.ring.size(.060,.006,.060);tint(m.ring,t.ok?0x99e0b7:0xe2a36f);geoSnapCell.visible=geoSnapCrossA.visible=geoSnapCrossB.visible=t.ok;geoSnapRoot.p.set(t.p.x,0,t.p.z);geoShowDropGhost(h,type,t);};
+
+// More faithful desk mapping: use plane centroid, orientation and desk-local ray projection.
+geoTryDeskPlane=function(){
+ if(state.mode!=='xr'||!state.occlusion||GLAB.surfaceLocked||GLAB.objects.length||state.time<GLAB.surfaceAt)return;GLAB.surfaceAt=state.time+.25;let best=null,bestScore=Infinity;
+ for(const s of state.planes.values()){
+  if(!s.valid||!s.horizontal||s.floor||!s.matrix||!s.poly?.length)continue;const m=s.matrix,normal=new V(m[4],m[5],m[6]).norm();if(Math.abs(normal.y)<.86)continue;
+  let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity,cx=0,cz=0;for(const p of s.poly){minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minZ=Math.min(minZ,p.z);maxZ=Math.max(maxZ,p.z);cx+=p.x;cz+=p.z;}cx/=s.poly.length;cz/=s.poly.length;const area=(maxX-minX)*(maxZ-minZ);if(area<.22)continue;
+  const centre=new V(cx,0,cz).applyM(m),dist=Math.hypot(centre.x-state.head.x,centre.z-state.head.z),heightPenalty=Math.abs(centre.y-clamp(state.head.y-.78,.58,.88));if(dist>1.8||centre.y<.45||centre.y>1.18)continue;const score=dist+heightPenalty*.6-Math.min(area,1.5)*.16;if(score<bestScore){bestScore=score;best={s,centre,q:geoQuatFromMatrix(m),area};}
+ }
+ if(!best)return;const normal=new V(0,1,0).applyQ(best.q);if(normal.y<0)best.q.mul(new Q().axis(new V(1,0,0),Math.PI));
+ GLAB.origin.lerp(best.centre,.62);GLAB.q.slerp(best.q,.62);GLAB.tableY=GLAB.origin.y;geoRoot.p.copy(GLAB.origin);geoRoot.q.copy(GLAB.q);nursery.p.y=mix(nursery.p.y,GLAB.origin.y+.08,.62);GLAB.surfaceFound=true;GLAB.planeConfidence=Math.min(1,GLAB.planeConfidence+.25);
+ const support=document.getElementById('support');if(support)support.textContent=GLAB.planeConfidence>.7?'Desk mapped — 5 cm placement grid locked to the surface.':'Mapping the desk surface…';
+};
+
+function geoHeldWorldRotation(h,a){const delta=h.q.clone().mul(a.grabHandQ.clone().inverse()).norm();return delta.mul(a.baseWorldQ.clone()).norm();}
+const geo11Acquire=acquire;
+acquire=function(h,t){
+ if(GLAB.interaction==='draw'&&t?.kind==='geoObject')return false;
+ if(t?.kind==='geoTool'||t?.kind==='geoObject')GLAB.interaction='place';
+ if(!t||h.held||state.safe||state.time<h.cooldown)return false;h.source.copy(h.p);h.hover=null;h.openTime=0;
+ if(t.kind==='geoTool'){
+  const n=makeGeoShape(t.type,1,true),baseLocal=new Q(),baseWorld=geoWorldRot(baseLocal);n.p.copy(h.p);n.q.copy(baseWorld);root.add(n);h.held={kind:'geoTool',type:t.type,n,age:0,grabHandQ:h.q.clone(),baseWorldQ:baseWorld,previewWorldQ:baseWorld};
+ }else if(t.kind==='geoObject'){
+  const o=t.object;if(!GLAB.objects.includes(o))return false;o.n.visible=false;const n=makeGeoShape(o.type,1,true),baseWorld=geoWorldRot(geoLocalRot(o));n.p.copy(geoObjectWorldCenter(o));n.q.copy(baseWorld);root.add(n);h.held={kind:'geoObject',type:o.type,object:o,n,age:0,oldP:o.p.clone(),oldYaw:o.yaw,oldRot:geoLocalRot(o).clone(),grabHandQ:h.q.clone(),baseWorldQ:baseWorld,previewWorldQ:baseWorld};GLAB.selected=o;
+ }else if(t.kind==='nursery'){h.held={kind:'nursery',age:0};h.last.copy(h.p);}
+ else return geo11Acquire(h,t);
+ h.closed=true;sound.note(650,.10,0,.10);geoPaintInfo(geoInfoText(h.held.type));return true;
+};
+
+updateHeld=function(h,dt){const a=h.held;if(!a)return;a.age+=dt;if(a.kind==='nursery'){const delta=h.p.clone().sub(h.last);nursery.p.add(delta);nursery.p.y=clamp(nursery.p.y,GLAB.origin.y+.04,GLAB.origin.y+.65);h.last.copy(h.p);return;}
+ a.n.p.lerp(h.p,1-Math.exp(-32*dt));let worldQ=geoHeldWorldRotation(h,a),localQ=geoLocalFromWorldRot(worldQ);
+ // Flat 2D pieces stay desk-flat but still follow the user's hand turn. 3D models follow full wrist rotation.
+ if(GSHAPES[a.type].dim===2){const yaw=geoYawFromQ(localQ);localQ=new Q().yaw(yaw);worldQ=geoWorldRot(localQ);}a.previewWorldQ=worldQ;a.previewLocalQ=localQ;a.previewYaw=geoYawFromQ(localQ);a.n.q.slerp(worldQ,1-Math.exp(-20*dt));const t=geoTarget(h,a.type,a.object);t.p.y+=geoTiltLift(a.type,localQ);geoDrawTarget(h,t,a.type);a.target=t;
+};
+
+releaseHand=function(h,commit=true){const a=h.held;if(!a)return;h.held=null;h.hover=null;h.closed=false;h.openTime=0;h.cooldown=state.time+.28;groundMarkers[h.i].n.visible=false;geoHideDropGhost(h);geoSnapCell.visible=geoSnapCrossA.visible=geoSnapCrossB.visible=false;
+ if(a.kind==='nursery'){GLAB.surfaceLocked=true;return;}
+ const t=a.target||geoTarget(h,a.type,a.object),ok=commit&&h.valid&&!state.safe&&h.recovery<=0&&a.age>.10&&t.ok,rot=a.previewLocalQ?.clone()||new Q().yaw(a.previewYaw||0);
+ if(a.kind==='geoTool'){if(ok)addGeoObject(a.type,t.p,{rot});removeNode(a.n);disposeTreeNode(a.n);}
+ else if(a.kind==='geoObject'){const o=a.object;if(ok){const before=o.yaw;o.rot=GSHAPES[o.type].dim===2?new Q().yaw(geoYawFromQ(rot)):rot;o.yaw=geoYawFromQ(o.rot);o.p.copy(geoSnapLocal(t.p));o.p.y=geoPlaceHeight(o.p,o.type,o)+geoTiltLift(o.type,o.rot);o.n.p.copy(o.p);o.n.q.copy(o.rot);o.moves++;o.turnTotal+=Math.abs(geoAngleDiff(o.yaw,before));o.lastMoved=state.time;GLAB.actionSerial++;burst(geoWorld(o.p).add(new V(0,.10,0)),GSHAPES[o.type].color,6);}o.n.visible=true;removeNode(a.n);disposeTreeNode(a.n);}
+ GLAB.surfaceLocked=GLAB.surfaceLocked||!!GLAB.objects.length;geoCheckChallenge();
+};
+
+function geoDrawSegment(stroke,a,b){const d=b.clone().sub(a);d.y=0;const len=d.len();if(len<.006)return;const mid=a.clone().lerp(b,.5);mid.y=.044;const n=mesh('cylinder',stroke.color,[mid.x,mid.y,mid.z],[GLAB.drawWidth,len,GLAB.drawWidth]);n.q.between(new V(0,1,0),d.norm());geoDrawRoot.add(n);stroke.nodes.push(n);}
+function geoBeginStroke(h,p){GLAB.surfaceLocked=true;const s={id:GLAB.nextID++,born:state.time,points:[p.clone()],nodes:[],color:GLAB.drawColor,shape:null,p:new V()};GLAB.strokes.push(s);h.geoStroke=s;GLAB.currentStroke=s;sound.note(510,.055,0,.06);}
+function geoContinueStroke(h,p){if(!h.geoStroke)geoBeginStroke(h,p);const s=h.geoStroke,last=s.points[s.points.length-1];if(last.dist(p)>.012){geoDrawSegment(s,last,p);s.points.push(p.clone());}}
+function geoSimplify2D(points,eps=.022){if(points.length<3)return points.slice();const dist=(p,a,b)=>{const dx=b.x-a.x,dz=b.z-a.z,l=dx*dx+dz*dz||1,u=clamp(((p.x-a.x)*dx+(p.z-a.z)*dz)/l,0,1);return Math.hypot(p.x-a.x-u*dx,p.z-a.z-u*dz);};let max=0,index=0;for(let i=1;i<points.length-1;i++){const d=dist(points[i],points[0],points.at(-1));if(d>max){max=d;index=i;}}if(max<=eps)return [points[0],points.at(-1)];const a=geoSimplify2D(points.slice(0,index+1),eps),b=geoSimplify2D(points.slice(index),eps);return a.slice(0,-1).concat(b);}
+function geoAnalyseStroke(s){if(!s||s.points.length<5)return;const pts=s.points,closed=Math.hypot(pts[0].x-pts.at(-1).x,pts[0].z-pts.at(-1).z)<.075;if(!closed)return;let cx=0,cz=0;for(const p of pts){cx+=p.x;cz+=p.z;}cx/=pts.length;cz/=pts.length;s.p.set(cx,.008,cz);const rs=pts.map(p=>Math.hypot(p.x-cx,p.z-cz)),mean=rs.reduce((a,b)=>a+b,0)/rs.length,dev=Math.sqrt(rs.reduce((a,r)=>a+(r-mean)**2,0)/rs.length)/(mean||1);
+ if(mean>.035&&dev<.16)s.shape='circle';else{const base=pts.slice(0,-1),simp=geoSimplify2D(base,.028);let corners=clamp(simp.length,3,6);if(corners===4){let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;for(const p of pts){minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minZ=Math.min(minZ,p.z);maxZ=Math.max(maxZ,p.z);}const ratio=Math.max(maxX-minX,maxZ-minZ)/Math.max(.001,Math.min(maxX-minX,maxZ-minZ));s.shape=ratio>1.32?'rectangle':'square';}else s.shape=({3:'triangle',5:'pentagon',6:'hexagon'})[corners]||null;}
+ if(s.shape){toast('You drew a '+GSHAPES[s.shape].name,GSHAPES[s.shape].info,1.8);geoCheckChallenge();}}
+function geoEndStroke(h){const s=h.geoStroke;if(!s)return;const first=s.points[0],last=s.points.at(-1);if(s.points.length>4&&first.dist(last)<.075&&last.dist(first)>.006){geoDrawSegment(s,last,first);s.points.push(first.clone());}geoAnalyseStroke(s);h.geoStroke=null;GLAB.currentStroke=null;GLAB.actionSerial++;}
+function geoUndoStroke(){const s=GLAB.strokes.pop();if(!s)return;for(const n of s.nodes){removeNode(n);disposeTreeNode(n);}GLAB.actionSerial++;}
+function geoClearStrokes(){for(const s of GLAB.strokes)for(const n of s.nodes){removeNode(n);disposeTreeNode(n);}GLAB.strokes=[];GLAB.currentStroke=null;for(const h of hands)h.geoStroke=null;}
+function geoDrawPointForHand(h){const p=geoProjectHandLocal(h,{draw:true});if(!p)return null;if(Math.abs(p.x)>GLAB.deskHalfX-.02||Math.abs(p.z)>GLAB.deskHalfZ-.02)return null;p.y=.044;return p;}
+
+const geo11Fresh=geoFresh;
+geoFresh=function(){const objects=geo11Fresh(),drawn=GLAB.strokes.filter(s=>s.shape&&s.born>=GLAB.challengeStarted-.05).map(s=>({type:s.shape,p:s.p,moves:0,turnTotal:0,yaw:0,startYaw:0,drawn:true}));return objects.concat(drawn);};
+const geo11ClearObjects=geoClearObjects;
+geoClearObjects=function(){geo11ClearObjects();geoClearStrokes();};
+
+const geo11Action=geoAction;
+geoAction=function(id){
+ if(id==='placeMode'){GLAB.interaction='place';desktopAction='plant';syncDesktop();geoBuildShelf();return;}
+ if(id==='drawMode'){GLAB.interaction='draw';desktopAction='draw';GLAB.desktopMove=null;syncDesktop();geoBuildShelf();toast('DRAW MODE','Pinch and trace on the desk. Close the loop to make a shape.',2);return;}
+ if(id==='undoStroke'){geoUndoStroke();geoCheckChallenge();syncDesktop();return;}
+ const result=geo11Action(id);return result;
+};action=geoAction;
+
+const geo11BuildShelf=geoBuildShelf;
+geoBuildShelf=function(){geo11BuildShelf();
+ function modeButton(id,text,x,active){const n=textLabel(text,.25,.078,{bg:active?'#efc75d':'#274c6d',fg:active?'#173b5f':'#fff0cf',size:22});n.at(x,-.415,.20);nursery.add(n);GLAB.buttons.push({id,n,p:n.p.clone(),w:.25,h:.078});}
+ modeButton('placeMode','PLACE',-.42,GLAB.interaction==='place');modeButton('drawMode','DRAW',-.14,GLAB.interaction==='draw');modeButton('undoStroke','UNDO DRAW',.18,false);const grid=textLabel('5 cm SNAP GRID',.30,.058,{bg:'#e9f0ef',fg:'#294b5e',size:19});grid.at(.49,-.415,.20);nursery.add(grid);
+};
+
+// Draw mode intercepts a pinch only when it projects onto the desk; shelf buttons remain usable.
+sampleHand=function(h,s,dt){
+ const visual=handVisuals[h.i];dt=clamp(dt,0,.2);if(!s){if(h.geoStroke)geoEndStroke(h);h.valid=false;h.miss+=dt;h.stable=0;h.hover=null;h.button=null;h.buttonTime=0;visual.n.visible=false;groundMarkers[h.i].n.visible=false;if(h.held&&h.miss>1.0)releaseHand(h,false);return;}
+ const first=h.miss>.12;h.sample=s;h.valid=true;h.miss=0;h.stable+=dt;const old=h.p.clone();if(first){h.p.copy(s.p);h.palm.copy(s.palm||s.p);h.q.copy(s.q);}else{h.p.lerp(s.p,1-Math.exp(-38*dt));h.palm.lerp(s.palm||s.p,1-Math.exp(-34*dt));h.q.slerp(s.q,1-Math.exp(-24*dt));}h.raw.copy(s.p);h.ray=s.ray||null;h.speed=first?0:h.p.dist(old)/Math.max(.001,dt);h.size=clamp(s.size||.085,.06,.12);h.gap=s.gap??.09;h.curl=s.curl??0;h.recovery=first&&h.held?.kind?.startsWith('geo')?.12:Math.max(0,(h.recovery||0)-dt);
+ const pinch=h.gap<clamp(h.size*(h.pinch?.72:.46),.032,.062),grip=h.curl>(h.grasp?.34:.66);h.pinch=pinch;h.grasp=grip;const native=!!(h.nativeSelect||h.nativeSqueeze),close=native||pinch||grip,button=buttonNear({...h,held:null});
+ const drawP=GLAB.interaction==='draw'&&!h.held&&!button?geoDrawPointForHand(h):null;
+ if(GLAB.interaction==='draw'&&!h.held&&close&&drawP){h.closed=true;h.openTime=0;h.hover=null;geoHideDropGhost(h);geoContinueStroke(h,drawP);groundMarkers[h.i].n.visible=false;geoSnapCell.visible=geoSnapCrossA.visible=geoSnapCrossB.visible=false;}
+ else{if(h.geoStroke&&!close)geoEndStroke(h);if(close){h.closed=true;h.openTime=0;}else{h.openTime=(h.openTime||0)+dt;if(h.openTime>.12){if(h.held)releaseHand(h,h.recovery<=0);h.closed=false;}}h.hover=h.held?null:nearbyTarget(h);if(h.closed&&!h.held&&h.hover)acquire(h,h.hover);if(h.held)updateHeld(h,dt);else handleButton(h,dt);}
+ visual.n.visible=state.mode==='xr';visual.tag.visible=false;visual.dots.forEach((n,i)=>{n.visible=!!s.points?.[i];if(n.visible)n.p.copy(s.points[i]);});const rp=h.hover?.center||h.p;visual.ring.p.copy(rp);visual.ring.q.between(new V(0,0,1),state.head.clone().sub(rp).norm());visual.ring.size(h.held?.018:h.hover?.028:.018,h.held?.018:h.hover?.028:.018,.006);tint(visual.ring,h.geoStroke?0xf2cb64:h.held?GCOL.gold:h.hover?0xffe4a3:0x9bd4d0);
+ const info=h.geoStroke?'DRAWING · OPEN HAND TO FINISH':h.held?.type||h.hover?.type||h.hover?.object?.type;geoPaintInfo(typeof info==='string'&&GSHAPES[info]?geoInfoText(info):info|| (GLAB.interaction==='draw'?'DRAW MODE · pinch and trace on the desk':'Reach for a shape · close your hand to grab'));GLAB.slots.forEach((slot,i)=>slot.halo.visible=hands.some(a=>a.valid&&a.hover?.id==='geoSlot'+i));
+};
+
+previewPlant=function(p){if(!p)return;let local=geoSnapLocal(geoLocal(p));if(Math.abs(local.x)>GLAB.deskHalfX||Math.abs(local.z)>GLAB.deskHalfZ){toast('Aim for the desk','Place shapes inside the gold border.',1.7);return;}addGeoObject(GLAB.desktopShape,local,{yaw:0});geoCheckChallenge();};
+desktopEcoPlace=function(p){if(!p||state.safe)return;const local=geoSnapLocal(geoLocal(p));if(desktopAction==='moveShape'){
+ if(!GLAB.desktopMove){const object=nearestGeoObject(p,.30);if(object){GLAB.desktopMove=object;GLAB.selected=object;toast('Shape selected','Click another grid point on the desk.',1.5);}return;}
+ const o=GLAB.desktopMove;o.p.copy(local);o.p.y=geoPlaceHeight(o.p,o.type,o)+geoTiltLift(o.type,geoLocalRot(o));o.n.p.copy(o.p);o.moves++;o.lastMoved=state.time;GLAB.desktopMove=null;GLAB.actionSerial++;geoCheckChallenge();return;}
+ if(desktopAction==='rotateShape'){const o=nearestGeoObject(p,.30);if(o){const before=o.yaw;o.yaw+=Math.PI/2;o.rot=new Q().yaw(o.yaw);o.n.q.copy(o.rot);o.moves++;o.turnTotal+=Math.abs(geoAngleDiff(o.yaw,before));o.lastMoved=state.time;GLAB.actionSerial++;sound.note(700,.08);geoCheckChallenge();}return;}
+};
+
+syncDesktop=function(){const tabs=document.getElementById('ecoTabs');if(!tabs)return;tabs.replaceChildren();for(let y=1;y<=3;y++){const b=document.createElement('button');b.textContent='YEAR '+y;b.className=GLAB.year===y?'active':'';b.onclick=()=>geoSetYear(y);tabs.append(b);}const tools=document.getElementById('ecoTools');tools.replaceChildren();for(const type of GYEARS[GLAB.year].tools){const d=GSHAPES[type],b=document.createElement('button');b.innerHTML='<span>'+d.symbol+'</span>'+d.short;b.className=desktopAction==='plant'&&GLAB.desktopShape===type?'active':'';b.onclick=()=>{GLAB.desktopShape=type;GLAB.interaction='place';desktopAction='plant';previewWatering=false;syncDesktop();};tools.append(b);}const actions=document.getElementById('ecoActions');actions.replaceChildren();const defs=[['placeMode','Place'],['drawMode','Draw'],['moveShape','Move'],['rotateShape','Turn 90°'],['undoStroke','Undo draw'],['mode',GLAB.activity==='challenge'?'Free build':'Missions'],['next','Next mission'],['clear','Clear desk']];for(const [id,name] of defs){const b=document.createElement('button');b.textContent=name;b.className=(id==='placeMode'&&GLAB.interaction==='place')||(id==='drawMode'&&GLAB.interaction==='draw')?'active':'';b.onclick=()=>{if(id==='moveShape'||id==='rotateShape'){GLAB.interaction='place';desktopAction=id;GLAB.desktopMove=null;syncDesktop();}else geoAction(id);};actions.append(b);}const badge=document.createElement('span');badge.style.cssText='display:inline-block;padding:8px 11px;color:#fff0c9;font-weight:700';badge.textContent=GYEARS[GLAB.year].codes+' · 5 cm grid · '+GLAB.stars+' stars';actions.append(badge);document.getElementById('mouseHint').textContent=desktopAction==='draw'?'Hold the mouse button and draw directly on the desk. Close the loop to recognise a shape.':desktopAction==='plant'?'Click a 5 cm grid point to create '+GSHAPES[GLAB.desktopShape].name+'. Drag empty space to orbit · scroll to zoom.':desktopAction==='moveShape'?'Click a shape, then click its new grid position.':desktopAction==='rotateShape'?'Click a shape to turn it a quarter turn.':'Choose a tool.';};
+
+let geoDesktopStroke=null;
+canvas.addEventListener('pointerdown',e=>{if(state.mode!=='preview'||state.safe||desktopAction!=='draw'||e.button!==0||e.shiftKey)return;const w=floorRay(e.clientX,e.clientY);if(!w)return;const p=geoLocal(w);if(Math.abs(p.x)>GLAB.deskHalfX||Math.abs(p.z)>GLAB.deskHalfZ)return;e.stopImmediatePropagation();canvas.setPointerCapture(e.pointerId);const s={id:GLAB.nextID++,born:state.time,points:[new V(p.x,.044,p.z)],nodes:[],color:GLAB.drawColor,shape:null,p:new V()};GLAB.strokes.push(s);geoDesktopStroke={s,id:e.pointerId};pointer.down=false;},true);
+canvas.addEventListener('pointermove',e=>{if(!geoDesktopStroke||geoDesktopStroke.id!==e.pointerId)return;e.stopImmediatePropagation();const w=floorRay(e.clientX,e.clientY);if(!w)return;const p=geoLocal(w);if(Math.abs(p.x)>GLAB.deskHalfX||Math.abs(p.z)>GLAB.deskHalfZ)return;const q=new V(p.x,.044,p.z),s=geoDesktopStroke.s,last=s.points.at(-1);if(last.dist(q)>.012){geoDrawSegment(s,last,q);s.points.push(q);}},true);
+function geoFinishDesktopStroke(e){if(!geoDesktopStroke||e.pointerId!=null&&geoDesktopStroke.id!==e.pointerId)return;const s=geoDesktopStroke.s,first=s.points[0],last=s.points.at(-1);if(s.points.length>4&&first.dist(last)<.075){geoDrawSegment(s,last,first);s.points.push(first.clone());}geoAnalyseStroke(s);geoDesktopStroke=null;GLAB.actionSerial++;try{canvas.releasePointerCapture(e.pointerId)}catch{}}
+canvas.addEventListener('pointerup',geoFinishDesktopStroke,true);canvas.addEventListener('pointercancel',geoFinishDesktopStroke,true);
+
+const geo11UpdateGeometry=updateGeometry;
+updateGeometry=function(dt){geo11UpdateGeometry(dt);geoGridRoot.visible=!state.safe;geoDrawRoot.visible=!state.safe;geoSnapRoot.visible=!state.safe;};update=updateGeometry;
+
+// UI wording for the enhanced interaction model.
+const geo11Style=document.createElement('style');geo11Style.textContent=`body.geometry-mode #ecoActions button.active{background:#efc75d;color:#173b5f;border-color:#efc75d}body.geometry-mode #ecoDesktop{max-width:760px}body.geometry-mode #ecoActions{align-items:center}`;document.head.append(geo11Style);
+const geoLead=document.querySelector('#landing .lead');if(geoLead)geoLead.textContent='Place, rotate and draw geometry directly on your desk. The 5 cm snap grid keeps builds precise while 3D objects follow your wrist as you turn them.';
+const geoFine=document.querySelector('.fineprint strong');if(geoFine)geoFine.textContent='GEOMETRY LAB 1.1';
+
+
+
 makeDemo();checkSupport();requestAnimationFrame(desktopFrame);
 // No diagnostics are transmitted. This opt-in test interface exercises the same code as the headset.
 if(new URLSearchParams(location.search).has('test'))window.__forest={VERSION,MAX_TREES,state,hands,V,Q,M,renderer,root,room,forestRoot,nursery,can,seedHomes,canHome,seedDisplays,targetHalos,handVisuals,groundMarkers,waterMarker,critters,localWorld,seedModel,makeTree,plant,validSpot,plantingTarget,markPlant,stats,resetForest,grow,update,watering,waterCandidate,nearbyTarget,acquire,releaseHand,sampleHand,extractHand,readHands,updateTools,setNurseryAtHead,toggleRoom,buttonNear,handleButton,updateWildlife,renderDesktop,startPreview,selectTool,makeDemo,enterXR,xrFrame,endXR,orbit,canvas,version:VERSION,simulatePointer:(p,down=true)=>{previewHit=p;previewWatering=down},project:(p)=>p.clone().applyM(currentVP)};

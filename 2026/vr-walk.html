@@ -1,0 +1,1113 @@
+# Digital Pet V1.4 — adds the ultrasonic sensor: the pet notices you up close
+# Board: ESP32-S3 TFT Feather, CircuitPython 9
+# Put pet_rfid.py next to this file.
+# Libraries in /lib: adafruit_display_text (folder), neopixel.mpy, adafruit_hcsr04.mpy
+#   (circup install adafruit_display_text neopixel adafruit_hcsr04)
+# Ultrasonic wiring: VCC -> 3V rail, GND -> ground rail, Trig -> pin 9, Echo -> pin 10
+#
+# Buttons:
+#   D0 tap   -> switch between FACE and STATUS screen
+#   D1 (or hold D0 for 1 second) -> LEARN mode
+#       in LEARN mode, tap D0 to choose what the card becomes, then tap the card
+# Learned cards are saved on the board and survive unplugging.
+
+import time
+import math
+import random
+import json
+import board
+import microcontroller
+import digitalio
+import displayio
+import terminalio
+import vectorio
+from adafruit_display_text import label
+from pet_rfid import PetRFID
+
+# =================== STUDENT SETTINGS ===================
+# FOOD meter: 100 = full tummy, 0 = starving
+FOOD_START = 50
+FOOD_DRAIN_PER_SECOND = 0.5   # how fast it gets hungry
+PECKISH_AT = 60               # food at or below this -> peckish
+HUNGRY_AT = 35                # -> hungry (sad, the odd tear)
+ANGRY_AT = 12                 # -> angry
+                              # food reaches 0 -> FURIOUS (angry AND crying)
+FUN_START = 70
+FUN_DRAIN_PER_SECOND = 0.4    # how fast it gets bored (pauses while asleep)
+BORED_AT = 30                 # fun at or below this -> bored (hunger still comes first)
+SLEEPY_AFTER = 30             # seconds with nobody playing (while happy) -> falls asleep
+EAT_TIME = 3.2
+PLAY_TIME = 4.0
+CONFUSED_TIME = 1.5
+NEAR_CM = 6                   # something closer than this (cm) -> the pet notices it
+NOTICE_TIME = 1.6             # how long the "oh, hi!" reaction lasts
+SONAR_EVERY = 0.15            # seconds between distance readings
+SHOW_DISTANCE = True          # print every reading to the console (set False once tested)
+LEARN_TIMEOUT = 10
+
+# Known cards: card ID -> (what it is, how much it adds)
+# Foods fill the FOOD meter. Toys fill the FUN meter.
+# Cards you teach with LEARN mode are saved on the board automatically,
+# so you only need to type them in here if you want every pet to know them.
+CARDS = {
+    # "A1B2C3D4": ("bone", 40),
+    # "0F1E2D3C": ("ball", 40),
+}
+TOYS = ("ball",)
+LEARN_MENU = [("bone", 40), ("ball", 40), ("kibble", 25), ("sausage", 50),
+              ("chicken", 35), ("cheese", 20)]
+FORGET_SAVED_CARDS = False    # set True, save, let it boot once, then set back to False
+
+# How each state LOOKS
+#   lid      = how far the top eyelids drop (0 = wide open, 80 = shut)
+#   tilt     = eyelid slant (+ = sad puppy, - = cross)
+#   cheek    = how far cheeks push up (big = happy squint)
+#   look_y   = where it gazes (+ = down)
+#   pupil    = pupil size (big = excited, small = angry)
+#   brow_y   = eyebrow height (+ = raised, - = pulled down)
+#   brow_ang = eyebrow angle (+ = worried, - = angry)
+#   head     = head tilt (+ / - leans either way)
+#   blush    = 1 shows pink cheeks, 0 hides them
+FACES = {
+    "happy":    {"lid": 6,  "tilt": 0,   "cheek": 12, "look_y": 0.0,  "pupil": 20,
+                 "brow_y": 6,   "brow_ang": 4,   "head": 0,  "blush": 1},
+    "peckish":  {"lid": 16, "tilt": 6,   "cheek": 0,  "look_y": 0.2,  "pupil": 18,
+                 "brow_y": 3,   "brow_ang": 10,  "head": 0,  "blush": 0},
+    "hungry":   {"lid": 26, "tilt": 16,  "cheek": 0,  "look_y": 0.7,  "pupil": 17,
+                 "brow_y": 2,   "brow_ang": 22,  "head": 0,  "blush": 0},
+    "angry":    {"lid": 22, "tilt": -20, "cheek": 8,  "look_y": 0.0,  "pupil": 11,
+                 "brow_y": -8,  "brow_ang": -24, "head": 0,  "blush": 0},
+    "furious":  {"lid": 16, "tilt": -26, "cheek": 18, "look_y": 0.0,  "pupil": 8,
+                 "brow_y": -12, "brow_ang": -32, "head": 0,  "blush": 0},
+    "eating":   {"lid": 4,  "tilt": -4,  "cheek": 40, "look_y": 0.0,  "pupil": 21,
+                 "brow_y": 8,   "brow_ang": 6,   "head": 0,  "blush": 1},
+    "confused": {"lid": 20, "tilt": 0,   "cheek": 0,  "look_y": -0.3, "pupil": 15,
+                 "brow_y": 4,   "brow_ang": 0,   "head": 5,  "blush": 0},
+    "learning": {"lid": 0,  "tilt": -6,  "cheek": 0,  "look_y": 0.0,  "pupil": 22,
+                 "brow_y": 10,  "brow_ang": 8,   "head": -4, "blush": 0},
+    "sleepy":   {"lid": 78, "tilt": 8,   "cheek": 6,  "look_y": 0.3,  "pupil": 18,
+                 "brow_y": 2,   "brow_ang": 6,   "head": 0,  "blush": 0},
+    "bored":    {"lid": 40, "tilt": 0,   "cheek": 4,  "look_y": 0.1,  "pupil": 16,
+                 "brow_y": 0,   "brow_ang": 0,   "head": 0,  "blush": 0},
+    "playing":  {"lid": 0,  "tilt": -6,  "cheek": 18, "look_y": 0.0,  "pupil": 23,
+                 "brow_y": 11,  "brow_ang": 8,   "head": 0,  "blush": 1},
+    "noticed":  {"lid": 0,  "tilt": -4,  "cheek": 10, "look_y": 0.1,  "pupil": 26,
+                 "brow_y": 14,  "brow_ang": 10,  "head": 0,  "blush": 1},
+}
+MOOD_COLOURS = {
+    "happy": (0, 80, 0), "peckish": (120, 90, 0), "hungry": (150, 30, 0),
+    "angry": (255, 0, 0), "furious": (255, 0, 0), "eating": (0, 255, 40),
+    "confused": (120, 0, 150), "learning": (0, 60, 255), "sleepy": (0, 0, 20),
+    "bored": (40, 40, 60), "playing": (255, 120, 0), "noticed": (0, 200, 255),
+}
+
+# Screen layout — only change these if the eyes don't fit your shell's window
+SCREEN_ROTATION = None     # None = automatic landscape. Try 0, 90, 180 or 270.
+EYE_SIZE = 0               # eye radius in pixels, 0 = automatic
+EYE_GAP = 0                # distance between eye centres, 0 = automatic
+# ========================================================
+
+EVENT_STATES = ("eating", "confused", "learning", "playing", "noticed")
+TOO_HUNGRY_TO_PLAY = ("hungry", "angry", "furious")   # states that last a set time
+CROSS_STATES = ("angry", "furious")
+
+FUR = 0xB5793F
+FUR_ANGRY = 0xC2543A
+FUR_DARK = 0x5A3A1C
+RIM = 0x22120A
+IRIS = 0x7A4520
+IRIS_ANGRY = 0xB01818
+
+# ---------------- screen setup ----------------
+display = board.DISPLAY
+display.auto_refresh = False
+try:
+    if SCREEN_ROTATION is not None:
+        display.rotation = SCREEN_ROTATION
+    elif display.width < display.height:
+        display.rotation = (display.rotation + 90) % 360
+except Exception as e:
+    print("Could not rotate screen:", e)
+
+W, H = display.width, display.height
+R = EYE_SIZE or max(16, min(W // 6, int(H * 0.30)))
+s = R / 40
+GAP = EYE_GAP or int(W * 0.44)
+EYE_Y = int(H * 0.46)
+print("Screen: {} x {}, rotation {}, eye radius {}".format(W, H, display.rotation, R))
+
+
+def sz(v):
+    return max(1, int(round(v * s)))
+
+
+def co(v):
+    return int(round(v * s))
+
+
+def clamp(v, lo, hi):
+    return lo if v < lo else hi if v > hi else v
+
+
+def solid(colour):
+    p = displayio.Palette(1)
+    p[0] = colour
+    return p
+
+
+def circ(pal, x, y, r):
+    return vectorio.Circle(pixel_shader=pal, radius=sz(r), x=co(x), y=co(y))
+
+
+def rect(pal, x, y, w, h):
+    return vectorio.Rectangle(pixel_shader=pal, width=sz(w), height=sz(h), x=co(x), y=co(y))
+
+
+def poly(pal, pts):
+    return vectorio.Polygon(pixel_shader=pal, points=[(co(x), co(y)) for x, y in pts], x=0, y=0)
+
+
+def group_of(*shapes, x=0, y=0):
+    g = displayio.Group(x=x, y=y)
+    for shape in shapes:
+        g.append(shape)
+    return g
+
+
+fur = solid(FUR)
+rim_pal = solid(RIM)
+pupil_pal = solid(0x000000)
+shine_pal = solid(0xFFFFFF)
+brow_pal = solid(0x3E2410)
+blush_pal = solid(0xE8837A)
+
+
+class Eye:
+    def __init__(self, parent, cx, cy, outer_side):
+        self.cx, self.cy, self.outer = cx, cy, outer_side
+        self.iris_pal = solid(IRIS)
+        self.rim = vectorio.Circle(pixel_shader=rim_pal, radius=R + sz(3), x=cx, y=cy)
+        self.iris = vectorio.Circle(pixel_shader=self.iris_pal, radius=R - sz(3), x=cx, y=cy)
+        self.pupil = vectorio.Circle(pixel_shader=pupil_pal, radius=sz(19), x=cx, y=cy)
+        self.shine_big = vectorio.Circle(pixel_shader=shine_pal, radius=sz(7), x=cx, y=cy)
+        self.shine_small = vectorio.Circle(pixel_shader=shine_pal, radius=sz(3), x=cx, y=cy)
+        self.cheek = vectorio.Circle(pixel_shader=fur, radius=R + sz(12), x=cx, y=cy + 3 * R)
+        self.lid = vectorio.Polygon(pixel_shader=fur,
+                                    points=[(0, 0), (1, 0), (1, 1), (0, 1)], x=0, y=0)
+        self.blush = group_of(vectorio.Circle(pixel_shader=blush_pal, radius=sz(8), x=0, y=0))
+        self.blush.hidden = True
+        self.brow = vectorio.Polygon(pixel_shader=brow_pal,
+                                     points=[(0, 0), (1, 0), (1, 1), (0, 1)], x=0, y=0)
+        for shape in (self.rim, self.iris, self.pupil, self.shine_big, self.shine_small,
+                      self.cheek, self.lid, self.blush, self.brow):
+            parent.append(shape)
+
+    def draw(self, dx, dy, look_x, look_y, f, lid, brow_y):
+        cx, cy = self.cx + dx, self.cy + dy
+        self.rim.x, self.rim.y = cx, cy
+        self.iris.x, self.iris.y = cx + int(look_x * 4 * s), cy + int(look_y * 4 * s)
+        px, py = cx + int(look_x * 11 * s), cy + int(look_y * 9 * s)
+        self.pupil.radius = max(2, int(f["pupil"] * s))
+        self.pupil.x, self.pupil.y = px, py
+        self.shine_big.x, self.shine_big.y = px - co(8), py - co(9)
+        self.shine_small.x, self.shine_small.y = px + co(7), py + co(6)
+        # cheek rises from below -> happy crescent
+        self.cheek.x = cx
+        self.cheek.y = cy + R + R + sz(12) - int(f["cheek"] * s)
+        # top eyelid
+        left, right = cx - R - sz(6), cx + R + sz(6)
+        top = cy - R - sz(8)
+        inner = cy - R - sz(3) + int(lid * s)
+        outer = inner + int(f["tilt"] * s)
+        low = cy + R + sz(4)
+        inner = clamp(inner, top + 1, low)
+        outer = clamp(outer, top + 1, low)
+        if self.outer < 0:
+            self.lid.points = [(left, top), (right, top), (right, inner), (left, outer)]
+        else:
+            self.lid.points = [(left, top), (right, top), (right, outer), (left, inner)]
+        # blush
+        self.blush.hidden = f["blush"] < 0.5
+        self.blush.x = cx + self.outer * int(R * 0.8)
+        self.blush.y = cy + int(R * 0.72)
+        # eyebrow: thick at the inner end, thinner at the outer end
+        a = math.radians(f["brow_ang"])
+        L = 24 * s
+        yc = cy - R - 8 * s - brow_y * s
+        toward_middle = -self.outer
+        ix = cx + toward_middle * L * math.cos(a)
+        iy = yc - L * math.sin(a)
+        ox = cx - toward_middle * L * math.cos(a)
+        oy = yc + L * math.sin(a)
+        t_in, t_out = 4.5 * s, 2.5 * s
+        self.brow.points = [(int(ix), max(0, int(iy - t_in))), (int(ix), max(2, int(iy + t_in))),
+                            (int(ox), max(2, int(oy + t_out))), (int(ox), max(0, int(oy - t_out)))]
+
+
+root = displayio.Group()
+
+# ---------------- the face ----------------
+face = displayio.Group()
+face.append(vectorio.Rectangle(pixel_shader=fur, width=W, height=H, x=0, y=0))
+left_eye = Eye(face, W // 2 - GAP // 2, EYE_Y, -1)
+right_eye = Eye(face, W // 2 + GAP // 2, EYE_Y, +1)
+face.append(vectorio.Circle(pixel_shader=solid(0x111111), radius=sz(14), x=W // 2, y=H + sz(3)))
+face.append(vectorio.Circle(pixel_shader=solid(0x555555), radius=sz(3),
+                            x=W // 2 - sz(5), y=H - sz(6)))
+
+# anger mark between the eyebrows
+mark_pal = solid(0xFF2020)
+anger_mark = group_of(
+    rect(mark_pal, -9, -9, 7, 3), rect(mark_pal, -9, -9, 3, 7),
+    rect(mark_pal, 2, -9, 7, 3), rect(mark_pal, 6, -9, 3, 7),
+    rect(mark_pal, -9, 6, 7, 3), rect(mark_pal, -9, 2, 3, 7),
+    rect(mark_pal, 2, 6, 7, 3), rect(mark_pal, 6, 2, 3, 7),
+    x=W // 2, y=sz(12))
+anger_mark.hidden = True
+face.append(anger_mark)
+
+# ---------------- food pictures ----------------
+food_layer = displayio.Group()
+face.append(food_layer)
+
+
+def build_food(bites, crumb_colour):
+    g = displayio.Group()
+    for part in reversed(bites):
+        g.append(part)
+    g.hidden = True
+    food_layer.append(g)
+    return (g, bites, crumb_colour)
+
+
+def make_bone():
+    c = solid(0xF4EBD0)
+    return [group_of(circ(c, 18, -6, 7), circ(c, 18, 6, 7)),
+            group_of(rect(c, -18, -5, 36, 10)),
+            group_of(circ(c, -18, -6, 7), circ(c, -18, 6, 7))]
+
+
+def make_sausage():
+    c, hi = solid(0xA0402A), solid(0xC86A50)
+    return [group_of(circ(c, 20, 0, 7), rect(c, 6, -7, 14, 14), rect(hi, 6, -5, 14, 3)),
+            group_of(rect(c, -7, -7, 13, 14), rect(hi, -7, -5, 13, 3)),
+            group_of(circ(c, -20, 0, 7), rect(c, -20, -7, 13, 14), rect(hi, -20, -5, 13, 3))]
+
+
+def make_kibble():
+    c, d = solid(0x8A5A2B), solid(0x6B4420)
+    return [group_of(circ(c, 12, 4, 7), circ(d, 6, -5, 7)),
+            group_of(circ(d, 0, 5, 7), circ(c, -6, -5, 7)),
+            group_of(circ(c, -12, 4, 7))]
+
+
+def make_chicken():
+    meat, dark, bone = solid(0xC8782E), solid(0xA85E20), solid(0xF4EBD0)
+    return [group_of(circ(meat, -12, 0, 13), circ(dark, -16, 4, 4)),
+            group_of(circ(meat, 1, 0, 10)),
+            group_of(rect(bone, 6, -3, 18, 6), circ(bone, 24, -4, 4), circ(bone, 24, 4, 4))]
+
+
+def make_cheese():
+    c, hole = solid(0xFFC83D), solid(0xE0A020)
+    return [group_of(poly(c, [(8, 12), (22, 12), (22, -10), (8, -3)]), circ(hole, 15, 4, 3)),
+            group_of(poly(c, [(-7, 12), (8, 12), (8, -3), (-7, 5)]), circ(hole, 1, 7, 3)),
+            group_of(poly(c, [(-22, 12), (-7, 12), (-7, 5)]))]
+
+
+FOOD_SPRITES = {
+    "bone": build_food(make_bone(), 0xF4EBD0),
+    "sausage": build_food(make_sausage(), 0xA0402A),
+    "kibble": build_food(make_kibble(), 0x8A5A2B),
+    "chicken": build_food(make_chicken(), 0xC8782E),
+    "cheese": build_food(make_cheese(), 0xFFC83D),
+}
+
+# the ball
+ball_pal = solid(0xE53935)
+ball = group_of(circ(ball_pal, 0, 0, 12), circ(solid(0xFFD54F), 0, 0, 5),
+                circ(shine_pal, -5, -5, 3))
+ball.hidden = True
+face.append(ball)
+
+# ---------------- particles: tears, crumbs, hearts, steam, Zzz ----------------
+tear_pal = solid(0x6EC6FF)
+tears = []
+for _ in range(10):
+    g = group_of(circ(tear_pal, 0, 0, 4), poly(tear_pal, [(-4, 0), (4, 0), (0, -9)]))
+    g.hidden = True
+    face.append(g)
+    tears.append({"g": g, "y": 0.0, "vy": 0.0, "live": False})
+
+crumb_pal = solid(0xF4EBD0)
+crumbs = []
+for _ in range(9):
+    g = group_of(vectorio.Circle(pixel_shader=crumb_pal, radius=sz(2), x=0, y=0))
+    g.hidden = True
+    face.append(g)
+    crumbs.append({"g": g, "x": 0.0, "y": 0.0, "vx": 0.0, "vy": 0.0, "life": 0.0})
+
+heart_pal = solid(0xFF4F7B)
+HEART = [(0, 6), (-7, -1), (-8, -4), (-6, -8), (-3, -8), (0, -5),
+         (3, -8), (6, -8), (8, -4), (7, -1)]
+hearts = []
+for _ in range(3):
+    g = group_of(poly(heart_pal, HEART))
+    g.hidden = True
+    face.append(g)
+    hearts.append({"g": g, "x": 0.0, "y": 0.0, "life": 0.0, "phase": 0.0})
+
+steam_pal = solid(0xEEEEEE)
+steam = []
+for side in (-1, 1):
+    for i in range(3):
+        c = vectorio.Circle(pixel_shader=steam_pal, radius=sz(3), x=0, y=0)
+        g = group_of(c)
+        g.hidden = True
+        face.append(g)
+        steam.append({"g": g, "c": c, "side": side, "offset": i / 3})
+
+zzz = []
+for i in range(3):
+    z = label.Label(terminalio.FONT, text="z", color=0xFFFFFF, scale=2)
+    z.hidden = True
+    face.append(z)
+    zzz.append(z)
+
+root.append(face)
+
+# ---------------- status screen ----------------
+status = displayio.Group()
+status.append(vectorio.Rectangle(pixel_shader=solid(0x101820), width=W, height=H, x=0, y=0))
+st_title = label.Label(terminalio.FONT, text="PET STATUS", color=0x88CCFF, x=6, y=8)
+st_state = label.Label(terminalio.FONT, text="", color=0xFFFFFF, scale=2, x=6, y=28)
+st_food = label.Label(terminalio.FONT, text="", color=0xFFFFFF, x=6, y=50)
+bar_pal = solid(0x22CC44)
+bar_bg = vectorio.Rectangle(pixel_shader=solid(0x333333), width=W - 12, height=8, x=6, y=57)
+bar = vectorio.Rectangle(pixel_shader=bar_pal, width=1, height=8, x=6, y=57)
+st_fun = label.Label(terminalio.FONT, text="", color=0xFFFFFF, x=6, y=76)
+fun_bg = vectorio.Rectangle(pixel_shader=solid(0x333333), width=W - 12, height=8, x=6, y=83)
+fun_bar = vectorio.Rectangle(pixel_shader=solid(0x3FA9F5), width=1, height=8, x=6, y=83)
+st_foods = label.Label(terminalio.FONT, text="", color=0xFFFFFF, x=6, y=102)
+st_card = label.Label(terminalio.FONT, text="", color=0xFFFFFF, x=6, y=115)
+st_help = label.Label(terminalio.FONT, text="D0: face/status   D1: learn card",
+                      color=0x777777, x=6, y=128)
+for item in (st_title, st_state, st_food, bar_bg, bar, st_fun, fun_bg, fun_bar,
+             st_foods, st_card, st_help):
+    status.append(item)
+status.hidden = True
+root.append(status)
+
+# ---------------- pop-up message ----------------
+msg = label.Label(terminalio.FONT, text=" ", color=0xFFFFFF, background_color=FUR_DARK,
+                  padding_left=4, padding_right=4, scale=2)
+msg.anchor_point = (0.5, 1.0)
+msg.anchored_position = (W // 2, H - 2)
+msg.hidden = True
+root.append(msg)
+
+try:
+    display.root_group = root
+except AttributeError:
+    display.show(root)
+
+# ---------------- mood light ----------------
+pixel = None
+try:
+    import neopixel
+    if hasattr(board, "NEOPIXEL_POWER"):
+        np_power = digitalio.DigitalInOut(board.NEOPIXEL_POWER)
+        np_power.switch_to_output(True)
+    pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=0.15)
+except Exception as e:
+    print("No NeoPixel:", e)
+
+# ---------------- buttons ----------------
+btn0 = digitalio.DigitalInOut(board.D0)
+btn0.switch_to_input(pull=digitalio.Pull.UP)
+btn1 = None
+try:
+    btn1 = digitalio.DigitalInOut(board.D1)
+    btn1.switch_to_input(pull=digitalio.Pull.DOWN)
+except Exception:
+    print("No D1 button on this board - hold D0 to learn instead")
+
+# ---------------- remembering cards (saved in the board's flash memory) ----------------
+SAVE_TAG = b"PET1"
+
+
+def save_cards():
+    try:
+        learned = {uid: list(v) for uid, v in CARDS.items()}
+        data = json.dumps(learned).encode()
+        n = len(data)
+        if n + 6 > len(microcontroller.nvm):
+            print("Too many cards to save!")
+            return False
+        microcontroller.nvm[0:n + 6] = SAVE_TAG + bytes((n >> 8, n & 255)) + data
+        print("Saved", len(learned), "cards")
+        return True
+    except Exception as e:
+        print("Could not save cards:", e)
+        return False
+
+
+def load_cards():
+    try:
+        if FORGET_SAVED_CARDS:
+            microcontroller.nvm[0:4] = b"\x00\x00\x00\x00"
+            print("Saved cards forgotten")
+            return
+        if bytes(microcontroller.nvm[0:4]) != SAVE_TAG:
+            print("No saved cards yet")
+            return
+        n = (microcontroller.nvm[4] << 8) | microcontroller.nvm[5]
+        saved = json.loads(bytes(microcontroller.nvm[6:6 + n]).decode())
+        for uid, v in saved.items():
+            if uid not in CARDS:            # cards typed into the code win
+                CARDS[uid] = (v[0], v[1])
+        print("Loaded", len(saved), "saved cards")
+    except Exception as e:
+        print("Could not load saved cards:", e)
+
+
+load_cards()
+
+# ---------------- RFID ----------------
+rfid = None
+try:
+    rfid = PetRFID(board.STEMMA_I2C())
+    print("RFID ready, chip version", hex(rfid.version))
+except Exception as e:
+    print("RFID problem:", e)
+
+# ---------------- ultrasonic ----------------
+sonar = None
+try:
+    import adafruit_hcsr04
+    sonar = adafruit_hcsr04.HCSR04(trigger_pin=board.D9, echo_pin=board.D10, timeout=0.05)
+    print("Ultrasonic ready")
+except Exception as e:
+    print("Ultrasonic problem:", e)
+
+# ---------------- pet state ----------------
+state = "happy"
+event_until = 0.0
+food = float(FOOD_START)
+fun = float(FUN_START)
+learn_pick = 0
+mode = "face"
+message_until = 0.0
+last_uid = None
+last_seen = 0.0
+last_interaction = time.monotonic()
+feed = {"group": None, "parts": [], "bites": 0, "amount": 0, "start": 0.0, "hearts": False}
+play = {"x": 0.0, "y": 0.0, "vx": 0.0, "vy": 0.0, "amount": 0, "start": 0.0,
+        "bounces": 0, "hearts": False}
+
+
+def set_message(text, seconds=2.0):
+    global message_until
+    msg.text = text
+    msg.hidden = False
+    message_until = time.monotonic() + seconds
+
+
+def change_state(new, seconds=0):
+    global state, event_until
+    if new != state:
+        print("STATE:", state, "->", new, "| food", int(food))
+        if state == "eating":
+            end_feeding()
+        if state == "playing":
+            ball.hidden = True
+        if new == "angry":
+            set_message("GRRR!", 2)
+        elif new == "furious":
+            set_message("WAAAH! FEED ME!!", 3)
+        elif new == "sleepy":
+            set_message("*yawn*", 1.5)
+        elif new == "bored":
+            set_message("*sigh* play?", 2)
+        cross = new in CROSS_STATES
+        fur[0] = FUR_ANGRY if cross else FUR
+        for eye in (left_eye, right_eye):
+            eye.iris_pal[0] = IRIS_ANGRY if cross else IRIS
+        if pixel:
+            pixel[0] = MOOD_COLOURS[new]
+        if new != "sleepy":
+            anim["pop_until"] = time.monotonic() + 0.3     # little "surprise" pop
+    state = new
+    event_until = time.monotonic() + seconds
+
+
+def mood_from_food():
+    if food <= 0:
+        return "furious"
+    if food <= ANGRY_AT:
+        return "angry"
+    if food <= HUNGRY_AT:
+        return "hungry"
+    if fun <= BORED_AT:                # hunger comes first, then boredom
+        return "bored"
+    if food <= PECKISH_AT:
+        return "peckish"
+    return "happy"
+
+
+def on_near(cm):
+    """Something came close to the pet's nose."""
+    global fun
+    print("NEAR: {:.1f} cm".format(cm))
+    was_asleep = state == "sleepy"
+    dist = " {}cm".format(int(cm))         # the distance goes in what it says
+    poke()
+    if state in EVENT_STATES:              # busy eating, playing or learning
+        return
+    if state in CROSS_STATES:
+        set_message("GRR! FOOD?!" + dist, 1.5)    # too cross to say hello
+        return
+    if state == "hungry":
+        set_message("Food?? For me?" + dist, NOTICE_TIME)
+    elif was_asleep:
+        set_message("Huh?! Oh, hi!" + dist, NOTICE_TIME)
+    else:
+        set_message("Hi! *boop*" + dist, NOTICE_TIME)
+        fun = min(100.0, fun + 5)          # a hello cheers it up a little
+    change_state("noticed", NOTICE_TIME)
+
+
+def poke():
+    """Someone interacted: wake up."""
+    global last_interaction
+    last_interaction = time.monotonic()
+
+
+def toggle_mode():
+    global mode
+    mode = "status" if mode == "face" else "face"
+    face.hidden = mode != "face"
+    status.hidden = mode != "status"
+    print("MODE:", mode)
+
+
+def toggle_learning():
+    if state == "eating":
+        return
+    if state == "learning":
+        change_state(mood_from_food())
+        set_message("Cancelled", 1)
+    elif rfid is None:
+        set_message("No RFID!", 2)
+    else:
+        change_state("learning", LEARN_TIMEOUT)
+        show_learn_pick()
+
+
+def show_learn_pick():
+    set_message("Card = " + LEARN_MENU[learn_pick][0], LEARN_TIMEOUT)
+
+
+def next_learn_pick():
+    global learn_pick, event_until
+    learn_pick = (learn_pick + 1) % len(LEARN_MENU)
+    event_until = time.monotonic() + LEARN_TIMEOUT      # more time to tap
+    show_learn_pick()
+
+
+# ---------------- feeding ----------------
+BITE_TIMES = (0.9, 1.35, 1.8)
+DROP_TIME = 0.5
+EXCITED = {"lid": 0, "tilt": -8, "cheek": 0, "look_y": 0.0, "pupil": 25,
+           "brow_y": 12, "brow_ang": 10, "head": 0, "blush": 1}
+WAITING = {"lid": 2, "tilt": -6, "cheek": 10, "look_y": 0.9, "pupil": 23,
+           "brow_y": 8, "brow_ang": 6, "head": 0, "blush": 1}
+CHOMP = {"lid": 6, "tilt": -4, "cheek": 46, "look_y": 0.9, "pupil": 21,
+         "brow_y": 6, "brow_ang": 4, "head": 0, "blush": 1}
+
+
+def start_feeding(name, amount):
+    group, parts, crumb_colour = FOOD_SPRITES.get(name, FOOD_SPRITES["bone"])
+    for part in parts:
+        part.hidden = False
+    group.x = W // 2
+    group.y = -sz(20)
+    group.hidden = False
+    crumb_pal[0] = crumb_colour
+    feed.update(group=group, parts=parts, bites=0, amount=amount,
+                start=time.monotonic(), hearts=False)
+    change_state("eating", EAT_TIME)
+
+
+def end_feeding():
+    if feed["group"] is not None:
+        feed["group"].hidden = True
+        feed["group"] = None
+
+
+def do_bite():
+    global food
+    i = feed["bites"]
+    feed["parts"][i].hidden = True
+    feed["bites"] = i + 1
+    food = min(100.0, food + feed["amount"] / 3)
+    spawn_crumbs(W // 2 + co(14) - i * co(14), feed["group"].y)
+
+
+def feeding_step(now):
+    t = now - feed["start"]
+    g = feed["group"]
+    rest = H - sz(18)
+    start_y = -sz(20)
+    if t < DROP_TIME:
+        p = t / DROP_TIME
+        y = start_y + (rest - start_y) * p * p
+        g.y = int(y)
+        f = dict(EXCITED)
+        f["look_y"] = clamp((y - EYE_Y) / (H * 0.4), -1, 1)
+        return f, 0
+    if t < 0.85:
+        g.y = rest - int(sz(8) * abs(math.sin((t - DROP_TIME) * 9)) * (0.85 - t) / 0.35)
+        f = dict(EXCITED)
+        f["look_y"] = 1.0
+        return f, int(sz(2) * math.sin(now * 30))
+    g.y = rest
+    while feed["bites"] < 3 and t >= BITE_TIMES[feed["bites"]]:
+        do_bite()
+    if feed["bites"] > 0:
+        since = t - BITE_TIMES[feed["bites"] - 1]
+        if since < 0.18:
+            return CHOMP, int(sz(5) * (1 - since / 0.18))
+    if feed["bites"] < 3:
+        return WAITING, 0
+    if t >= 2.0 and not feed["hearts"]:
+        feed["hearts"] = True
+        spawn_hearts()
+    return FACES["eating"], int(round(sz(2) * math.sin(now * 10)))
+
+
+def start_playing(amount):
+    play.update(x=float(-sz(12)), y=float(sz(20)), vx=random.uniform(110, 150) * s,
+                vy=0.0, amount=amount, start=time.monotonic(), bounces=0, hearts=False)
+    ball.hidden = False
+    change_state("playing", PLAY_TIME)
+
+
+def playing_step(now, dt):
+    global fun
+    r = sz(12)
+    floor = H - r - 2
+    play["vy"] += 520 * s * dt
+    play["x"] += play["vx"] * dt
+    play["y"] += play["vy"] * dt
+    if play["y"] > floor:                        # bounce off the floor
+        play["y"] = floor
+        play["vy"] = -play["vy"] * 0.82
+        if play["vy"] > -60 * s:
+            play["vy"] = -random.uniform(230, 300) * s     # the pet paws it back up
+        play["bounces"] += 1
+        fun = min(100.0, fun + play["amount"] / 6)
+    if play["x"] > W - r and play["vx"] > 0:     # bounce off the walls
+        play["vx"] = -play["vx"]
+    if play["x"] < r and play["vx"] < 0 and now - play["start"] > 0.5:
+        play["vx"] = -play["vx"]
+    ball.x, ball.y = int(play["x"]), int(play["y"])
+    if now - play["start"] > PLAY_TIME - 0.8 and not play["hearts"]:
+        play["hearts"] = True
+        spawn_hearts()
+    f = dict(FACES["playing"])
+    look_x = clamp((play["x"] - W / 2) / (W / 2), -1, 1)
+    f["look_y"] = clamp((play["y"] - EYE_Y) / (H * 0.4), -1, 1)
+    return f, look_x
+
+
+def on_card(uid):
+    print("Card tapped:", uid)
+    poke()
+    if state in ("eating", "playing"):
+        return
+    if state == "learning":
+        if uid in CARDS:
+            set_message("Know it: " + CARDS[uid][0], 2)
+            change_state(mood_from_food())
+        else:
+            name, amount = LEARN_MENU[learn_pick]
+            CARDS[uid] = (name, amount)
+            saved = save_cards()
+            set_message(("Saved: " if saved else "Learned: ") + name, 2.5)
+            print('    "{}": ("{}", {}),'.format(uid, name, amount))
+            if name in TOYS:
+                start_playing(0)
+            else:
+                start_feeding(name, 0)
+    elif uid in CARDS and CARDS[uid][0] in TOYS:
+        name, amount = CARDS[uid]
+        if state in TOO_HUNGRY_TO_PLAY:
+            set_message("Too hungry!", 2)
+        else:
+            set_message("BALL!!", 1.5)
+            start_playing(amount)
+    elif uid in CARDS:
+        name, amount = CARDS[uid]
+        if state == "furious":
+            set_message("FINALLY! " + name, 2.5)
+        elif state == "angry":
+            set_message("Hmph... " + name, 2.5)
+        else:
+            set_message("Yum! " + name, 2.5)
+        start_feeding(name, amount)
+    else:
+        set_message("???", CONFUSED_TIME)
+        change_state("confused", CONFUSED_TIME)
+
+
+# ---------------- particles ----------------
+def spawn_tear(eye):
+    for tr in tears:
+        if not tr["live"]:
+            tr["live"] = True
+            tr["y"] = float(eye.cy + R * 0.6)
+            tr["vy"] = random.uniform(10, 30) * s
+            tr["g"].x = eye.cx + eye.outer * int(R * random.uniform(0.45, 0.75))
+            tr["g"].y = int(tr["y"])
+            tr["g"].hidden = False
+            return
+
+
+def spawn_crumbs(x, y):
+    n = 0
+    for c in crumbs:
+        if c["life"] <= 0 and n < 3:
+            c.update(x=float(x), y=float(y), vx=random.uniform(-60, 60) * s,
+                     vy=random.uniform(-110, -50) * s, life=0.8)
+            c["g"].hidden = False
+            n += 1
+
+
+def spawn_hearts():
+    for i, h in enumerate(hearts):
+        h.update(x=float(W // 2 + (i - 1) * sz(26)), y=float(H - sz(26)),
+                 life=1.2 + i * 0.1, phase=random.uniform(0, 6))
+        h["g"].hidden = False
+
+
+def update_particles(now, dt):
+    for tr in tears:
+        if tr["live"]:
+            tr["vy"] += 160 * s * dt
+            tr["y"] += tr["vy"] * dt
+            tr["g"].y = int(tr["y"])
+            if tr["y"] > H + 10:
+                tr["live"] = False
+                tr["g"].hidden = True
+    for c in crumbs:
+        if c["life"] > 0:
+            c["life"] -= dt
+            c["vy"] += 400 * s * dt
+            c["x"] += c["vx"] * dt
+            c["y"] += c["vy"] * dt
+            c["g"].x, c["g"].y = int(c["x"]), int(c["y"])
+            if c["life"] <= 0 or c["y"] > H + 5:
+                c["life"] = 0
+                c["g"].hidden = True
+    for h in hearts:
+        if h["life"] > 0:
+            h["life"] -= dt
+            h["y"] -= 45 * s * dt
+            h["g"].x = int(h["x"] + sz(5) * math.sin(now * 6 + h["phase"]))
+            h["g"].y = int(h["y"])
+            if h["life"] <= 0:
+                h["g"].hidden = True
+    steaming = state in CROSS_STATES
+    speed = 2.0 if state == "furious" else 1.3
+    for st in steam:
+        if steaming:
+            t = (now * speed + st["offset"]) % 1
+            base_x = sz(12) if st["side"] < 0 else W - sz(12)
+            st["g"].x = base_x + int(sz(4) * math.sin(t * 8 + st["offset"] * 5))
+            st["g"].y = int(EYE_Y + R * 0.4 - t * (EYE_Y + R * 0.4))
+            st["c"].radius = sz(3 + (9 if state == "furious" else 6) * t)
+            st["g"].hidden = False
+        elif not st["g"].hidden:
+            st["g"].hidden = True
+    for i, z in enumerate(zzz):
+        if state == "sleepy":
+            t = (now * 0.35 + i / 3) % 1
+            z.x = right_eye.cx + int(R * 0.6) + int(t * sz(16))
+            z.y = int(EYE_Y - R * 0.3 - t * (EYE_Y - R * 0.3 - sz(8)))
+            z.hidden = False
+        elif not z.hidden:
+            z.hidden = True
+    if steaming:
+        rate = 0.15 if state == "furious" else 0.4
+        anger_mark.hidden = int(now / rate) % 2 == 1
+    elif not anger_mark.hidden:
+        anger_mark.hidden = True
+
+
+# ---------------- animation ----------------
+cur = dict(FACES["happy"])
+anim = {"look_x": 0.0, "look_tx": 0.0, "next_glance": 0.0, "next_blink": 3.0,
+        "blink_start": -1.0, "next_rumble": 6.0, "rumble_until": 0.0,
+        "next_hop": 5.0, "hop_until": 0.0, "next_huff": 0.0, "huff_until": 0.0,
+        "next_tear": 4.0, "next_tilt": 8.0, "tilt_until": 0.0, "tilt_dir": 1,
+        "next_peek": 6.0, "peek_until": 0.0, "pop_until": 0.0, "next_status": 0.0,
+        "next_sigh": 3.0, "sigh_until": 0.0, "next_roll": 6.0, "roll_until": 0.0}
+
+
+def animate(now, dt):
+    dx = dy = 0
+    ball_look = None
+    if state == "eating" and feed["group"] is not None:
+        target, dy = feeding_step(now)
+    elif state == "playing":
+        target, ball_look = playing_step(now, dt)
+        dx = int(ball_look * sz(6))                     # head follows the ball
+        dy = -int(sz(3) * abs(math.sin(now * 9)))       # excited bouncing
+    else:
+        target = FACES[state]
+    if state == "happy":                            # curious head tilt now and then
+        if now >= anim["next_tilt"]:
+            anim["tilt_until"] = now + 1.5
+            anim["tilt_dir"] = random.choice((-1, 1))
+            anim["next_tilt"] = now + random.uniform(6, 12)
+        if now < anim["tilt_until"]:
+            target = dict(target)
+            target["head"] = 6 * anim["tilt_dir"]
+            target["brow_y"] = 10
+    k = min(1.0, dt * (16 if state == "eating" else 8))
+    for key in cur:
+        cur[key] += (target[key] - cur[key]) * k
+
+    # where to look
+    if now >= anim["next_glance"]:
+        if state == "confused":
+            anim["look_tx"] = random.uniform(-1, 1)
+            anim["next_glance"] = now + 0.25
+        elif state in ("learning", "eating", "angry", "furious", "sleepy", "noticed"):
+            anim["look_tx"] = 0
+            anim["next_glance"] = now + 0.5
+        elif state == "bored":                  # slow, uninterested gazing
+            anim["look_tx"] = random.choice((-1, -0.8, 0.8, 1))
+            anim["next_glance"] = now + random.uniform(2.5, 5)
+        elif state == "hungry":
+            anim["look_tx"] = random.uniform(-0.5, 0.5)
+            anim["next_glance"] = now + random.uniform(1.5, 3)
+        else:
+            anim["look_tx"] = random.choice((-1, -0.6, 0, 0, 0.6, 1))
+            anim["next_glance"] = now + random.uniform(0.8, 2.5)
+    if ball_look is not None:
+        anim["look_tx"] = ball_look
+        anim["look_x"] = ball_look
+    speed = 3 if state == "bored" else 14
+    anim["look_x"] += (anim["look_tx"] - anim["look_x"]) * min(1.0, dt * speed)
+
+    # blinking
+    blink = 0.0
+    if anim["blink_start"] < 0 and now >= anim["next_blink"] and state not in ("eating", "sleepy"):
+        anim["blink_start"] = now
+    if anim["blink_start"] >= 0:
+        t = (now - anim["blink_start"]) / 0.18
+        if t >= 1:
+            anim["blink_start"] = -1.0
+            anim["next_blink"] = now + random.uniform(1.5, 4.5)
+        else:
+            blink = math.sin(t * math.pi)
+
+    # surprise pop when the mood changes
+    pop = max(0.0, (anim["pop_until"] - now) / 0.3)
+
+    # body language
+    if state == "happy":
+        if now >= anim["next_hop"]:
+            anim["hop_until"] = now + 0.5
+            anim["next_hop"] = now + random.uniform(4, 8)
+        if now < anim["hop_until"]:
+            p = (anim["hop_until"] - now) / 0.5
+            dy = -int(sz(6) * abs(math.sin(p * 2 * math.pi)))
+        else:
+            dy = int(round(sz(1.5) * math.sin(now * 2.5)))
+    elif state == "sleepy":
+        dy = int(round(sz(2) * math.sin(now * 1.2)))       # slow sleepy breathing
+    elif state == "bored":
+        if now >= anim["next_sigh"]:
+            anim["sigh_until"] = now + 1.6
+            anim["next_sigh"] = now + random.uniform(5, 9)
+            if random.random() < 0.5:
+                set_message("*sigh*", 1.2)
+        if now < anim["sigh_until"]:                        # big slow sigh
+            p = 1 - (anim["sigh_until"] - now) / 1.6
+            dy = int(sz(7) * math.sin(p * math.pi))
+        if now >= anim["next_roll"]:                        # rolls its eyes
+            anim["roll_until"] = now + 0.9
+            anim["next_roll"] = now + random.uniform(7, 12)
+        if now < anim["roll_until"]:
+            a = (1 - (anim["roll_until"] - now) / 0.9) * 2 * math.pi
+            anim["look_x"] = -math.cos(a)
+            cur["look_y"] = -abs(math.sin(a)) - 0.2
+    elif state == "hungry":
+        if now >= anim["next_rumble"]:
+            anim["rumble_until"] = now + 0.6
+            anim["next_rumble"] = now + random.uniform(4, 8)
+        if now < anim["rumble_until"]:
+            dx = int(sz(3) * math.sin(now * 50))
+        if now >= anim["next_tear"]:
+            anim["next_tear"] = now + random.uniform(4, 8)
+            spawn_tear(random.choice((left_eye, right_eye)))
+    elif state == "angry":
+        if now >= anim["next_huff"]:
+            anim["huff_until"] = now + 0.5
+            anim["next_huff"] = now + random.uniform(1.2, 2.5)
+        if now < anim["huff_until"]:
+            dx = int(sz(3) * math.sin(now * 70))
+        if pixel:
+            pixel[0] = (int(150 + 100 * math.sin(now * 8)), 0, 0)
+    elif state == "furious":
+        dx = int(sz(3) * math.sin(now * 80))                # can't stop shaking
+        dy = int(sz(2) * math.sin(now * 37))
+        if now >= anim["next_tear"]:                        # streams of tears
+            anim["next_tear"] = now + 0.12
+            spawn_tear(left_eye if random.random() < 0.5 else right_eye)
+        if pixel:
+            pixel[0] = (255, 0, 0) if int(now * 8) % 2 else (40, 0, 0)
+
+    lid = cur["lid"] + blink * 95 - 12 * pop
+    f = dict(cur)
+    f["pupil"] = cur["pupil"] + 5 * pop
+    left_lid, right_lid = lid, lid
+    left_brow, right_brow = cur["brow_y"], cur["brow_y"]
+    if state == "confused":                         # one eyebrow up
+        left_lid += 14
+        right_lid = max(0, right_lid - 14)
+        right_brow += 10
+    if state == "sleepy":                           # peeks with one eye now and then
+        if now >= anim["next_peek"]:
+            anim["peek_until"] = now + 1.0
+            anim["next_peek"] = now + random.uniform(6, 12)
+        if now < anim["peek_until"]:
+            right_lid = 36
+    head = int(cur["head"] * s)
+    left_eye.draw(dx, dy - head, anim["look_x"], cur["look_y"], f, left_lid, left_brow)
+    right_eye.draw(dx, dy + head, anim["look_x"], cur["look_y"], f, right_lid, right_brow)
+    update_particles(now, dt)
+
+
+def update_status(now):
+    if now < anim["next_status"]:
+        return
+    anim["next_status"] = now + 0.25
+    st_state.text = state.upper()
+    st_food.text = "Food: {}%".format(int(food))
+    bar.width = max(1, int((W - 12) * food / 100))
+    if food > PECKISH_AT:
+        bar_pal[0] = 0x22CC44
+    elif food > HUNGRY_AT:
+        bar_pal[0] = 0xDDAA00
+    elif food > ANGRY_AT:
+        bar_pal[0] = 0xDD6622
+    else:
+        bar_pal[0] = 0xFF0000
+    st_fun.text = "Fun: {}%".format(int(fun))
+    fun_bar.width = max(1, int((W - 12) * fun / 100))
+    dist = "none" if last_cm is None else "{}cm".format(int(last_cm))
+    st_foods.text = "Cards: {}   Distance: {}".format(len(CARDS), dist)
+    st_card.text = "Last card: " + (last_uid or "none")
+
+
+# ---------------- main loop ----------------
+print("Digital pet V1.4 running")
+if pixel:
+    pixel[0] = MOOD_COLOURS[state]
+
+d0_was = False
+d0_down_at = 0.0
+d0_long_done = False
+d1_was = False
+next_rfid_poll = 0.0
+next_sonar = 0.0
+last_cm = None
+near_count = 0
+last = time.monotonic()
+
+while True:
+    now = time.monotonic()
+    dt = min(now - last, 0.1)
+    last = now
+
+    # 1. INPUT: time drains the food
+    if state != "eating":
+        food = max(0.0, food - FOOD_DRAIN_PER_SECOND * dt)
+    if state not in ("playing", "sleepy"):
+        fun = max(0.0, fun - FUN_DRAIN_PER_SECOND * dt)
+
+    # 2. INPUT: buttons
+    d0 = not btn0.value
+    if d0 and not d0_was:
+        d0_down_at = now
+        d0_long_done = False
+        poke()
+    if d0 and not d0_long_done and now - d0_down_at > 0.8:
+        d0_long_done = True
+        toggle_learning()
+    if not d0 and d0_was and not d0_long_done:
+        if state == "learning":
+            next_learn_pick()           # in LEARN mode, D0 picks what the card becomes
+        else:
+            toggle_mode()
+    d0_was = d0
+
+    if btn1 is not None:
+        d1 = btn1.value
+        if d1 and not d1_was:
+            poke()
+            toggle_learning()
+        d1_was = d1
+
+    # 3. INPUT: RFID card (a held card only counts once)
+    if rfid and now >= next_rfid_poll:
+        next_rfid_poll = now + 0.2
+        uid = rfid.read_uid()
+        if uid:
+            if uid != last_uid or now - last_seen > 1.5:
+                on_card(uid)
+            last_uid = uid
+            last_seen = now
+
+    # 3b. INPUT: ultrasonic - is something right in front of its nose?
+    if sonar and now >= next_sonar:
+        next_sonar = now + SONAR_EVERY
+        try:
+            cm = sonar.distance
+        except RuntimeError:               # no echo came back (nothing in range)
+            cm = None
+        last_cm = cm
+        if SHOW_DISTANCE:
+            print("distance:", "none" if cm is None else "{:.1f} cm".format(cm))
+        if cm is not None and cm <= NEAR_CM:
+            near_count += 1
+            if near_count == 2:            # two readings in a row = really there
+                on_near(cm)
+        else:
+            near_count = 0                 # it went away: ready to notice again
+
+    # 4. DECIDE: the pet's brain
+    if state in EVENT_STATES:
+        if now >= event_until:
+            if state == "learning":
+                set_message("Timed out", 1.5)
+            change_state(mood_from_food())
+    else:
+        mood = mood_from_food()
+        if mood == "happy" and now - last_interaction > SLEEPY_AFTER:
+            mood = "sleepy"
+        change_state(mood)
+
+    # 5. OUTPUT: screen
+    if not msg.hidden and now >= message_until:
+        msg.hidden = True
+    if mode == "face":
+        animate(now, dt)
+    else:
+        update_status(now)
+    display.refresh()
+    time.sleep(0.01)

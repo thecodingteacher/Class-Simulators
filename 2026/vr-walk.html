@@ -1,1113 +1,260 @@
-# Digital Pet V1.4 — adds the ultrasonic sensor: the pet notices you up close
-# Board: ESP32-S3 TFT Feather, CircuitPython 9
-# Put pet_rfid.py next to this file.
-# Libraries in /lib: adafruit_display_text (folder), neopixel.mpy, adafruit_hcsr04.mpy
-#   (circup install adafruit_display_text neopixel adafruit_hcsr04)
-# Ultrasonic wiring: VCC -> 3V rail, GND -> ground rail, Trig -> pin 9, Echo -> pin 10
-#
-# Buttons:
-#   D0 tap   -> switch between FACE and STATUS screen
-#   D1 (or hold D0 for 1 second) -> LEARN mode
-#       in LEARN mode, tap D0 to choose what the card becomes, then tap the card
-# Learned cards are saved on the board and survive unplugging.
-
-import time
-import math
-import random
-import json
-import board
-import microcontroller
-import digitalio
-import displayio
-import terminalio
-import vectorio
-from adafruit_display_text import label
-from pet_rfid import PetRFID
-
-# =================== STUDENT SETTINGS ===================
-# FOOD meter: 100 = full tummy, 0 = starving
-FOOD_START = 50
-FOOD_DRAIN_PER_SECOND = 0.5   # how fast it gets hungry
-PECKISH_AT = 60               # food at or below this -> peckish
-HUNGRY_AT = 35                # -> hungry (sad, the odd tear)
-ANGRY_AT = 12                 # -> angry
-                              # food reaches 0 -> FURIOUS (angry AND crying)
-FUN_START = 70
-FUN_DRAIN_PER_SECOND = 0.4    # how fast it gets bored (pauses while asleep)
-BORED_AT = 30                 # fun at or below this -> bored (hunger still comes first)
-SLEEPY_AFTER = 30             # seconds with nobody playing (while happy) -> falls asleep
-EAT_TIME = 3.2
-PLAY_TIME = 4.0
-CONFUSED_TIME = 1.5
-NEAR_CM = 6                   # something closer than this (cm) -> the pet notices it
-NOTICE_TIME = 1.6             # how long the "oh, hi!" reaction lasts
-SONAR_EVERY = 0.15            # seconds between distance readings
-SHOW_DISTANCE = True          # print every reading to the console (set False once tested)
-LEARN_TIMEOUT = 10
-
-# Known cards: card ID -> (what it is, how much it adds)
-# Foods fill the FOOD meter. Toys fill the FUN meter.
-# Cards you teach with LEARN mode are saved on the board automatically,
-# so you only need to type them in here if you want every pet to know them.
-CARDS = {
-    # "A1B2C3D4": ("bone", 40),
-    # "0F1E2D3C": ("ball", 40),
+<!doctype html>
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f4ecd9"><title>Paint Splash Park — Quest 3</title>
+<style>
+:root{--ink:#193443;--muted:#607b83;--paper:#faf5e8;--teal:#19b9a6;--pink:#f04f9b;--yellow:#ffd269;--violet:#8e73e8;--line:#183d4920;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-synthesis:none;color:var(--ink)}*{box-sizing:border-box}body{margin:0;background:#a4d8d8;overflow:hidden}button,select,input{font:inherit}button{cursor:pointer;border:0}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--pink);outline-offset:3px}button:disabled{opacity:.5;cursor:default}#scene{position:fixed;inset:0;width:100%;height:100%;touch-action:none}#home{position:fixed;inset:0;padding:25px 34px;display:flex;flex-direction:column;pointer-events:none;background:linear-gradient(90deg,#fbf5e8ef 0%,#fbf5e8ba 26%,#fbf5e82b 55%,transparent 72%)}#home>*{pointer-events:auto}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{display:flex;align-items:center;gap:11px}.mark{width:43px;height:43px;background:var(--teal);border-radius:14px 18px 12px 20px;display:grid;place-items:center;color:white;transform:rotate(-8deg);font-size:26px;font-weight:900}.brand b{font-size:16px;letter-spacing:-.4px}.brand small{display:block;font-size:9px;letter-spacing:2px;color:#58717b;margin-top:2px}.nav{display:flex;gap:8px}.pillButton{padding:11px 17px;border-radius:30px;color:var(--ink);background:#faf7ece8;border:1px solid #193c4c25;font-size:12px;font-weight:700;backdrop-filter:blur(10px)}.pillButton:hover{background:white}.hero{width:min(485px,50%);margin:auto 0}.eyebrow{font-size:10px;letter-spacing:2px;font-weight:850;text-transform:uppercase;color:#087e77}.eyebrow:before{content:'';display:inline-block;width:6px;height:6px;background:var(--pink);border-radius:50%;margin-right:8px;vertical-align:middle}h1{font-size:clamp(56px,6.4vw,87px);line-height:.98;letter-spacing:-5px;margin:22px 0;color:#193b49;font-weight:900}h1 .paint{color:var(--teal);display:inline-block;transform:rotate(-3deg);position:relative}h1 .paint:after{content:'';position:absolute;bottom:-4px;left:0;width:99%;height:7px;background:var(--yellow);border-radius:60%;z-index:-1}.intro{max-width:345px;line-height:1.65;font-size:15px;color:#4b6876}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:25px}.primary{background:#183e4c;color:#fffef4;padding:17px 26px;border-radius:15px;font-size:14px;font-weight:800;box-shadow:0 6px 0 #12303b}.primary:hover{background:#23586b;transform:translateY(-1px)}.secondary{padding:16px 22px;border:1px solid #193e4c33;border-radius:15px;color:#234754;font-weight:750;font-size:13px;background:#fffcf390}.subnote{color:#617782;font-size:10px;line-height:1.6;margin-top:18px;max-width:390px}.chips{display:flex;gap:6px;flex-wrap:wrap;margin:22px 0}.chip{background:#fffdf599;border:1px solid #173e4d20;padding:7px 10px;border-radius:40px;font-size:10px;font-weight:650}.homeFooter{display:flex;justify-content:space-between;align-items:end;font-size:10px;color:#355864}.modeTag{background:#fbf7ebe3;border:1px solid #284e5020;border-radius:12px;padding:11px 15px;font-size:10px;letter-spacing:1.2px}.modeTag b{display:block;font-size:14px;letter-spacing:-.1px;margin-top:4px}.hide{display:none!important}.error{display:none;max-width:430px;background:#fff0cc;border-left:3px solid #db9137;border-radius:10px;padding:12px;font-size:11px;line-height:1.6;margin-top:15px}#playUI{position:fixed;inset:0;pointer-events:none;padding:22px;display:flex;flex-direction:column;justify-content:space-between}.playTop{display:flex;justify-content:space-between;gap:15px;align-items:start}.score{background:#fff9eaeF;border:1px solid #23415322;border-radius:19px;padding:12px 20px;display:flex;gap:25px;box-shadow:0 5px 20px #28434e17}.stat small{font-size:8px;letter-spacing:1.5px;display:block;color:#5b787f}.stat b{font-size:25px;line-height:1.2;display:block;margin-top:3px}.stat .teal{color:#0b978d}.controlsTop{pointer-events:auto;display:flex;gap:7px}.objective{margin-top:9px;max-width:300px;background:#193d4adb;color:#f0f5df;border-radius:11px;padding:10px 14px;font-size:11px}.playBottom{display:flex;justify-content:space-between;gap:12px;align-items:end}.controlCard{pointer-events:auto;background:#fffbf0ed;border:1px solid #254e5529;border-radius:17px;padding:12px 16px;font-size:10px;line-height:1.7;color:#49656c}.key{display:inline-block;border:1px solid #28494e35;background:#fff;padding:0 5px;border-radius:4px;font-weight:750;color:#24424a}.touch{display:flex;gap:7px;margin-top:10px}.touch button{background:#183e4c;color:white;padding:12px 15px;border-radius:10px;touch-action:none;user-select:none;-webkit-user-select:none}.touch .colour{background:#19b9a6}.paintSwatches{display:flex;gap:8px;pointer-events:auto;align-items:center}.swatch{width:31px;height:31px;border:3px solid #ffffffa8;border-radius:50%;box-shadow:0 2px 7px #14392f2a}.swatch.selected{outline:2px solid #153e4c;outline-offset:2px}.signal{background:#fffbf0e8;border:1px solid #254e5529;border-radius:16px;padding:12px 15px;width:190px;font-size:10px;color:#66808a}.signal strong{display:block;color:#244552;font-size:16px;margin:4px 0}.bar{height:4px;background:#bfd8d4;border-radius:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--teal);width:0}.micro{font-size:10px;line-height:1.6;color:#607b85}.crosshair{position:fixed;left:50%;top:50%;width:19px;height:19px;margin:-9.5px;border:2px solid #ffffffde;border-radius:50%;box-shadow:0 0 0 1px #23546860;pointer-events:none}.crosshair:after{content:'';position:absolute;left:6px;top:6px;width:3px;height:3px;border-radius:50%;background:white}.toast{position:fixed;top:24%;left:50%;transform:translateX(-50%);background:#193e4ceF;color:#faffdf;border-radius:20px;padding:13px 22px;font-size:18px;font-weight:800;pointer-events:none;opacity:0;transition:opacity .12s;white-space:nowrap}.veil{position:fixed;inset:0;background:#153b485e;backdrop-filter:blur(9px);display:grid;place-items:center;padding:18px}.modal{background:#fbf6e9;border:1px solid #fff9e9;border-radius:26px;width:min(690px,100%);max-height:92vh;overflow:auto;padding:28px 32px;box-shadow:0 30px 100px #14334436}.modal.wide{width:min(830px,100%)}.heading{display:flex;justify-content:space-between;align-items:start;gap:12px}.modal h2{font-size:30px;letter-spacing:-1px;margin:8px 0 10px}.modal p{color:#58737d;font-size:12px;line-height:1.7}.close{background:#dce8e2;color:#23454d;width:33px;height:33px;border-radius:50%;font-size:23px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px 25px;margin:23px 0}.field label{font-size:12px;font-weight:750;display:flex;justify-content:space-between;margin-bottom:9px}.field small{font-size:10px;line-height:1.6;color:#6b8186;display:block;margin-top:7px}input[type=range]{width:100%;accent-color:#14a59a}select{background:#eef0e6;border:1px solid #284e4e26;padding:10px 12px;border-radius:9px;width:100%;color:#2d515a;font-size:12px}.check{display:flex;gap:10px;font-size:12px;line-height:1.6}.check input{accent-color:var(--teal);align-self:start;margin-top:4px}.check small{display:block;color:#6a8186;font-size:10px}.notice{border-left:3px solid var(--teal);background:#d9eae23d;padding:12px 15px;border-radius:0 10px 10px 0;color:#486970;font-size:11px;line-height:1.7}.steps{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:24px 0}.steps div{border:1px solid var(--line);padding:15px;border-radius:14px}.steps b{color:#0b8d83;font-size:12px}.steps p{font-size:11px;margin-bottom:0}.readouts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:20px 0}.readouts div{background:#e9eee2;border-radius:12px;padding:13px;font-size:9px;color:#6f8385}.readouts b{display:block;font-size:16px;color:#25505a;margin-top:7px}#scope{width:100%;height:95px;border:1px solid #33515120;border-radius:12px;background:#eff2e7}.sensorLine{background:#e2ebe3;border-radius:10px;padding:10px;font:11px ui-monospace,monospace;white-space:pre-wrap;color:#3d6571}.bigStats{display:flex;justify-content:center;gap:25px;margin:23px 0}.bigStats b{font-size:30px;display:block;color:#139e95}.bigStats small{font-size:10px;color:#5f7c81}#endModal{text-align:center}#fatal{display:none;position:fixed;inset:0;background:var(--paper);padding:10vh 10vw;z-index:100}#fatal h2{font-size:40px}#fatal p{max-width:600px;line-height:1.7}a{color:#13867d}#captureTip{position:fixed;left:50%;bottom:170px;transform:translateX(-50%);color:white;font-size:11px;background:#153c4dcf;border-radius:20px;padding:9px 16px;pointer-events:none}@media(max-width:790px){#home{padding:19px;background:linear-gradient(90deg,#fbf5e8ee,#fbf5e8b8 58%,#fbf5e83d)}.hero{width:min(450px,92%)}h1{font-size:65px;letter-spacing:-4px}.nav .extra{display:none}.homeFooter .location{display:none}#playUI{padding:12px}.score{gap:16px;padding:12px 15px}.stat b{font-size:21px}.controlCard{font-size:9px}.signal{display:none}.modal{padding:24px}.grid,.steps{grid-template-columns:1fr}.readouts{grid-template-columns:1fr 1fr}.controlsTop{flex-direction:column;gap:4px}.controlsTop button{padding:8px 12px}.paintSwatches{gap:7px}.swatch{width:25px;height:25px}}@media(max-height:700px){#home{padding-top:16px;padding-bottom:16px}h1{font-size:62px;margin:16px 0}.chips{margin:15px 0}.intro{margin-bottom:0;font-size:14px}.actions{margin-top:18px}.subnote{margin-top:14px}.homeFooter{margin-top:10px}}
+</style></head><body>
+<canvas id="scene" aria-label="Paint Splash Park 3D game"></canvas>
+<div id="home"><header class="topbar"><div class="brand"><span class="mark">✳</span><span><b>PAINT SPLASH PARK</b><small>MAKE YOUR MARK</small></span></div><nav class="nav"><button id="helpOpen" class="pillButton extra">How to play</button><button id="settingsOpen" class="pillButton">Movement & throwing ↗</button></nav></header><main class="hero"><div class="eyebrow">QUEST 3 · HAND TRACKING · HEADSET ACCELERATION</div><h1>A little run.<br>A big <span class="paint">splash.</span></h1><p class="intro">An entire park is your canvas. Follow your gaze, fling a paintball, and beat the bots to every target.</p><div class="chips"><span class="chip">✦ Grab & throw</span><span class="chip">↗ Look to steer</span><span class="chip">● Paint the park</span></div><div class="actions"><button class="primary" id="enterVR">Enter the park in VR ↗</button><button class="secondary" id="preview">Desktop play</button></div><div class="subnote" id="support">Checking VR support…</div><div id="homeError" class="error" role="status"></div></main><footer class="homeFooter"><span>One file. All colour. &nbsp; • &nbsp; No KAT connection.</span><span class="modeTag location">TODAY’S CHALLENGE<b>12 targets. One colourful takeover.</b></span></footer></div>
+<div id="playUI" class="hide"><div class="playTop"><div><div class="score"><div class="stat"><small>PAINTED</small><b class="teal" id="paintCount">0 / 12</b></div><div class="stat"><small>SCORE</small><b id="score">0</b></div><div class="stat"><small>TIME</small><b id="timer">2:00</b></div></div><div class="objective" id="objective">Paint every target. Tag the bots to stop them repainting.</div></div><div class="controlsTop"><button class="pillButton" id="labOpen">Sensor lab</button><button class="pillButton" id="pauseButton">Pause Ⅱ</button></div></div><div class="playBottom"><div class="controlCard"><div><span class="key">W</span> move · <span class="key">Shift</span> run · <span class="key">← →</span> turn · mouse aim · click / <span class="key">Space</span> throw · <span class="key">1 2 3</span> colour · <span class="key">P</span> pause</div><div class="touch"><button id="turnLeft" aria-label="Turn left">↶</button><button id="touchWalk">Hold to walk</button><button id="turnRight" aria-label="Turn right">↷</button><button id="touchThrow">Throw ●</button><button id="touchColour" class="colour">Colour</button></div></div><div class="paintSwatches" id="swatches"><button class="swatch selected" style="background:#19b9a6" data-colour="0" aria-label="Mint paint"></button><button class="swatch" style="background:#f04f9b" data-colour="1" aria-label="Pink paint"></button><button class="swatch" style="background:#8e73e8" data-colour="2" aria-label="Violet paint"></button></div><div class="signal"><span id="signalSource">DESKTOP SIMULATION</span><strong id="motionState">STILL</strong><div class="bar"><i id="signalMeter"></i></div><div class="micro" id="frameInfo">—</div></div></div></div><div class="crosshair hide" id="crosshair"></div><div id="captureTip" class="hide">Move the mouse to aim. Click the park to throw.</div><div id="toast" class="toast" role="status"></div>
+<div id="settingsVeil" class="veil hide"><section class="modal wide" role="dialog" aria-modal="true" aria-labelledby="settingsTitle"><div class="heading"><div><div class="eyebrow">FIND YOUR FEEL</div><h2 id="settingsTitle">Movement & throwing.</h2></div><button class="close" data-close="settingsVeil" aria-label="Close">×</button></div><p>VR movement speed uses live headset accelerometer readings. Your current headset facing direction steers continuously, including while aiming and throwing.</p><div class="grid"><div class="field"><label for="sensitivity">Motion sensitivity <output id="sensitivityValue"></output></label><input id="sensitivity" type="range" min="0.5" max="2.5" step="0.1"><small>Increase if gentle strides are missed. High sensitivity can interpret other head movement as walking.</small></div><div class="field"><label for="maxSpeed">Maximum virtual speed <output id="maxSpeedValue"></output></label><input id="maxSpeed" type="range" min="1" max="4" step="0.25"><small>This is game speed, not measured treadmill or foot speed.</small></div><div class="field"><label for="throwGain">Throw strength <output id="throwGainValue"></output></label><input id="throwGain" type="range" min="1.5" max="4" step="0.25"><small>Multiplies the hand’s recent movement velocity when the pinch opens.</small></div><div class="field"><label for="duration">Round length</label><select id="duration"><option value="120">2 minutes</option><option value="180">3 minutes</option><option value="0">Free paint · no timer</option></select><small>Paint all twelve targets to complete a timed round.</small></div><label class="check"><input id="rivals" type="checkbox"><span>Rival paint bots<small>They repaint targets after a gentle 25-second head start. Paint a bot to stun it.</small></span></label><label class="check"><input id="comfort" type="checkbox"><span>Comfort edges<small>A soft vignette at higher speeds. No artificial head bob, jumping or camera tilt.</small></span></label><label class="check"><input id="sound" type="checkbox"><span>Sound effects<small>Soft pops, splashes and target chimes.</small></span></label><label class="check"><input id="showHands" type="checkbox"><span>Visible hand markers<small>Lightweight fingers and palm outlines help you see tracking.</small></span></label></div><div class="notice"><b>Accelerometer-only means accelerometer-only.</b> This file does not infer walking from WebXR head-position changes, hand swings or treadmill telemetry. WebXR is used for the view, steering orientation and tracked hands. If browser sensor data is unavailable, walking stays disabled; stationary paint practice is a separate, explicit choice.</div><div class="actions"><button class="primary" id="saveSettings">Save settings</button><button class="secondary" id="sensorPermission">Enable / check sensors</button></div><p class="micro" id="sensorStatus">Accelerometer samples have not been received.</p></section></div>
+<div id="helpVeil" class="veil hide"><section class="modal wide" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="heading"><div><div class="eyebrow">WELCOME TO THE PARK</div><h2 id="helpTitle">Run. Grab. Splash.</h2></div><button class="close" data-close="helpVeil" aria-label="Close">×</button></div><div class="steps"><div><b>01 / Check & calibrate</b><p>Enter VR. Look at a menu button until its ring fills. The game checks for live acceleration data, measures 2 seconds still, then samples 4 seconds of comfortable walking.</p></div><div><b>02 / Look where you want to go</b><p>Step to move. Faster detected acceleration increases virtual speed. Direction follows the headset’s horizontal facing direction every frame, even while holding a paintball. Stop stepping to stop.</p></div><div><b>03 / Pinch, swing, release</b><p>Pinch thumb + index finger on either hand to make a paintball. Keep the pinch, move your hand forward, then release to throw. Use short throws in front of the headset. A gentle release drops the ball.</p></div><div><b>04 / Pick your paint</b><p>Pinch thumb + middle finger on either hand while your index finger stays open to cycle mint, pink and violet paint. On desktop use 1, 2 or 3.</p></div><div><b>05 / Claim the park</b><p>Paint the twelve round targets. Every first capture scores 100; tagging a bot scores 50 and stops it briefly. Splashes stick to the ground, walls and scenery too.</p></div><div><b>06 / Take a break</b><p>Raise both open hands near eye level for half a second. Tracking loss, interrupted sensor readings and a hidden headset view stop movement. Resume deliberately.</p></div></div><div class="notice"><b>Quest deployment:</b> Put this HTML on an HTTPS host such as GitHub Pages, then open its direct URL on Quest 3. No CDN or downloads are needed after the page loads. For your ManageXR / Wolvic setup, the administrator must allow immersive WebXR, hand tracking and motion-sensor access. Browser support is checked live; it is not assumed.</div><p><b>Hardware check:</b> Test as an adult before student use. Keep normal boundary protection and follow your treadmill’s harness, supervision, age and size limits. KAT’s C2+ guidance specifies ages 14–60 and height 1.55–2.00 m; check your exact model.</p><p class="micro">Raw motion can’t identify feet: nodding, throwing or other head movement can resemble walking. Calibration reduces noise but cannot remove that ambiguity. No actual walking speed, treadmill telemetry or hardware latency is measured.</p><p class="micro">References: <a href="https://www.w3.org/TR/accelerometer/" target="_blank" rel="noopener">W3C accelerometer APIs</a> · <a href="https://developers.meta.com/horizon/documentation/web/browser-specs/" target="_blank" rel="noopener">Meta browser feature detection</a> · <a href="https://developers.meta.com/horizon/documentation/web/webxr-hands/" target="_blank" rel="noopener">Meta hand tracking</a> · <a href="https://www.kat-vr.com/pages/c-2-plus-agreement" target="_blank" rel="noopener">KAT guidance</a></p></section></div>
+<div id="labVeil" class="veil hide"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="labTitle"><div class="heading"><div><div class="eyebrow">LOCAL READINGS · NO UPLOADS</div><h2 id="labTitle">Sensor lab.</h2></div><button class="close" data-close="labVeil" aria-label="Close">×</button></div><p id="labIntro">Headset movement requires actual browser acceleration events. Desktop play is a separate keyboard simulation.</p><canvas id="scope" width="580" height="100" aria-label="Acceleration signal trace"></canvas><div class="readouts"><div>Active source<b id="labSource">None</b></div><div>Sensor sample rate<b id="labRate">—</b></div><div>Sample age<b id="labAge">—</b></div><div>Acceleration signal<b id="labEnergy">—</b></div><div>Frame rate<b id="labFPS">—</b></div><div>App update CPU<b id="labCPU">—</b></div></div><div id="sensorList" class="sensorLine">No samples.</div><p class="micro">Frame rate and app update CPU time do not measure sensor-to-display latency. Acceleration controls game speed without integrating it into a physical distance estimate.</p><div class="actions"><button class="primary" id="labEnable">Check sensors</button><button class="secondary" id="exportStats">Download run summary</button></div></section></div>
+<div id="endVeil" class="veil hide"><section class="modal" id="endModal" role="dialog" aria-modal="true" aria-labelledby="endTitle"><div class="eyebrow" id="endEyebrow">TAKE A BREATHER</div><h2 id="endTitle">Park paused.</h2><p id="endBody">Everything is stopped.</p><div class="bigStats"><div><b id="endPainted">0</b><small>targets</small></div><div><b id="endScore">0</b><small>score</small></div><div><b id="endBest">0</b><small>best</small></div></div><div class="actions" style="justify-content:center"><button class="primary" id="resumeButton">Resume</button><button class="secondary" id="newRound">New round</button><button class="secondary" id="homeButton">Home</button></div></section></div><div id="fatal"><h2>Graphics need a quick check.</h2><p id="fatalText">This game needs WebGL 2. Open it in a current Quest browser or a desktop browser with graphics acceleration enabled.</p></div>
+<script>
+'use strict';
+// Paint Splash Park 1.0. Single-file WebGL2/WebXR. No external resources.
+// Locomotion: browser accelerometer samples only. Orientation steers, hand joints throw.
+(()=>{
+const $=id=>document.getElementById(id),clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),mix=(a,b,t)=>a+(b-a)*t;
+const EYE=1.62,defaults={sensitivity:1,maxSpeed:2.75,throwGain:3,duration:120,rivals:true,comfort:true,sound:true,showHands:true};
+let settings={...defaults},best=0;
+try{settings={...defaults,...JSON.parse(localStorage.getItem('splash-park-settings')||'{}')};best=Number(localStorage.getItem('splash-park-best'))||0}catch(e){}
+function sanitise(){for(const [key,lo,hi] of [['sensitivity',.5,2.5],['maxSpeed',1,4],['throwGain',1.5,4]])settings[key]=clamp(Number.isFinite(Number(settings[key]))?Number(settings[key]):defaults[key],lo,hi);settings.duration=[0,120,180].includes(Number(settings.duration))?Number(settings.duration):120;for(const k of ['rivals','comfort','sound','showHands'])settings[k]=!!settings[k]}
+sanitise();function save(){try{localStorage.setItem('splash-park-settings',JSON.stringify(settings));localStorage.setItem('splash-park-best',String(best))}catch(e){}}
+const multScratch=new Float32Array(16);
+// Column-major matrix operations. Scratch matrices are reused in the render loop.
+function identity(o=new Float32Array(16)){o.fill(0);o[0]=o[5]=o[10]=o[15]=1;return o}
+function mult(o,a,b){const t=multScratch;for(let c=0;c<4;c++)for(let r=0;r<4;r++)t[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];o.set(t);return o}
+function perspective(o,fov,aspect,near,far){o.fill(0);let f=1/Math.tan(fov/2);o[0]=f/aspect;o[5]=f;o[10]=(far+near)/(near-far);o[11]=-1;o[14]=2*far*near/(near-far);return o}
+function compose(o,x,y,z,sx=1,sy=1,sz=1,qx=0,qy=0,qz=0,qw=1){const x2=qx+qx,y2=qy+qy,z2=qz+qz,xx=qx*x2,xy=qx*y2,xz=qx*z2,yy=qy*y2,yz=qy*z2,zz=qz*z2,wx=qw*x2,wy=qw*y2,wz=qw*z2;o[0]=(1-yy-zz)*sx;o[1]=(xy+wz)*sx;o[2]=(xz-wy)*sx;o[3]=0;o[4]=(xy-wz)*sy;o[5]=(1-xx-zz)*sy;o[6]=(yz+wx)*sy;o[7]=0;o[8]=(xz+wy)*sz;o[9]=(yz-wx)*sz;o[10]=(1-xx-yy)*sz;o[11]=0;o[12]=x;o[13]=y;o[14]=z;o[15]=1;return o}
+function inverseRigid(o,m){o[0]=m[0];o[1]=m[4];o[2]=m[8];o[3]=0;o[4]=m[1];o[5]=m[5];o[6]=m[9];o[7]=0;o[8]=m[2];o[9]=m[6];o[10]=m[10];o[11]=0;o[12]=-(o[0]*m[12]+o[4]*m[13]+o[8]*m[14]);o[13]=-(o[1]*m[12]+o[5]*m[13]+o[9]*m[14]);o[14]=-(o[2]*m[12]+o[6]*m[13]+o[10]*m[14]);o[15]=1;return o}
+function forward(q){return{x:-2*(q.x*q.z+q.w*q.y),y:-2*(q.y*q.z-q.w*q.x),z:-(1-2*(q.x*q.x+q.y*q.y))}}
+const length=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+const colours={road:[.14,.23,.32],rail:[.49,.68,.72],sleep:[.27,.38,.45],mint:[.78,1,.38],cream:[.92,.93,.81],blue:[.19,.56,.68],pink:[.95,.40,.48],yellow:[1,.77,.30],navy:[.08,.16,.24],window:[.12,.29,.39],white:[.86,.94,.91],orange:[1,.49,.27],teal:[.25,.83,.76],concrete:[.49,.62,.67],purple:[.46,.41,.64]};
+const canvas=$('scene');let gl=canvas.getContext('webgl2',{antialias:true,alpha:false,powerPreference:'high-performance',xrCompatible:true});
+if(!gl){$('fatal').style.display='block';return}
+function shader(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s}
+function program(v,f){const p=gl.createProgram();gl.attachShader(p,shader(gl.VERTEX_SHADER,v));gl.attachShader(p,shader(gl.FRAGMENT_SHADER,f));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(p));return p}
+const prog=program(`#version 300 es
+layout(location=0) in vec3 position;layout(location=1) in vec3 normal;layout(location=2) in mat4 model;layout(location=6) in vec4 colour;uniform mat4 vp;uniform vec3 eye;out vec3 vColour;out float vDistance;void main(){vec4 w=model*vec4(position,1.);vec3 n=normalize(mat3(model)*normal);float shade=.72+.28*max(dot(n,normalize(vec3(-.4,.85,.35))),0.);vColour=colour.rgb*shade;vDistance=length(w.xyz-eye);gl_Position=vp*w;}`,`#version 300 es
+precision mediump float;in vec3 vColour;in float vDistance;uniform vec3 fog;out vec4 outColor;void main(){float f=smoothstep(28.,90.,vDistance);outColor=vec4(mix(vColour,fog,f),1.);}`);
+const skyProg=program(`#version 300 es
+out vec2 uv;void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);uv=p*2.-1.;gl_Position=vec4(uv,1.,1.);}`,`#version 300 es
+precision highp float;in vec2 uv;uniform mat4 camera;uniform vec2 lens;uniform vec3 fog;out vec4 outColor;void main(){vec3 d=normalize(mat3(camera)*vec3(uv.x/lens.x,uv.y/lens.y,-1.));float h=clamp(d.y*1.35+.08,0.,1.);vec3 c=mix(fog,vec3(.26,.66,.78),h);float sun=dot(d,normalize(vec3(-.50,.55,-1.)));c=mix(c,vec3(1.,.84,.55),smoothstep(.9955,.9965,sun));float glow=pow(max(sun,0.),60.)*.13;c+=glow*vec3(1.,.43,.13);outColor=vec4(c,1.);}`);
+const texProg=program(`#version 300 es
+layout(location=0) in vec3 position;uniform mat4 mvp;out vec2 uv;void main(){uv=position.xy+.5;gl_Position=mvp*vec4(position,1.);}`,`#version 300 es
+precision mediump float;in vec2 uv;uniform sampler2D tex;uniform float opacity;out vec4 outColor;void main(){vec4 c=texture(tex,vec2(uv.x,1.-uv.y));outColor=vec4(c.rgb,c.a*opacity);}`);
+const edgeProg=program(`#version 300 es
+out vec2 uv;void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);uv=p*2.-1.;gl_Position=vec4(uv,0.,1.);}`,`#version 300 es
+precision mediump float;in vec2 uv;uniform float amount;uniform float hit;out vec4 outColor;void main(){float e=smoothstep(.49,1.16,length(uv*vec2(.88,1.)));outColor=vec4(mix(vec3(.015,.035,.07),vec3(.7,.14,.10),hit),e*amount);}`);
+const uniform=(p,n)=>gl.getUniformLocation(p,n),u={vp:uniform(prog,'vp'),eye:uniform(prog,'eye'),fog:uniform(prog,'fog')},su={camera:uniform(skyProg,'camera'),lens:uniform(skyProg,'lens'),fog:uniform(skyProg,'fog')},tu={mvp:uniform(texProg,'mvp'),tex:uniform(texProg,'tex'),opacity:uniform(texProg,'opacity')},eu={amount:uniform(edgeProg,'amount'),hit:uniform(edgeProg,'hit')};
+function tri(a,b,c,n,out){for(const v of [a,b,c])out.push(...v,...n)}
+function boxGeometry(){const a=[];for(const [n,p] of [[[0,0,1],[[-.5,-.5,.5],[.5,-.5,.5],[.5,.5,.5],[-.5,.5,.5]]],[[0,0,-1],[[.5,-.5,-.5],[-.5,-.5,-.5],[-.5,.5,-.5],[.5,.5,-.5]]],[[1,0,0],[[.5,-.5,.5],[.5,-.5,-.5],[.5,.5,-.5],[.5,.5,.5]]],[[-1,0,0],[[-.5,-.5,-.5],[-.5,-.5,.5],[-.5,.5,.5],[-.5,.5,-.5]]],[[0,1,0],[[-.5,.5,.5],[.5,.5,.5],[.5,.5,-.5],[-.5,.5,-.5]]],[[0,-1,0],[[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5]]]]){tri(p[0],p[1],p[2],n,a);tri(p[0],p[2],p[3],n,a)}return a}
+function cylinderGeometry(){const a=[],N=12;for(let i=0;i<N;i++){const t=i/N*Math.PI*2,t2=(i+1)/N*Math.PI*2,p=[Math.cos(t)*.5,-.5,Math.sin(t)*.5],q=[Math.cos(t2)*.5,-.5,Math.sin(t2)*.5],r=[q[0],.5,q[2]],s=[p[0],.5,p[2]],n=[Math.cos((t+t2)/2),0,Math.sin((t+t2)/2)];tri(p,r,q,n,a);tri(p,s,r,n,a);tri([0,.5,0],r,s,[0,1,0],a);tri([0,-.5,0],p,q,[0,-1,0],a)}return a}
+function octaGeometry(){const a=[];for(const y of [-1,1])for(let i=0;i<4;i++){let t=i*Math.PI/2,t2=(i+1)*Math.PI/2,p=[Math.cos(t)*.5,0,Math.sin(t)*.5],q=[Math.cos(t2)*.5,0,Math.sin(t2)*.5],r=[0,y*.5,0],n=[Math.cos((t+t2)/2)*.577,y*.577,Math.sin((t+t2)/2)*.577];y>0?tri(p,r,q,n,a):tri(p,q,r,n,a)}return a}
+const buffers={};function createBatch(name,verts,capacity){const vao=gl.createVertexArray();gl.bindVertexArray(vao);const vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.STATIC_DRAW);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,24,0);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,3,gl.FLOAT,false,24,12);const ib=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,ib);gl.bufferData(gl.ARRAY_BUFFER,capacity*80,gl.DYNAMIC_DRAW);for(let i=0;i<4;i++){gl.enableVertexAttribArray(2+i);gl.vertexAttribPointer(2+i,4,gl.FLOAT,false,80,i*16);gl.vertexAttribDivisor(2+i,1)}gl.enableVertexAttribArray(6);gl.vertexAttribPointer(6,4,gl.FLOAT,false,80,64);gl.vertexAttribDivisor(6,1);buffers[name]={vao,ib,count:verts.length/6,data:new Float32Array(capacity*20),used:0,capacity}}
+createBatch('box',boxGeometry(),2600);createBatch('cyl',cylinderGeometry(),600);createBatch('gem',octaGeometry(),250);
+const quadVAO=gl.createVertexArray();gl.bindVertexArray(quadVAO);const quadBuffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,quadBuffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-.5,-.5,0,.5,-.5,0,.5,.5,0,-.5,-.5,0,.5,.5,0,-.5,.5,0]),gl.STATIC_DRAW);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);gl.bindVertexArray(null);
+const matrixTemp=new Float32Array(16);
+function add(kind,x,y,z,sx,sy,sz,col,qx=0,qy=0,qz=0,qw=1){let b=buffers[kind];if(b.used>=b.capacity)return;let i=b.used++*20;compose(matrixTemp,x,y,z,sx,sy,sz,qx,qy,qz,qw);b.data.set(matrixTemp,i);b.data[i+16]=col[0];b.data[i+17]=col[1];b.data[i+18]=col[2];b.data[i+19]=1}
+const box=(x,y,z,sx,sy,sz,col)=>add('box',x,y,z,sx,sy,sz,col);
+const gem=(x,y,z,size,col,angle=0)=>add('gem',x,y,z,size,size,size,col,0,Math.sin(angle/2),0,Math.cos(angle/2));
+function beam(a,b,r,col){const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,l=Math.hypot(dx,dy,dz);if(l<.001)return;const uy=dy/l,qx=dz/l,qz=-dx/l,qw=1+uy,n=Math.hypot(qx,qz,qw);if(n<.001)add('box',(a.x+b.x)/2,(a.y+b.y)/2,(a.z+b.z)/2,r,l,r,col,1,0,0,0);else add('box',(a.x+b.x)/2,(a.y+b.y)/2,(a.z+b.z)/2,r,l,r,col,qx/n,0,qz/n,qw/n)}
+function copyPoint(out,p){out.x=p.x;out.y=p.y;out.z=p.z;return out}
+function copyQuaternion(out,q){out.x=q.x;out.y=q.y;out.z=q.z;out.w=q.w;return out}
+// A few more shared geometries: paintballs and splashes, each instanced.
+function sphereGeometry(){const a=[],N=12,M=8;function v(i,j){let t=i/N*Math.PI*2,p=j/M*Math.PI;return[Math.sin(p)*Math.cos(t)*.5,Math.cos(p)*.5,Math.sin(p)*Math.sin(t)*.5]}for(let j=0;j<M;j++)for(let i=0;i<N;i++){const A=v(i,j),B=v(i+1,j),C=v(i+1,j+1),D=v(i,j+1);for(const q of [A,B,D,B,C,D])a.push(...q,q[0]*2,q[1]*2,q[2]*2)}return a}
+function splatGeometry(){const a=[],N=40;for(let i=0;i<N;i++){const t=i/N*Math.PI*2,t2=(i+1)/N*Math.PI*2,r=.40+.055*Math.sin(i*2.7)+.035*Math.sin(i*5.3),r2=.40+.055*Math.sin((i+1)*2.7)+.035*Math.sin((i+1)*5.3);tri([0,0,0],[Math.cos(t)*r,Math.sin(t)*r,0],[Math.cos(t2)*r2,Math.sin(t2)*r2,0],[0,0,1],a)}return a}
+createBatch('sphere',sphereGeometry(),350);createBatch('splat',splatGeometry(),240);
+const PAINT=[[.10,.73,.65],[.94,.31,.60],[.56,.45,.91]],PAINT_HEX=['#19b9a6','#f04f9b','#8e73e8'],PAINT_NAMES=['MINT','PINK','VIOLET'],RIVAL=[1,.51,.18],C={sand:[.87,.86,.75],path:[.96,.91,.79],white:[.99,.96,.87],dark:[.10,.24,.28],steel:[.29,.49,.52],grass:[.43,.69,.54],wood:[.76,.51,.34],water:[.34,.80,.79],yellow:[1,.81,.39],coral:[.99,.61,.47],blue:[.32,.62,.79],purple:[.58,.55,.77]};
+const sphere=(x,y,z,size,col)=>add('sphere',x,y,z,size,size,size,col);
+const flatCylinder=(x,y,z,d,h,col)=>add('cyl',x,y,z,d,h,d,col);
+const qFace=(nx,ny,nz)=>{const w=1+nz,n=Math.hypot(-ny,nx,w);return n<.001?[0,1,0,0]:[-ny/n,nx/n,0,w/n]};
+function disc(x,y,z,d,col,nx=0,ny=0,nz=1,thickness=.08){const q=qFace(nx,ny,nz);const ax=q[0],ay=q[1],az=q[2],aw=q[3],s=Math.SQRT1_2;add('cyl',x,y,z,d,thickness,d,col,s*aw+s*ax,s*ay+s*az,s*az-s*ay,s*aw-s*ax)}
+function splashShape(x,y,z,size,col,n){const q=qFace(n.x,n.y,n.z);add('splat',x,y,z,size,size,1,col,...q)}
+// Only these channels can supply the walking signal. No pose derivatives, KAT inputs or network.
+class AccelChannel{
+ constructor(id,gravity,rank){this.id=id;this.gravity=gravity;this.rank=rank;this.at=-1e9;this.count=0;this.energy=0;this.envelope=0;this.g=9.80665;this.rate=0;this.ready=false;this.lastStamp=null;this.lastValue=0}
+ feed(x,y,z,t,stamp=null){if(![x,y,z,t].every(Number.isFinite))return false;if(stamp!==null&&this.lastStamp===stamp)return false;this.lastStamp=stamp;const dt=clamp(t-this.at,.002,.2),m=Math.hypot(x,y,z);if(this.gravity&&!this.ready)this.g=m;let value=this.gravity?Math.abs(m-this.g):m;if(this.gravity)this.g=mix(this.g,m,1-Math.exp(-dt/1.2));if(!this.ready){value=0;this.ready=true}value=clamp(value,0,25);this.lastValue=value;this.energy=mix(this.energy,value,1-Math.exp(-dt/.03));this.envelope=Math.max(this.energy,this.envelope*Math.exp(-dt/.065));if(this.count>0)this.rate=mix(this.rate,1/dt,.08);this.at=t;this.count++;return true}
+ value(t){return this.envelope*Math.exp(-Math.max(0,t-this.at)/.065)}
+ fresh(t){return this.count>5&&t-this.at>=0&&t-this.at<.18}
 }
-TOYS = ("ball",)
-LEARN_MENU = [("bone", 40), ("ball", 40), ("kibble", 25), ("sausage", 50),
-              ("chicken", 35), ("cheese", 20)]
-FORGET_SAVED_CARDS = False    # set True, save, let it boot once, then set back to False
-
-# How each state LOOKS
-#   lid      = how far the top eyelids drop (0 = wide open, 80 = shut)
-#   tilt     = eyelid slant (+ = sad puppy, - = cross)
-#   cheek    = how far cheeks push up (big = happy squint)
-#   look_y   = where it gazes (+ = down)
-#   pupil    = pupil size (big = excited, small = angry)
-#   brow_y   = eyebrow height (+ = raised, - = pulled down)
-#   brow_ang = eyebrow angle (+ = worried, - = angry)
-#   head     = head tilt (+ / - leans either way)
-#   blush    = 1 shows pink cheeks, 0 hides them
-FACES = {
-    "happy":    {"lid": 6,  "tilt": 0,   "cheek": 12, "look_y": 0.0,  "pupil": 20,
-                 "brow_y": 6,   "brow_ang": 4,   "head": 0,  "blush": 1},
-    "peckish":  {"lid": 16, "tilt": 6,   "cheek": 0,  "look_y": 0.2,  "pupil": 18,
-                 "brow_y": 3,   "brow_ang": 10,  "head": 0,  "blush": 0},
-    "hungry":   {"lid": 26, "tilt": 16,  "cheek": 0,  "look_y": 0.7,  "pupil": 17,
-                 "brow_y": 2,   "brow_ang": 22,  "head": 0,  "blush": 0},
-    "angry":    {"lid": 22, "tilt": -20, "cheek": 8,  "look_y": 0.0,  "pupil": 11,
-                 "brow_y": -8,  "brow_ang": -24, "head": 0,  "blush": 0},
-    "furious":  {"lid": 16, "tilt": -26, "cheek": 18, "look_y": 0.0,  "pupil": 8,
-                 "brow_y": -12, "brow_ang": -32, "head": 0,  "blush": 0},
-    "eating":   {"lid": 4,  "tilt": -4,  "cheek": 40, "look_y": 0.0,  "pupil": 21,
-                 "brow_y": 8,   "brow_ang": 6,   "head": 0,  "blush": 1},
-    "confused": {"lid": 20, "tilt": 0,   "cheek": 0,  "look_y": -0.3, "pupil": 15,
-                 "brow_y": 4,   "brow_ang": 0,   "head": 5,  "blush": 0},
-    "learning": {"lid": 0,  "tilt": -6,  "cheek": 0,  "look_y": 0.0,  "pupil": 22,
-                 "brow_y": 10,  "brow_ang": 8,   "head": -4, "blush": 0},
-    "sleepy":   {"lid": 78, "tilt": 8,   "cheek": 6,  "look_y": 0.3,  "pupil": 18,
-                 "brow_y": 2,   "brow_ang": 6,   "head": 0,  "blush": 0},
-    "bored":    {"lid": 40, "tilt": 0,   "cheek": 4,  "look_y": 0.1,  "pupil": 16,
-                 "brow_y": 0,   "brow_ang": 0,   "head": 0,  "blush": 0},
-    "playing":  {"lid": 0,  "tilt": -6,  "cheek": 18, "look_y": 0.0,  "pupil": 23,
-                 "brow_y": 11,  "brow_ang": 8,   "head": 0,  "blush": 1},
-    "noticed":  {"lid": 0,  "tilt": -4,  "cheek": 10, "look_y": 0.1,  "pupil": 26,
-                 "brow_y": 14,  "brow_ang": 10,  "head": 0,  "blush": 1},
+class AccelHub{
+ constructor(){this.channels=new Map();this.lock=null;this.started=false;this.sensors=[];this.errors=[];this.rest=.035;this.walk=.8;this.active=false;this.ratio=0;this.label='STILL';this.lastStrong=-1e9;this.threshold=.15;this.liveSource=null}
+ channel(id,gravity,rank){if(!this.channels.has(id))this.channels.set(id,new AccelChannel(id,gravity,rank));return this.channels.get(id)}
+ choose(t){if(this.lock)return this.channels.get(this.lock)||null;let list=[...this.channels.values()].filter(c=>c.fresh(t)).sort((a,b)=>b.rank-a.rank);return list[0]||null}
+ resetGate(){this.active=false;this.ratio=0;this.label='STILL';this.lastStrong=-1e9}
+ evaluate(t,sensitivity){const c=this.choose(t);this.liveSource=c;if(!c||!c.fresh(t)){this.resetGate();return{fresh:false,ratio:0,source:c?.id||'Unavailable'}}const activity=c.value(t);this.threshold=Math.max(.10,this.rest*3.5,this.walk*.24)/sensitivity;if(activity>this.threshold)this.lastStrong=t;this.active=activity>this.threshold*.70&&t-this.lastStrong<.075;this.ratio=this.active?clamp(activity/Math.max(this.walk,.18),.25,2.5):0;this.label=this.ratio>1.55?'RUN':this.ratio?'WALK':'STILL';return{fresh:true,ratio:this.ratio,source:c.id,activity}}
+ start(){if(this.started)return;this.started=true;for(const [name,gravity,rank] of [['LinearAccelerationSensor',false,4],['Accelerometer',true,2]]){if(!(name in window))continue;try{const sensor=new window[name]({frequency:90,referenceFrame:'device'}),ch=this.channel(name,gravity,rank);sensor.addEventListener('reading',()=>ch.feed(sensor.x,sensor.y,sensor.z,performance.now()/1000,sensor.timestamp));sensor.addEventListener('error',e=>{this.errors.push(name+': '+(e.error?.name||'unavailable'))});sensor.start();this.sensors.push(sensor)}catch(e){this.errors.push(name+': '+e.name)}}}
 }
-MOOD_COLOURS = {
-    "happy": (0, 80, 0), "peckish": (120, 90, 0), "hungry": (150, 30, 0),
-    "angry": (255, 0, 0), "furious": (255, 0, 0), "eating": (0, 255, 40),
-    "confused": (120, 0, 150), "learning": (0, 60, 255), "sleepy": (0, 0, 20),
-    "bored": (40, 40, 60), "playing": (255, 120, 0), "noticed": (0, 200, 255),
+const accel=new AccelHub();
+window.addEventListener('devicemotion',e=>{if(!accel.started)return;const t=performance.now()/1000,a=e.acceleration,g=e.accelerationIncludingGravity;if(a&&[a.x,a.y,a.z].every(Number.isFinite))accel.channel('DeviceMotion linear',false,3).feed(a.x,a.y,a.z,t,e.timeStamp);if(g&&[g.x,g.y,g.z].every(Number.isFinite))accel.channel('DeviceMotion gravity',true,1).feed(g.x,g.y,g.z,t,e.timeStamp)},{passive:true});
+async function enableSensors(){accel.start();try{if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){const r=await DeviceMotionEvent.requestPermission();if(r!=='granted')accel.errors.push('DeviceMotion permission: '+r)}}catch(e){accel.errors.push(e.name+': '+e.message)}refreshSensorText()}
+// Shared game state. All coordinates are metres in the virtual park.
+let state='home',mode='desktop',session=null,refSpace=null,baseLayer=null,xrActive=false,trackValid=false,calibrated=false,head={x:0,y:EYE,z:0},headQ={x:0,y:0,z:0,w:1},origin={x:0,y:EYE,z:0,yaw:0},player={x:0,z:9},yaw=0,pitch=0,lastDirection={x:0,z:-1},speed=0,now=0,lastXR=0,lastDesktop=0,frameMS=16.7,cpuMS=0,lastHands=-1e6,handCount=0,colour=0,score=0,elapsed=0,shots=0,targetHits=0,botHits=0,walked=0,combo=0,bestStreak=0,roundSeed=0,reason='',lastThrow=-1e6,pausedFrom='playing';
+let targets=[],bots=[],balls=[],splats=[],particles=[],calTime=0,calValues=[],calResult='',calChannel=null,calCount=0,toastUntil=0,toastText='',shotSerial=0,paintSerial=0,hudDirty=true,lastHUD=-1,resetEpoch=0;
+const keys=new Set(),touch={walk:false,left:false,right:false},arena={xmin:-14.3,xmax:14.3,zmin:-24,zmax:12.2};
+const obstacles=[{x:-6,y:.65,z:-6,w:3.6,h:1.3,d:2.2,col:C.coral},{x:6.2,y:.50,z:-10,w:3,h:1,d:2.5,col:C.purple},{x:0,y:.44,z:-12,w:3.6,h:.88,d:1.8,col:C.blue},{x:-10.7,y:.46,z:1,w:2,h:.92,d:3,col:C.steel},{x:11,y:.46,z:2,w:2,h:.92,d:3,col:C.steel}];
+const walls=[{x:0,y:1,z:-24.6,w:30,h:2,d:.4},{x:-14.8,y:1,z:-6,w:.4,h:2,d:37},{x:14.8,y:1,z:-6,w:.4,h:2,d:37},{x:0,y:.75,z:12.7,w:30,h:1.5,d:.4}];
+const targetLayout=[[-3.2,1.65,1.7],[3.2,1.65,1.7],[0,1.7,-3.5],[-11.5,1.7,-6],[-8.7,2,-13.4],[-6.7,1.6,-20.2],[0,2.2,-21.8],[6.5,1.7,-20.2],[11.7,1.75,-14.5],[10.5,1.65,-5.3],[6.6,2.2,-1.5],[-8,2.1,5.4]];
+const painted=()=>targets.filter(t=>t.owner===1).length;
+function setColour(i){colour=((i%3)+3)%3;document.querySelectorAll('[data-colour]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.colour)===colour));hudDirty=true}
+function initRound(){score=elapsed=shots=targetHits=botHits=walked=combo=bestStreak=0;speed=0;player={x:0,z:9};yaw=0;pitch=0;balls=[];splats=[];particles=[];lastThrow=-1e6;lastDirection={x:0,z:-1};roundSeed=Date.now();shotSerial=paintSerial=0;
+ targets=targetLayout.map((v,i)=>{let x=v[0],y=v[1],z=v[2];if(mode==='stationary'){let a=(i/12)*Math.PI*2;x=Math.sin(a)*4.5;y=1.5+(i%3)*.18;z=9-Math.cos(a)*4.5}let dx=-x,dz=4-z,l=Math.hypot(dx,dz);if(mode==='stationary'){dx=-x;dz=9-z;l=Math.hypot(dx,dz)}return{x,y,z,nx:dx/l,nz:dz/l,r:.76,owner:0,colour:i%3,flash:0,zone:i<4?0:i<8?1:2}});
+ bots=[{x:-8,y:1.35,z:-10,phase:0,stun:0,cool:8,target:0},{x:8,y:1.55,z:-17,phase:2.8,stun:0,cool:13,target:6}];accel.resetGate();cancelHeld();hudDirty=true}
+let ac;function unlockSound(){try{ac??=new(window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(e){}}
+function sound(f=500,d=.08,kind='sine',volume=.025){if(!settings.sound||!ac||ac.state!=='running')return;const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;o.type=kind;o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(Math.max(80,f*.6),t+d);g.gain.setValueAtTime(.001,t);g.gain.linearRampToValueAtTime(volume,t+.008);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d+.02);o.onended=()=>{o.disconnect();g.disconnect()}}
+function toast(s,d=1.5){toastText=s;toastUntil=now+d;$('toast').textContent=s;$('toast').style.opacity=1;hudDirty=true}
+function worldPosition(p){const c=Math.cos(origin.yaw),s=Math.sin(origin.yaw),x=p.x-origin.x,z=p.z-origin.z;return{x:player.x+c*x-s*z,y:EYE+p.y-origin.y,z:player.z+s*x+c*z}}
+function worldVector(v){const c=Math.cos(origin.yaw),s=Math.sin(origin.yaw);return{x:c*v.x-s*v.z,y:v.y,z:s*v.x+c*v.z}}
+function viewDirection(){if(!xrActive)return{x:-Math.sin(yaw)*Math.cos(pitch),y:Math.sin(pitch),z:-Math.cos(yaw)*Math.cos(pitch)};return worldVector(forward(headQ))}
+function eyePosition(){return xrActive?worldPosition(head):{x:player.x,y:EYE,z:player.z}}
+function flatDirection(){const d=viewDirection(),l=Math.hypot(d.x,d.z);if(l>.08)lastDirection={x:d.x/l,z:d.z/l};return lastDirection}
+function blocks(x,z){const r=.33;for(const b of obstacles)if(Math.abs(x-b.x)<b.w/2+r&&Math.abs(z-b.z)<b.d/2+r)return true;for(const t of targets)if(Math.hypot(x-t.x,z-t.z)<.39)return true;return false}
+function movePlayer(dx,dz){let x=clamp(player.x+dx,arena.xmin,arena.xmax),z=clamp(player.z+dz,arena.zmin,arena.zmax);if(!blocks(x,player.z))player.x=x;if(!blocks(player.x,z))player.z=z}
+function updateMovement(dt,ratio){const requested=ratio>0?Math.min(settings.maxSpeed,.55+ratio*1.3):0;speed=mix(speed,requested,1-Math.exp(-dt/(requested>speed?.030:.065)));if(speed<.025)speed=0;const d=flatDirection(),ox=player.x,oz=player.z;movePlayer(d.x*speed*dt,d.z*speed*dt);walked+=Math.hypot(player.x-ox,player.z-oz)}
+function pause(message='Everything is stopped.'){if(!['playing','calStill','calWalk','calReview','check','ready'].includes(state))return;pausedFrom=state;if(['calStill','calWalk'].includes(state))calibrated=false;state='paused';reason=message;speed=0;keys.clear();touch.walk=touch.left=touch.right=false;accel.resetGate();cancelHeld();placePanel();gazeReset();hudDirty=true;if(!xrActive)showEnd(false)}
+function resume(){if(xrActive){if(!trackValid||!session||session.visibilityState!=='visible')return;if(mode==='treadmill'&&!calibrated){beginCalibration();return}if(mode==='treadmill'&&!accel.choose(performance.now()/1000)?.fresh(performance.now()/1000)){state='check';reason='Fresh accelerometer readings are required.';placePanel();hudDirty=true;return}}state='playing';speed=0;keys.clear();cancelHeld();accel.resetGate();gazeReset();lastHands=now;$('endVeil').classList.add('hide');hudDirty=true}
+function startRound(chosenMode=mode){mode=chosenMode;initRound();if(xrActive)anchor();state='playing';lastHands=now;gazeReset();$('endVeil').classList.add('hide');hudDirty=true;toast(mode==='stationary'?'STATIONARY PAINT PRACTICE':'PAINT ALL TWELVE TARGETS',2.3)}
+function finish(won=false){if(state!=='playing')return;state='finished';reason=won?'You coloured the whole park.':'Time’s up. The park looks brighter already.';speed=0;cancelHeld();keys.clear();best=Math.max(best,score);save();placePanel();gazeReset();hudDirty=true;if(!xrActive)showEnd(true);sound(won?880:520,.25,'triangle',.05)}
+function showEnd(done){$('endVeil').classList.remove('hide');$('endTitle').textContent=done?'What a splash.':'Park paused.';$('endEyebrow').textContent=done?'YOUR MARK ON THE PARK':'TAKE A BREATHER';$('endBody').textContent=reason;$('endPainted').textContent=painted()+'/12';$('endScore').textContent=score;$('endBest').textContent=best;$('resumeButton').classList.toggle('hide',done)}
+function spawnBall(p,v,owner=1,c=colour){if(balls.length>=36)balls.shift();balls.push({x:p.x,y:p.y,z:p.z,vx:v.x,vy:v.y,vz:v.z,owner,colour:c,life:3,r:.10,id:++shotSerial});if(owner===1){shots++;lastThrow=now;sound(370,.06,'sine',.012)}}
+function desktopThrow(){if(xrActive||state!=='playing'||now-lastThrow<.22)return;const d=viewDirection(),p=eyePosition();spawnBall({x:p.x+d.x*.34,y:p.y-.09,z:p.z+d.z*.34},{x:d.x*12,y:d.y*12+.9,z:d.z*12})}
+function splatAt(p,n,col,size=.8){if(splats.length>=170)splats.shift();const offset=.007+(paintSerial++%30)*.00022;splats.push({x:p.x+n.x*offset,y:p.y+n.y*offset,z:p.z+n.z*offset,n:{...n},size,colour:col});for(let i=0;i<9;i++){if(particles.length>=100)particles.shift();const a=Math.random()*Math.PI*2;particles.push({x:p.x,y:p.y,z:p.z,vx:Math.cos(a)*(1+Math.random())+n.x,vy:1.2+Math.random()*2+n.y,vz:Math.sin(a)*(1+Math.random())+n.z,life:.25+Math.random()*.3,colour:col})}sound(210+Math.random()*170,.075,'triangle',.025)}
+function hitTarget(t,b,p,n){splatAt(p,n,b.owner===1?PAINT[b.colour]:RIVAL,.75);if(b.owner===1){targetHits++;if(t.owner!==1){score+=100;combo++;bestStreak=Math.max(bestStreak,combo);toast(`${painted()+1} / 12 · NICE SPLASH`,.9)}t.owner=1;t.colour=b.colour;t.flash=.3;sound(540+painted()*32,.13,'sine',.035)}else{if(t.owner===1){combo=0;toast('A BOT REPAINTED A TARGET',1.1)}t.owner=2;t.flash=.25}hudDirty=true}
+// Swept sphere collisions prevent a quick throw passing through a thin target or wall.
+function segmentSphere(a,b,c,r){const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,ox=a.x-c.x,oy=a.y-c.y,oz=a.z-c.z,A=dx*dx+dy*dy+dz*dz,B=2*(ox*dx+oy*dy+oz*dz),C0=ox*ox+oy*oy+oz*oz-r*r;if(C0<=0)return 0;if(A<1e-10)return null;const d=B*B-4*A*C0;if(d<0)return null;const t=(-B-Math.sqrt(d))/(2*A);return t>=0&&t<=1?t:null}
+function segmentBox(a,b,box0,r=.10){let near=0,far=1,n={x:0,y:1,z:0};for(const [axis,size] of [['x','w'],['y','h'],['z','d']]){const lo=box0[axis]-box0[size]/2-r,hi=box0[axis]+box0[size]/2+r,d=b[axis]-a[axis];if(Math.abs(d)<1e-8){if(a[axis]<lo||a[axis]>hi)return null;continue}let t1=(lo-a[axis])/d,t2=(hi-a[axis])/d,sign=-Math.sign(d);if(t1>t2)[t1,t2]=[t2,t1];if(t1>near){near=t1;n={x:0,y:0,z:0};n[axis]=sign}far=Math.min(far,t2);if(near>far)return null}return near<=1&&far>=0?{t:Math.max(0,near),n}:null}
+function firstCollision(a,b,ball){let hit=null;function use(t,n,kind,item=null){if(t===null||t<0||t>1||(hit&&hit.t<=t))return;hit={t,n,kind,item,p:{x:mix(a.x,b.x,t),y:mix(a.y,b.y,t),z:mix(a.z,b.z,t)}}}
+ if(b.y<=ball.r&&a.y>ball.r)use((a.y-ball.r)/(a.y-b.y),{x:0,y:1,z:0},'floor');else if(a.y<=ball.r)use(0,{x:0,y:1,z:0},'floor');
+ for(const t of targets){const da=(a.x-t.x)*t.nx+(a.z-t.z)*t.nz,db=(b.x-t.x)*t.nx+(b.z-t.z)*t.nz,side=da>=0?1:-1,plane=side*(ball.r+.045),den=db-da;if(Math.abs(den)<1e-8)continue;let u=(plane-da)/den;if(u<0||u>1)continue;const x=mix(a.x,b.x,u)-t.x,y=mix(a.y,b.y,u)-t.y,z=mix(a.z,b.z,u)-t.z;if(Math.hypot(x*t.nz-z*t.nx,y)<=t.r+ball.r)use(u,{x:t.nx*side,y:0,z:t.nz*side},'target',t)}
+ if(ball.owner===1&&mode!=='stationary')for(const bot of bots){const t=segmentSphere(a,b,bot,.55+ball.r);if(t!==null){const p={x:mix(a.x,b.x,t)-bot.x,y:mix(a.y,b.y,t)-bot.y,z:mix(a.z,b.z,t)-bot.z},l=Math.hypot(p.x,p.y,p.z)||1;use(t,{x:p.x/l,y:p.y/l,z:p.z/l},'bot',bot)}}
+ for(const o of [...obstacles,...walls]){const h=segmentBox(a,b,o,ball.r);if(h)use(h.t,h.n,'scenery',o)}return hit}
+function stepBalls(dt){const steps=Math.max(1,Math.ceil(dt/.009)),d=dt/steps;for(let k=0;k<steps;k++){for(let i=balls.length-1;i>=0;i--){const b=balls[i];b.life-=d;const a={x:b.x,y:b.y,z:b.z};b.vy-=4.8*d;const end={x:b.x+b.vx*d,y:b.y+b.vy*d,z:b.z+b.vz*d},hit=firstCollision(a,end,b);if(hit){const p={...hit.p};p.x-=hit.n.x*b.r;p.y-=hit.n.y*b.r;p.z-=hit.n.z*b.r;if(hit.kind==='target')hitTarget(hit.item,b,p,hit.n);else if(hit.kind==='bot'){const bot=hit.item;if(bot.stun<=0){score+=50;botHits++;toast('BOT TAGGED · +50',1)}bot.stun=6;bot.colour=b.colour;splatAt(p,hit.n,PAINT[b.colour],.55)}else splatAt(p,hit.n,b.owner===1?PAINT[b.colour]:RIVAL,.85);balls.splice(i,1)}else if(b.life<=0||end.y<-1||Math.abs(end.x)>40||Math.abs(end.z)>45)balls.splice(i,1);else Object.assign(b,end)}}}
+function updateBots(dt){if(mode==='stationary')return;for(let i=0;i<bots.length;i++){const b=bots[i];b.stun=Math.max(0,b.stun-dt);if(!settings.rivals)continue;if(b.stun>0)continue;b.phase+=dt*.22;const centre=i===0?-7:7;b.x=centre+Math.sin(b.phase)*2.3;b.z=(i===0?-10:-16)+Math.cos(b.phase*.7)*3.2;b.y=1.6+Math.sin(now*2+i)*.15;if(elapsed<25)continue;b.cool-=dt;if(b.cool<=0){const options=targets.filter(t=>t.owner===1);if(options.length){const t=options[Math.floor(Math.random()*options.length)],flight=Math.max(.75,Math.hypot(t.x-b.x,t.z-b.z)/7);spawnBall({x:b.x,y:b.y+.15,z:b.z},{x:(t.x-b.x)/flight,y:(t.y-b.y-.15)/flight+2.4*flight,z:(t.z-b.z)/flight},2,0)}b.cool=12+i*4}}}
+function tick(dt,ratio){if(state!=='playing')return;updateMovement(dt,mode==='stationary'?0:ratio);elapsed+=dt;for(const t of targets)t.flash=Math.max(0,t.flash-dt);updateBots(dt);stepBalls(dt);for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.vy-=5*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;if(p.life<=0)particles.splice(i,1)}if(mode!=='stationary'&&settings.duration>0){if(painted()===12)finish(true);else if(elapsed>=settings.duration)finish(false)}}
+// Calibration uses acceleration samples, not head movement. Head pose only recentres the view.
+function median(a,fallback=0,p=.5){if(!a.length)return fallback;const b=[...a].sort((x,y)=>x-y);return b[Math.floor((b.length-1)*p)]}
+function anchor(){const f=forward(headQ);origin={x:head.x,y:head.y,z:head.z,yaw:Math.atan2(-f.x,-f.z)};lastDirection={x:0,z:-1}}
+function beginCalibration(){const c=accel.choose(performance.now()/1000);if(!c||!c.fresh(performance.now()/1000)){state='check';reason='The browser has not supplied live accelerometer readings.';placePanel();hudDirty=true;return}accel.lock=c.id;calChannel=c;calCount=c.count;calTime=0;calValues=[];calibrated=false;accel.resetGate();mode='treadmill';state='calStill';speed=0;cancelHeld();placePanel();gazeReset();hudDirty=true}
+function updateCalibration(dt){if(!['calStill','calWalk'].includes(state))return;const c=accel.choose(performance.now()/1000);if(!c||!c.fresh(performance.now()/1000)){calibrated=false;state='check';reason='Acceleration samples stopped during calibration.';speed=0;accel.lock=null;placePanel();hudDirty=true;return}if(c.count!==calCount){calValues.push(c.energy);calCount=c.count}calTime+=dt;
+ if(state==='calStill'){if(calTime>=2){accel.rest=clamp(median(calValues,.035,.85),.015,.8);calTime=0;calValues=[];state='calWalk';hudDirty=true}}
+ else if(calTime>=4){const w=median(calValues,0,.65);accel.walk=clamp(w,.20,8);calibrated=calValues.length>=20&&w>Math.max(.10,accel.rest*2.0);calResult=calibrated?'Motion found. Look where you want to go.':'Walking signal is too close to the still signal. Try calibration again.';state='calReview';gazeReset();placePanel();hudDirty=true}}
+// Hand throws use recent raw joint positions, so virtual walking does not inflate throw speed.
+class HandHistory{
+ constructor(){this.samples=[]}
+ clear(){this.samples.length=0}
+ push(p,t){this.samples.push({x:p.x,y:p.y,z:p.z,t});while(this.samples.length>14||this.samples.length>1&&t-this.samples[0].t>.085)this.samples.shift()}
+ velocity(){const a=this.samples;if(a.length<3||a[a.length-1].t-a[0].t<.015)return{x:0,y:0,z:0};let mt=0,mx=0,my=0,mz=0;for(const p of a){mt+=p.t;mx+=p.x;my+=p.y;mz+=p.z}mt/=a.length;mx/=a.length;my/=a.length;mz/=a.length;let den=0,x=0,y=0,z=0;for(const p of a){const d=p.t-mt;den+=d*d;x+=d*(p.x-mx);y+=d*(p.y-my);z+=d*(p.z-mz)}return den>1e-8?{x:x/den,y:y/den,z:z/den}:{x:0,y:0,z:0}}
 }
+const JOINTS=['wrist','thumb-tip','index-finger-tip','middle-finger-tip','ring-finger-tip','pinky-finger-tip','index-finger-phalanx-proximal','middle-finger-phalanx-proximal'];
+const hands={left:{points:{},seen:false,index:false,middle:false,held:false,history:new HandHistory(),cool:0},right:{points:{},seen:false,index:false,middle:false,held:false,history:new HandHistory(),cool:0}};
+let openHandsTime=0;
+function cancelHeld(){openHandsTime=0;for(const h of Object.values(hands)){h.held=false;h.seen=false;h.index=h.middle=false;h.history.clear()}}
+function releaseHand(h,p){if(!h.held)return;h.held=false;h.cool=now+.28;let v=h.history.velocity(),mag=Math.hypot(v.x,v.y,v.z);if(mag>5.7){const s=5.7/mag;v={x:v.x*s,y:v.y*s,z:v.z*s}}v=worldVector(v);const gain=settings.throwGain;v={x:v.x*gain,y:v.y*gain,z:v.z*gain};const l=Math.hypot(v.x,v.y,v.z);if(l>16){v.x*=16/l;v.y*=16/l;v.z*=16/l}spawnBall(worldPosition(p),v,1,h.colour)}
+function pollHands(frame,dt){handCount=0;let openHigh=0;const seen={left:false,right:false};for(const source of session.inputSources){if(!source.hand||!hands[source.handedness])continue;const h=hands[source.handedness];let valid=true;for(const name of JOINTS){const space=source.hand.get(name),jp=space?frame.getJointPose(space,refSpace):null;if(jp){h.points[name]??={x:0,y:0,z:0};copyPoint(h.points[name],jp.transform.position)}else{delete h.points[name];if(['wrist','thumb-tip','index-finger-tip','middle-finger-tip'].includes(name))valid=false}}if(!valid)continue;seen[source.handedness]=true;handCount++;const p=h.points,w=p.wrist,index=p['index-finger-tip'],thumb=p['thumb-tip'],middle=p['middle-finger-tip'],pinch={x:(index.x+thumb.x)/2,y:(index.y+thumb.y)/2,z:(index.z+thumb.z)/2},ni=length(index,thumb)<(h.index?.038:.022),nm=length(middle,thumb)<(h.middle?.038:.022);
+ if(!h.seen){h.held=false;h.history.clear();h.index=ni;h.middle=nm;h.seen=true;h.pinch=pinch;h.history.push(pinch,now);continue}
+ if(h.pinch&&length(h.pinch,pinch)>.16){h.held=false;h.history.clear();h.index=ni;h.middle=nm;h.pinch=pinch;continue}h.pinch=pinch;h.history.push(pinch,now);
+ if(state==='playing'){if(ni&&!h.index&&!nm&&now>h.cool){h.held=true;h.colour=colour;h.history.clear();h.history.push(pinch,now);sound(580,.04,'sine',.01)}if(!ni&&h.index&&h.held)releaseHand(h,pinch);if(nm&&!h.middle&&!ni&&!h.held){setColour(colour+1);toast(PAINT_NAMES[colour]+' PAINT',.7)}}else h.held=false;
+ h.index=ni;h.middle=nm;
+ const ib=p['index-finger-phalanx-proximal'],mb=p['middle-finger-phalanx-proximal'];const open=ib&&mb&&length(w,index)>length(w,ib)*1.45&&length(w,middle)>length(w,mb)*1.45&&!ni&&!nm;if(open&&w.y>head.y-.28&&w.y<head.y+.35)openHigh++;
+ }for(const side of ['left','right'])if(!seen[side]){const h=hands[side];h.seen=false;h.held=false;h.history.clear()}if(handCount)lastHands=now;if(openHigh===2&&state==='playing'){openHandsTime+=dt;if(openHandsTime>.50)pause('Paused with both open hands.')}else openHandsTime=0;if(state==='playing'&&now-lastHands>1.25)pause('Hands out of view. Bring them in front of you, then resume.');}
 
-# Screen layout — only change these if the eyes don't fit your shell's window
-SCREEN_ROTATION = None     # None = automatic landscape. Try 0, 90, 180 or 270.
-EYE_SIZE = 0               # eye radius in pixels, 0 = automatic
-EYE_GAP = 0                # distance between eye centres, 0 = automatic
-# ========================================================
-
-EVENT_STATES = ("eating", "confused", "learning", "playing", "noticed")
-TOO_HUNGRY_TO_PLAY = ("hungry", "angry", "furious")   # states that last a set time
-CROSS_STATES = ("angry", "furious")
-
-FUR = 0xB5793F
-FUR_ANGRY = 0xC2543A
-FUR_DARK = 0x5A3A1C
-RIM = 0x22120A
-IRIS = 0x7A4520
-IRIS_ANGRY = 0xB01818
-
-# ---------------- screen setup ----------------
-display = board.DISPLAY
-display.auto_refresh = False
-try:
-    if SCREEN_ROTATION is not None:
-        display.rotation = SCREEN_ROTATION
-    elif display.width < display.height:
-        display.rotation = (display.rotation + 90) % 360
-except Exception as e:
-    print("Could not rotate screen:", e)
-
-W, H = display.width, display.height
-R = EYE_SIZE or max(16, min(W // 6, int(H * 0.30)))
-s = R / 40
-GAP = EYE_GAP or int(W * 0.44)
-EYE_Y = int(H * 0.46)
-print("Screen: {} x {}, rotation {}, eye radius {}".format(W, H, display.rotation, R))
-
-
-def sz(v):
-    return max(1, int(round(v * s)))
-
-
-def co(v):
-    return int(round(v * s))
-
-
-def clamp(v, lo, hi):
-    return lo if v < lo else hi if v > hi else v
-
-
-def solid(colour):
-    p = displayio.Palette(1)
-    p[0] = colour
-    return p
-
-
-def circ(pal, x, y, r):
-    return vectorio.Circle(pixel_shader=pal, radius=sz(r), x=co(x), y=co(y))
-
-
-def rect(pal, x, y, w, h):
-    return vectorio.Rectangle(pixel_shader=pal, width=sz(w), height=sz(h), x=co(x), y=co(y))
-
-
-def poly(pal, pts):
-    return vectorio.Polygon(pixel_shader=pal, points=[(co(x), co(y)) for x, y in pts], x=0, y=0)
-
-
-def group_of(*shapes, x=0, y=0):
-    g = displayio.Group(x=x, y=y)
-    for shape in shapes:
-        g.append(shape)
-    return g
-
-
-fur = solid(FUR)
-rim_pal = solid(RIM)
-pupil_pal = solid(0x000000)
-shine_pal = solid(0xFFFFFF)
-brow_pal = solid(0x3E2410)
-blush_pal = solid(0xE8837A)
-
-
-class Eye:
-    def __init__(self, parent, cx, cy, outer_side):
-        self.cx, self.cy, self.outer = cx, cy, outer_side
-        self.iris_pal = solid(IRIS)
-        self.rim = vectorio.Circle(pixel_shader=rim_pal, radius=R + sz(3), x=cx, y=cy)
-        self.iris = vectorio.Circle(pixel_shader=self.iris_pal, radius=R - sz(3), x=cx, y=cy)
-        self.pupil = vectorio.Circle(pixel_shader=pupil_pal, radius=sz(19), x=cx, y=cy)
-        self.shine_big = vectorio.Circle(pixel_shader=shine_pal, radius=sz(7), x=cx, y=cy)
-        self.shine_small = vectorio.Circle(pixel_shader=shine_pal, radius=sz(3), x=cx, y=cy)
-        self.cheek = vectorio.Circle(pixel_shader=fur, radius=R + sz(12), x=cx, y=cy + 3 * R)
-        self.lid = vectorio.Polygon(pixel_shader=fur,
-                                    points=[(0, 0), (1, 0), (1, 1), (0, 1)], x=0, y=0)
-        self.blush = group_of(vectorio.Circle(pixel_shader=blush_pal, radius=sz(8), x=0, y=0))
-        self.blush.hidden = True
-        self.brow = vectorio.Polygon(pixel_shader=brow_pal,
-                                     points=[(0, 0), (1, 0), (1, 1), (0, 1)], x=0, y=0)
-        for shape in (self.rim, self.iris, self.pupil, self.shine_big, self.shine_small,
-                      self.cheek, self.lid, self.blush, self.brow):
-            parent.append(shape)
-
-    def draw(self, dx, dy, look_x, look_y, f, lid, brow_y):
-        cx, cy = self.cx + dx, self.cy + dy
-        self.rim.x, self.rim.y = cx, cy
-        self.iris.x, self.iris.y = cx + int(look_x * 4 * s), cy + int(look_y * 4 * s)
-        px, py = cx + int(look_x * 11 * s), cy + int(look_y * 9 * s)
-        self.pupil.radius = max(2, int(f["pupil"] * s))
-        self.pupil.x, self.pupil.y = px, py
-        self.shine_big.x, self.shine_big.y = px - co(8), py - co(9)
-        self.shine_small.x, self.shine_small.y = px + co(7), py + co(6)
-        # cheek rises from below -> happy crescent
-        self.cheek.x = cx
-        self.cheek.y = cy + R + R + sz(12) - int(f["cheek"] * s)
-        # top eyelid
-        left, right = cx - R - sz(6), cx + R + sz(6)
-        top = cy - R - sz(8)
-        inner = cy - R - sz(3) + int(lid * s)
-        outer = inner + int(f["tilt"] * s)
-        low = cy + R + sz(4)
-        inner = clamp(inner, top + 1, low)
-        outer = clamp(outer, top + 1, low)
-        if self.outer < 0:
-            self.lid.points = [(left, top), (right, top), (right, inner), (left, outer)]
-        else:
-            self.lid.points = [(left, top), (right, top), (right, outer), (left, inner)]
-        # blush
-        self.blush.hidden = f["blush"] < 0.5
-        self.blush.x = cx + self.outer * int(R * 0.8)
-        self.blush.y = cy + int(R * 0.72)
-        # eyebrow: thick at the inner end, thinner at the outer end
-        a = math.radians(f["brow_ang"])
-        L = 24 * s
-        yc = cy - R - 8 * s - brow_y * s
-        toward_middle = -self.outer
-        ix = cx + toward_middle * L * math.cos(a)
-        iy = yc - L * math.sin(a)
-        ox = cx - toward_middle * L * math.cos(a)
-        oy = yc + L * math.sin(a)
-        t_in, t_out = 4.5 * s, 2.5 * s
-        self.brow.points = [(int(ix), max(0, int(iy - t_in))), (int(ix), max(2, int(iy + t_in))),
-                            (int(ox), max(2, int(oy + t_out))), (int(ox), max(0, int(oy - t_out)))]
-
-
-root = displayio.Group()
-
-# ---------------- the face ----------------
-face = displayio.Group()
-face.append(vectorio.Rectangle(pixel_shader=fur, width=W, height=H, x=0, y=0))
-left_eye = Eye(face, W // 2 - GAP // 2, EYE_Y, -1)
-right_eye = Eye(face, W // 2 + GAP // 2, EYE_Y, +1)
-face.append(vectorio.Circle(pixel_shader=solid(0x111111), radius=sz(14), x=W // 2, y=H + sz(3)))
-face.append(vectorio.Circle(pixel_shader=solid(0x555555), radius=sz(3),
-                            x=W // 2 - sz(5), y=H - sz(6)))
-
-# anger mark between the eyebrows
-mark_pal = solid(0xFF2020)
-anger_mark = group_of(
-    rect(mark_pal, -9, -9, 7, 3), rect(mark_pal, -9, -9, 3, 7),
-    rect(mark_pal, 2, -9, 7, 3), rect(mark_pal, 6, -9, 3, 7),
-    rect(mark_pal, -9, 6, 7, 3), rect(mark_pal, -9, 2, 3, 7),
-    rect(mark_pal, 2, 6, 7, 3), rect(mark_pal, 6, 2, 3, 7),
-    x=W // 2, y=sz(12))
-anger_mark.hidden = True
-face.append(anger_mark)
-
-# ---------------- food pictures ----------------
-food_layer = displayio.Group()
-face.append(food_layer)
-
-
-def build_food(bites, crumb_colour):
-    g = displayio.Group()
-    for part in reversed(bites):
-        g.append(part)
-    g.hidden = True
-    food_layer.append(g)
-    return (g, bites, crumb_colour)
-
-
-def make_bone():
-    c = solid(0xF4EBD0)
-    return [group_of(circ(c, 18, -6, 7), circ(c, 18, 6, 7)),
-            group_of(rect(c, -18, -5, 36, 10)),
-            group_of(circ(c, -18, -6, 7), circ(c, -18, 6, 7))]
-
-
-def make_sausage():
-    c, hi = solid(0xA0402A), solid(0xC86A50)
-    return [group_of(circ(c, 20, 0, 7), rect(c, 6, -7, 14, 14), rect(hi, 6, -5, 14, 3)),
-            group_of(rect(c, -7, -7, 13, 14), rect(hi, -7, -5, 13, 3)),
-            group_of(circ(c, -20, 0, 7), rect(c, -20, -7, 13, 14), rect(hi, -20, -5, 13, 3))]
-
-
-def make_kibble():
-    c, d = solid(0x8A5A2B), solid(0x6B4420)
-    return [group_of(circ(c, 12, 4, 7), circ(d, 6, -5, 7)),
-            group_of(circ(d, 0, 5, 7), circ(c, -6, -5, 7)),
-            group_of(circ(c, -12, 4, 7))]
-
-
-def make_chicken():
-    meat, dark, bone = solid(0xC8782E), solid(0xA85E20), solid(0xF4EBD0)
-    return [group_of(circ(meat, -12, 0, 13), circ(dark, -16, 4, 4)),
-            group_of(circ(meat, 1, 0, 10)),
-            group_of(rect(bone, 6, -3, 18, 6), circ(bone, 24, -4, 4), circ(bone, 24, 4, 4))]
-
-
-def make_cheese():
-    c, hole = solid(0xFFC83D), solid(0xE0A020)
-    return [group_of(poly(c, [(8, 12), (22, 12), (22, -10), (8, -3)]), circ(hole, 15, 4, 3)),
-            group_of(poly(c, [(-7, 12), (8, 12), (8, -3), (-7, 5)]), circ(hole, 1, 7, 3)),
-            group_of(poly(c, [(-22, 12), (-7, 12), (-7, 5)]))]
-
-
-FOOD_SPRITES = {
-    "bone": build_food(make_bone(), 0xF4EBD0),
-    "sausage": build_food(make_sausage(), 0xA0402A),
-    "kibble": build_food(make_kibble(), 0x8A5A2B),
-    "chicken": build_food(make_chicken(), 0xC8782E),
-    "cheese": build_food(make_cheese(), 0xFFC83D),
+// Solid park scenery is batched by geometry; there are no downloaded assets or realtime shadows.
+function hash(n){return Math.abs(Math.sin(n*127.1+311.7)*43758.5453)%1}
+function orientedBox(x,y,z,w,h,d,col,yaw0){add('box',x,y,z,w,h,d,col,0,Math.sin(yaw0/2),0,Math.cos(yaw0/2))}
+function buildScene(){for(const b of Object.values(buffers))b.used=0;
+ box(0,-.21,-5,70,.4,95,C.grass);box(0,-.035,-6,29,.12,37,C.sand);box(0,.038,-6,5.2,.025,37,C.path);box(0,.039,-4,29,.027,3.8,C.path);box(0,.04,-17.5,29,.028,3.2,C.path);
+ const pads=[[-9,-9,PAINT[0]],[7,-15,PAINT[1]],[0,4,PAINT[2]]];for(const [x,z,c] of pads){flatCylinder(x,.012,z,8.5,.05,c);flatCylinder(x,.041,z,7.9,.055,C.path)}
+ for(let i=0;i<16;i++){const z=10-i*2.1;box(-2.9,.035,z,.16,.035,.55,C.white);box(2.9,.035,z,.16,.035,.55,C.white)}
+ for(let i=0;i<walls.length;i++){const w=walls[i];box(w.x,w.y,w.z,w.w,w.h,w.d,i===0?C.blue:i===3?C.coral:C.white);box(w.x,w.y+w.h/2+.03,w.z,w.w+.07,.12,w.d+.07,C.white)}
+ for(const o of obstacles){box(o.x,o.y,o.z,o.w,o.h,o.d,o.col);box(o.x,o.y+o.h/2+.03,o.z,o.w+.08,.12,o.d+.08,C.white);box(o.x,o.y,o.z+o.d/2+.018,o.w*.62,.12,.03,C.white)}
+ // Wide entrance arch and friendly skyline.
+ box(-4,2.35,11.8,.40,4.7,.48,PAINT[0]);box(4,2.35,11.8,.40,4.7,.48,PAINT[1]);box(0,4.55,11.8,8.4,.48,.5,C.yellow);box(0,3.35,-24.4,8.7,2.15,.4,C.dark);box(-5,3,-24.2,.25,6,.25,C.yellow);box(5,3,-24.2,.25,6,.25,C.yellow);
+ for(let i=0;i<15;i++){const side=i%2?-1:1,x=side*(17+hash(i)*9),z=12-Math.floor(i/2)*6.5,h=2.7+hash(i+2)*2;box(x,h/2,z,.30,h,.30,C.wood);sphere(x,h,z,2.9+hash(i+1),i%3===0?[.48,.74,.49]:[.31,.64,.51]);sphere(x+.85,h+.7,z-.2,1.9,[.50,.77,.58]);}
+ for(let i=0;i<13;i++){const x=(i-6)*5.3,h=3+hash(i+70)*10,z=-32-hash(i+3)*7;box(x,h/2,z,4,h,4,[.49+hash(i)*.15,.71,.71]);box(x,h+.06,z,4.1,.16,4.1,C.white);for(let j=1;j<h/1.7;j++)box(x,j*1.6,z+2.01,2.5,.57,.03,[.40,.62,.68])}
+ // Ambient paint makes the park feel playful before the first throw.
+ for(let i=0;i<15;i++){const x=(hash(i+222)-.5)*25,z=10-hash(i+91)*32;const q=qFace(0,1,0);add('splat',x,.045,z,.5+hash(i)*1.6,.5+hash(i)*1.6,1,PAINT[i%3],...q)}
+ for(let i=0;i<targets.length;i++){const t=targets[i],owned=t.owner===1?PAINT[t.colour]:t.owner===2?RIVAL:C.white,c=t.flash>0?C.yellow:owned;flatCylinder(t.x,.12,t.z,1.35,.24,t.owner===1?PAINT[t.colour]:C.steel);box(t.x,t.y/2-.1,t.z,.13,t.y,.13,C.steel);disc(t.x,t.y,t.z,t.r*2+.13,C.dark,t.nx,0,t.nz,.10);disc(t.x+t.nx*.065,t.y,t.z+t.nz*.065,t.r*2,c,t.nx,0,t.nz,.035);disc(t.x+t.nx*.09,t.y,t.z+t.nz*.09,.37,t.owner===1?C.white:C.yellow,t.nx,0,t.nz,.025);if(t.owner===1){const right={x:t.nz,z:-t.nx};const A={x:t.x-right.x*.17+t.nx*.115,y:t.y+.02,z:t.z-right.z*.17+t.nz*.115},B={x:t.x-right.x*.035+t.nx*.115,y:t.y-.11,z:t.z-right.z*.035+t.nz*.115},D={x:t.x+right.x*.22+t.nx*.115,y:t.y+.14,z:t.z+right.z*.22+t.nz*.115};beam(A,B,.055,C.dark);beam(B,D,.055,C.dark)}}
+ if(mode!=='stationary')for(const b of bots){const c=b.stun>0?PAINT[b.colour||0]:RIVAL;const a=Math.atan2(player.x-b.x,player.z-b.z),nx=Math.sin(a),nz=Math.cos(a);sphere(b.x,b.y,b.z,.94,c);orientedBox(b.x+nx*.38,b.y+.04,b.z+nz*.38,.60,.30,.10,C.dark,a);const rx=Math.cos(a),rz=-Math.sin(a);sphere(b.x+nx*.45+rx*.15,b.y+.055,b.z+nz*.45+rz*.15,.10,C.white);sphere(b.x+nx*.45-rx*.15,b.y+.055,b.z+nz*.45-rz*.15,.10,C.white);flatCylinder(b.x,b.y-.49,b.z,.52,.12,C.steel);box(b.x,b.y+.59,b.z,.065,.3,.065,C.dark);sphere(b.x,b.y+.74,b.z,.15,b.stun>0?C.white:C.yellow);if(b.stun>0)for(let i=0;i<3;i++)gem(b.x+Math.sin(now*2+i*2.1)*.55,b.y+.82,b.z+Math.cos(now*2+i*2.1)*.55,.12,C.yellow,now)}
+ for(const s of splats)splashShape(s.x,s.y,s.z,s.size,s.colour,s.n);
+ for(const b of balls){const c=b.owner===1?PAINT[b.colour]:RIVAL;sphere(b.x,b.y,b.z,.22,c);const l=Math.hypot(b.vx,b.vy,b.vz)||1;for(let i=1;i<=3;i++)sphere(b.x-b.vx/l*i*.065,b.y-b.vy/l*i*.065,b.z-b.vz/l*i*.065,.12-i*.024,c)}
+ for(const p of particles)sphere(p.x,p.y,p.z,.045+p.life*.04,p.colour);
+ if(xrActive)for(const h of Object.values(hands)){if(!h.seen)continue;const w=worldPosition(h.points.wrist),col=h.held?PAINT[h.colour]:C.white;if(settings.showHands){sphere(w.x,w.y,w.z,.052,col);for(const name of ['thumb-tip','index-finger-tip','middle-finger-tip','ring-finger-tip','pinky-finger-tip']){if(!h.points[name])continue;const p=worldPosition(h.points[name]);sphere(p.x,p.y,p.z,.019,col);beam(w,p,.010,col)}}if(h.held&&h.pinch){const p=worldPosition(h.pinch);sphere(p.x,p.y,p.z,.18,PAINT[h.colour]);sphere(p.x-.034,p.y+.038,p.z+.061,.042,C.white)}}
+ for(const b of Object.values(buffers)){gl.bindBuffer(gl.ARRAY_BUFFER,b.ib);gl.bufferSubData(gl.ARRAY_BUFFER,0,b.data.subarray(0,b.used*20))}
 }
-
-# the ball
-ball_pal = solid(0xE53935)
-ball = group_of(circ(ball_pal, 0, 0, 12), circ(solid(0xFFD54F), 0, 0, 5),
-                circ(shine_pal, -5, -5, 3))
-ball.hidden = True
-face.append(ball)
-
-# ---------------- particles: tears, crumbs, hearts, steam, Zzz ----------------
-tear_pal = solid(0x6EC6FF)
-tears = []
-for _ in range(10):
-    g = group_of(circ(tear_pal, 0, 0, 4), poly(tear_pal, [(-4, 0), (4, 0), (0, -9)]))
-    g.hidden = True
-    face.append(g)
-    tears.append({"g": g, "y": 0.0, "vy": 0.0, "live": False})
-
-crumb_pal = solid(0xF4EBD0)
-crumbs = []
-for _ in range(9):
-    g = group_of(vectorio.Circle(pixel_shader=crumb_pal, radius=sz(2), x=0, y=0))
-    g.hidden = True
-    face.append(g)
-    crumbs.append({"g": g, "x": 0.0, "y": 0.0, "vx": 0.0, "vy": 0.0, "life": 0.0})
-
-heart_pal = solid(0xFF4F7B)
-HEART = [(0, 6), (-7, -1), (-8, -4), (-6, -8), (-3, -8), (0, -5),
-         (3, -8), (6, -8), (8, -4), (7, -1)]
-hearts = []
-for _ in range(3):
-    g = group_of(poly(heart_pal, HEART))
-    g.hidden = True
-    face.append(g)
-    hearts.append({"g": g, "x": 0.0, "y": 0.0, "life": 0.0, "phase": 0.0})
-
-steam_pal = solid(0xEEEEEE)
-steam = []
-for side in (-1, 1):
-    for i in range(3):
-        c = vectorio.Circle(pixel_shader=steam_pal, radius=sz(3), x=0, y=0)
-        g = group_of(c)
-        g.hidden = True
-        face.append(g)
-        steam.append({"g": g, "c": c, "side": side, "offset": i / 3})
-
-zzz = []
-for i in range(3):
-    z = label.Label(terminalio.FONT, text="z", color=0xFFFFFF, scale=2)
-    z.hidden = True
-    face.append(z)
-    zzz.append(z)
-
-root.append(face)
-
-# ---------------- status screen ----------------
-status = displayio.Group()
-status.append(vectorio.Rectangle(pixel_shader=solid(0x101820), width=W, height=H, x=0, y=0))
-st_title = label.Label(terminalio.FONT, text="PET STATUS", color=0x88CCFF, x=6, y=8)
-st_state = label.Label(terminalio.FONT, text="", color=0xFFFFFF, scale=2, x=6, y=28)
-st_food = label.Label(terminalio.FONT, text="", color=0xFFFFFF, x=6, y=50)
-bar_pal = solid(0x22CC44)
-bar_bg = vectorio.Rectangle(pixel_shader=solid(0x333333), width=W - 12, height=8, x=6, y=57)
-bar = vectorio.Rectangle(pixel_shader=bar_pal, width=1, height=8, x=6, y=57)
-st_fun = label.Label(terminalio.FONT, text="", color=0xFFFFFF, x=6, y=76)
-fun_bg = vectorio.Rectangle(pixel_shader=solid(0x333333), width=W - 12, height=8, x=6, y=83)
-fun_bar = vectorio.Rectangle(pixel_shader=solid(0x3FA9F5), width=1, height=8, x=6, y=83)
-st_foods = label.Label(terminalio.FONT, text="", color=0xFFFFFF, x=6, y=102)
-st_card = label.Label(terminalio.FONT, text="", color=0xFFFFFF, x=6, y=115)
-st_help = label.Label(terminalio.FONT, text="D0: face/status   D1: learn card",
-                      color=0x777777, x=6, y=128)
-for item in (st_title, st_state, st_food, bar_bg, bar, st_fun, fun_bg, fun_bar,
-             st_foods, st_card, st_help):
-    status.append(item)
-status.hidden = True
-root.append(status)
-
-# ---------------- pop-up message ----------------
-msg = label.Label(terminalio.FONT, text=" ", color=0xFFFFFF, background_color=FUR_DARK,
-                  padding_left=4, padding_right=4, scale=2)
-msg.anchor_point = (0.5, 1.0)
-msg.anchored_position = (W // 2, H - 2)
-msg.hidden = True
-root.append(msg)
-
-try:
-    display.root_group = root
-except AttributeError:
-    display.show(root)
-
-# ---------------- mood light ----------------
-pixel = None
-try:
-    import neopixel
-    if hasattr(board, "NEOPIXEL_POWER"):
-        np_power = digitalio.DigitalInOut(board.NEOPIXEL_POWER)
-        np_power.switch_to_output(True)
-    pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=0.15)
-except Exception as e:
-    print("No NeoPixel:", e)
-
-# ---------------- buttons ----------------
-btn0 = digitalio.DigitalInOut(board.D0)
-btn0.switch_to_input(pull=digitalio.Pull.UP)
-btn1 = None
-try:
-    btn1 = digitalio.DigitalInOut(board.D1)
-    btn1.switch_to_input(pull=digitalio.Pull.DOWN)
-except Exception:
-    print("No D1 button on this board - hold D0 to learn instead")
-
-# ---------------- remembering cards (saved in the board's flash memory) ----------------
-SAVE_TAG = b"PET1"
-
-
-def save_cards():
-    try:
-        learned = {uid: list(v) for uid, v in CARDS.items()}
-        data = json.dumps(learned).encode()
-        n = len(data)
-        if n + 6 > len(microcontroller.nvm):
-            print("Too many cards to save!")
-            return False
-        microcontroller.nvm[0:n + 6] = SAVE_TAG + bytes((n >> 8, n & 255)) + data
-        print("Saved", len(learned), "cards")
-        return True
-    except Exception as e:
-        print("Could not save cards:", e)
-        return False
-
-
-def load_cards():
-    try:
-        if FORGET_SAVED_CARDS:
-            microcontroller.nvm[0:4] = b"\x00\x00\x00\x00"
-            print("Saved cards forgotten")
-            return
-        if bytes(microcontroller.nvm[0:4]) != SAVE_TAG:
-            print("No saved cards yet")
-            return
-        n = (microcontroller.nvm[4] << 8) | microcontroller.nvm[5]
-        saved = json.loads(bytes(microcontroller.nvm[6:6 + n]).decode())
-        for uid, v in saved.items():
-            if uid not in CARDS:            # cards typed into the code win
-                CARDS[uid] = (v[0], v[1])
-        print("Loaded", len(saved), "saved cards")
-    except Exception as e:
-        print("Could not load saved cards:", e)
-
-
-load_cards()
-
-# ---------------- RFID ----------------
-rfid = None
-try:
-    rfid = PetRFID(board.STEMMA_I2C())
-    print("RFID ready, chip version", hex(rfid.version))
-except Exception as e:
-    print("RFID problem:", e)
-
-# ---------------- ultrasonic ----------------
-sonar = None
-try:
-    import adafruit_hcsr04
-    sonar = adafruit_hcsr04.HCSR04(trigger_pin=board.D9, echo_pin=board.D10, timeout=0.05)
-    print("Ultrasonic ready")
-except Exception as e:
-    print("Ultrasonic problem:", e)
-
-# ---------------- pet state ----------------
-state = "happy"
-event_until = 0.0
-food = float(FOOD_START)
-fun = float(FUN_START)
-learn_pick = 0
-mode = "face"
-message_until = 0.0
-last_uid = None
-last_seen = 0.0
-last_interaction = time.monotonic()
-feed = {"group": None, "parts": [], "bites": 0, "amount": 0, "start": 0.0, "hearts": False}
-play = {"x": 0.0, "y": 0.0, "vx": 0.0, "vy": 0.0, "amount": 0, "start": 0.0,
-        "bounces": 0, "hearts": False}
-
-
-def set_message(text, seconds=2.0):
-    global message_until
-    msg.text = text
-    msg.hidden = False
-    message_until = time.monotonic() + seconds
-
-
-def change_state(new, seconds=0):
-    global state, event_until
-    if new != state:
-        print("STATE:", state, "->", new, "| food", int(food))
-        if state == "eating":
-            end_feeding()
-        if state == "playing":
-            ball.hidden = True
-        if new == "angry":
-            set_message("GRRR!", 2)
-        elif new == "furious":
-            set_message("WAAAH! FEED ME!!", 3)
-        elif new == "sleepy":
-            set_message("*yawn*", 1.5)
-        elif new == "bored":
-            set_message("*sigh* play?", 2)
-        cross = new in CROSS_STATES
-        fur[0] = FUR_ANGRY if cross else FUR
-        for eye in (left_eye, right_eye):
-            eye.iris_pal[0] = IRIS_ANGRY if cross else IRIS
-        if pixel:
-            pixel[0] = MOOD_COLOURS[new]
-        if new != "sleepy":
-            anim["pop_until"] = time.monotonic() + 0.3     # little "surprise" pop
-    state = new
-    event_until = time.monotonic() + seconds
-
-
-def mood_from_food():
-    if food <= 0:
-        return "furious"
-    if food <= ANGRY_AT:
-        return "angry"
-    if food <= HUNGRY_AT:
-        return "hungry"
-    if fun <= BORED_AT:                # hunger comes first, then boredom
-        return "bored"
-    if food <= PECKISH_AT:
-        return "peckish"
-    return "happy"
-
-
-def on_near(cm):
-    """Something came close to the pet's nose."""
-    global fun
-    print("NEAR: {:.1f} cm".format(cm))
-    was_asleep = state == "sleepy"
-    dist = " {}cm".format(int(cm))         # the distance goes in what it says
-    poke()
-    if state in EVENT_STATES:              # busy eating, playing or learning
-        return
-    if state in CROSS_STATES:
-        set_message("GRR! FOOD?!" + dist, 1.5)    # too cross to say hello
-        return
-    if state == "hungry":
-        set_message("Food?? For me?" + dist, NOTICE_TIME)
-    elif was_asleep:
-        set_message("Huh?! Oh, hi!" + dist, NOTICE_TIME)
-    else:
-        set_message("Hi! *boop*" + dist, NOTICE_TIME)
-        fun = min(100.0, fun + 5)          # a hello cheers it up a little
-    change_state("noticed", NOTICE_TIME)
-
-
-def poke():
-    """Someone interacted: wake up."""
-    global last_interaction
-    last_interaction = time.monotonic()
-
-
-def toggle_mode():
-    global mode
-    mode = "status" if mode == "face" else "face"
-    face.hidden = mode != "face"
-    status.hidden = mode != "status"
-    print("MODE:", mode)
-
-
-def toggle_learning():
-    if state == "eating":
-        return
-    if state == "learning":
-        change_state(mood_from_food())
-        set_message("Cancelled", 1)
-    elif rfid is None:
-        set_message("No RFID!", 2)
-    else:
-        change_state("learning", LEARN_TIMEOUT)
-        show_learn_pick()
-
-
-def show_learn_pick():
-    set_message("Card = " + LEARN_MENU[learn_pick][0], LEARN_TIMEOUT)
-
-
-def next_learn_pick():
-    global learn_pick, event_until
-    learn_pick = (learn_pick + 1) % len(LEARN_MENU)
-    event_until = time.monotonic() + LEARN_TIMEOUT      # more time to tap
-    show_learn_pick()
-
-
-# ---------------- feeding ----------------
-BITE_TIMES = (0.9, 1.35, 1.8)
-DROP_TIME = 0.5
-EXCITED = {"lid": 0, "tilt": -8, "cheek": 0, "look_y": 0.0, "pupil": 25,
-           "brow_y": 12, "brow_ang": 10, "head": 0, "blush": 1}
-WAITING = {"lid": 2, "tilt": -6, "cheek": 10, "look_y": 0.9, "pupil": 23,
-           "brow_y": 8, "brow_ang": 6, "head": 0, "blush": 1}
-CHOMP = {"lid": 6, "tilt": -4, "cheek": 46, "look_y": 0.9, "pupil": 21,
-         "brow_y": 6, "brow_ang": 4, "head": 0, "blush": 1}
-
-
-def start_feeding(name, amount):
-    group, parts, crumb_colour = FOOD_SPRITES.get(name, FOOD_SPRITES["bone"])
-    for part in parts:
-        part.hidden = False
-    group.x = W // 2
-    group.y = -sz(20)
-    group.hidden = False
-    crumb_pal[0] = crumb_colour
-    feed.update(group=group, parts=parts, bites=0, amount=amount,
-                start=time.monotonic(), hearts=False)
-    change_state("eating", EAT_TIME)
-
-
-def end_feeding():
-    if feed["group"] is not None:
-        feed["group"].hidden = True
-        feed["group"] = None
-
-
-def do_bite():
-    global food
-    i = feed["bites"]
-    feed["parts"][i].hidden = True
-    feed["bites"] = i + 1
-    food = min(100.0, food + feed["amount"] / 3)
-    spawn_crumbs(W // 2 + co(14) - i * co(14), feed["group"].y)
-
-
-def feeding_step(now):
-    t = now - feed["start"]
-    g = feed["group"]
-    rest = H - sz(18)
-    start_y = -sz(20)
-    if t < DROP_TIME:
-        p = t / DROP_TIME
-        y = start_y + (rest - start_y) * p * p
-        g.y = int(y)
-        f = dict(EXCITED)
-        f["look_y"] = clamp((y - EYE_Y) / (H * 0.4), -1, 1)
-        return f, 0
-    if t < 0.85:
-        g.y = rest - int(sz(8) * abs(math.sin((t - DROP_TIME) * 9)) * (0.85 - t) / 0.35)
-        f = dict(EXCITED)
-        f["look_y"] = 1.0
-        return f, int(sz(2) * math.sin(now * 30))
-    g.y = rest
-    while feed["bites"] < 3 and t >= BITE_TIMES[feed["bites"]]:
-        do_bite()
-    if feed["bites"] > 0:
-        since = t - BITE_TIMES[feed["bites"] - 1]
-        if since < 0.18:
-            return CHOMP, int(sz(5) * (1 - since / 0.18))
-    if feed["bites"] < 3:
-        return WAITING, 0
-    if t >= 2.0 and not feed["hearts"]:
-        feed["hearts"] = True
-        spawn_hearts()
-    return FACES["eating"], int(round(sz(2) * math.sin(now * 10)))
-
-
-def start_playing(amount):
-    play.update(x=float(-sz(12)), y=float(sz(20)), vx=random.uniform(110, 150) * s,
-                vy=0.0, amount=amount, start=time.monotonic(), bounces=0, hearts=False)
-    ball.hidden = False
-    change_state("playing", PLAY_TIME)
-
-
-def playing_step(now, dt):
-    global fun
-    r = sz(12)
-    floor = H - r - 2
-    play["vy"] += 520 * s * dt
-    play["x"] += play["vx"] * dt
-    play["y"] += play["vy"] * dt
-    if play["y"] > floor:                        # bounce off the floor
-        play["y"] = floor
-        play["vy"] = -play["vy"] * 0.82
-        if play["vy"] > -60 * s:
-            play["vy"] = -random.uniform(230, 300) * s     # the pet paws it back up
-        play["bounces"] += 1
-        fun = min(100.0, fun + play["amount"] / 6)
-    if play["x"] > W - r and play["vx"] > 0:     # bounce off the walls
-        play["vx"] = -play["vx"]
-    if play["x"] < r and play["vx"] < 0 and now - play["start"] > 0.5:
-        play["vx"] = -play["vx"]
-    ball.x, ball.y = int(play["x"]), int(play["y"])
-    if now - play["start"] > PLAY_TIME - 0.8 and not play["hearts"]:
-        play["hearts"] = True
-        spawn_hearts()
-    f = dict(FACES["playing"])
-    look_x = clamp((play["x"] - W / 2) / (W / 2), -1, 1)
-    f["look_y"] = clamp((play["y"] - EYE_Y) / (H * 0.4), -1, 1)
-    return f, look_x
-
-
-def on_card(uid):
-    print("Card tapped:", uid)
-    poke()
-    if state in ("eating", "playing"):
-        return
-    if state == "learning":
-        if uid in CARDS:
-            set_message("Know it: " + CARDS[uid][0], 2)
-            change_state(mood_from_food())
-        else:
-            name, amount = LEARN_MENU[learn_pick]
-            CARDS[uid] = (name, amount)
-            saved = save_cards()
-            set_message(("Saved: " if saved else "Learned: ") + name, 2.5)
-            print('    "{}": ("{}", {}),'.format(uid, name, amount))
-            if name in TOYS:
-                start_playing(0)
-            else:
-                start_feeding(name, 0)
-    elif uid in CARDS and CARDS[uid][0] in TOYS:
-        name, amount = CARDS[uid]
-        if state in TOO_HUNGRY_TO_PLAY:
-            set_message("Too hungry!", 2)
-        else:
-            set_message("BALL!!", 1.5)
-            start_playing(amount)
-    elif uid in CARDS:
-        name, amount = CARDS[uid]
-        if state == "furious":
-            set_message("FINALLY! " + name, 2.5)
-        elif state == "angry":
-            set_message("Hmph... " + name, 2.5)
-        else:
-            set_message("Yum! " + name, 2.5)
-        start_feeding(name, amount)
-    else:
-        set_message("???", CONFUSED_TIME)
-        change_state("confused", CONFUSED_TIME)
-
-
-# ---------------- particles ----------------
-def spawn_tear(eye):
-    for tr in tears:
-        if not tr["live"]:
-            tr["live"] = True
-            tr["y"] = float(eye.cy + R * 0.6)
-            tr["vy"] = random.uniform(10, 30) * s
-            tr["g"].x = eye.cx + eye.outer * int(R * random.uniform(0.45, 0.75))
-            tr["g"].y = int(tr["y"])
-            tr["g"].hidden = False
-            return
-
-
-def spawn_crumbs(x, y):
-    n = 0
-    for c in crumbs:
-        if c["life"] <= 0 and n < 3:
-            c.update(x=float(x), y=float(y), vx=random.uniform(-60, 60) * s,
-                     vy=random.uniform(-110, -50) * s, life=0.8)
-            c["g"].hidden = False
-            n += 1
-
-
-def spawn_hearts():
-    for i, h in enumerate(hearts):
-        h.update(x=float(W // 2 + (i - 1) * sz(26)), y=float(H - sz(26)),
-                 life=1.2 + i * 0.1, phase=random.uniform(0, 6))
-        h["g"].hidden = False
-
-
-def update_particles(now, dt):
-    for tr in tears:
-        if tr["live"]:
-            tr["vy"] += 160 * s * dt
-            tr["y"] += tr["vy"] * dt
-            tr["g"].y = int(tr["y"])
-            if tr["y"] > H + 10:
-                tr["live"] = False
-                tr["g"].hidden = True
-    for c in crumbs:
-        if c["life"] > 0:
-            c["life"] -= dt
-            c["vy"] += 400 * s * dt
-            c["x"] += c["vx"] * dt
-            c["y"] += c["vy"] * dt
-            c["g"].x, c["g"].y = int(c["x"]), int(c["y"])
-            if c["life"] <= 0 or c["y"] > H + 5:
-                c["life"] = 0
-                c["g"].hidden = True
-    for h in hearts:
-        if h["life"] > 0:
-            h["life"] -= dt
-            h["y"] -= 45 * s * dt
-            h["g"].x = int(h["x"] + sz(5) * math.sin(now * 6 + h["phase"]))
-            h["g"].y = int(h["y"])
-            if h["life"] <= 0:
-                h["g"].hidden = True
-    steaming = state in CROSS_STATES
-    speed = 2.0 if state == "furious" else 1.3
-    for st in steam:
-        if steaming:
-            t = (now * speed + st["offset"]) % 1
-            base_x = sz(12) if st["side"] < 0 else W - sz(12)
-            st["g"].x = base_x + int(sz(4) * math.sin(t * 8 + st["offset"] * 5))
-            st["g"].y = int(EYE_Y + R * 0.4 - t * (EYE_Y + R * 0.4))
-            st["c"].radius = sz(3 + (9 if state == "furious" else 6) * t)
-            st["g"].hidden = False
-        elif not st["g"].hidden:
-            st["g"].hidden = True
-    for i, z in enumerate(zzz):
-        if state == "sleepy":
-            t = (now * 0.35 + i / 3) % 1
-            z.x = right_eye.cx + int(R * 0.6) + int(t * sz(16))
-            z.y = int(EYE_Y - R * 0.3 - t * (EYE_Y - R * 0.3 - sz(8)))
-            z.hidden = False
-        elif not z.hidden:
-            z.hidden = True
-    if steaming:
-        rate = 0.15 if state == "furious" else 0.4
-        anger_mark.hidden = int(now / rate) % 2 == 1
-    elif not anger_mark.hidden:
-        anger_mark.hidden = True
-
-
-# ---------------- animation ----------------
-cur = dict(FACES["happy"])
-anim = {"look_x": 0.0, "look_tx": 0.0, "next_glance": 0.0, "next_blink": 3.0,
-        "blink_start": -1.0, "next_rumble": 6.0, "rumble_until": 0.0,
-        "next_hop": 5.0, "hop_until": 0.0, "next_huff": 0.0, "huff_until": 0.0,
-        "next_tear": 4.0, "next_tilt": 8.0, "tilt_until": 0.0, "tilt_dir": 1,
-        "next_peek": 6.0, "peek_until": 0.0, "pop_until": 0.0, "next_status": 0.0,
-        "next_sigh": 3.0, "sigh_until": 0.0, "next_roll": 6.0, "roll_until": 0.0}
-
-
-def animate(now, dt):
-    dx = dy = 0
-    ball_look = None
-    if state == "eating" and feed["group"] is not None:
-        target, dy = feeding_step(now)
-    elif state == "playing":
-        target, ball_look = playing_step(now, dt)
-        dx = int(ball_look * sz(6))                     # head follows the ball
-        dy = -int(sz(3) * abs(math.sin(now * 9)))       # excited bouncing
-    else:
-        target = FACES[state]
-    if state == "happy":                            # curious head tilt now and then
-        if now >= anim["next_tilt"]:
-            anim["tilt_until"] = now + 1.5
-            anim["tilt_dir"] = random.choice((-1, 1))
-            anim["next_tilt"] = now + random.uniform(6, 12)
-        if now < anim["tilt_until"]:
-            target = dict(target)
-            target["head"] = 6 * anim["tilt_dir"]
-            target["brow_y"] = 10
-    k = min(1.0, dt * (16 if state == "eating" else 8))
-    for key in cur:
-        cur[key] += (target[key] - cur[key]) * k
-
-    # where to look
-    if now >= anim["next_glance"]:
-        if state == "confused":
-            anim["look_tx"] = random.uniform(-1, 1)
-            anim["next_glance"] = now + 0.25
-        elif state in ("learning", "eating", "angry", "furious", "sleepy", "noticed"):
-            anim["look_tx"] = 0
-            anim["next_glance"] = now + 0.5
-        elif state == "bored":                  # slow, uninterested gazing
-            anim["look_tx"] = random.choice((-1, -0.8, 0.8, 1))
-            anim["next_glance"] = now + random.uniform(2.5, 5)
-        elif state == "hungry":
-            anim["look_tx"] = random.uniform(-0.5, 0.5)
-            anim["next_glance"] = now + random.uniform(1.5, 3)
-        else:
-            anim["look_tx"] = random.choice((-1, -0.6, 0, 0, 0.6, 1))
-            anim["next_glance"] = now + random.uniform(0.8, 2.5)
-    if ball_look is not None:
-        anim["look_tx"] = ball_look
-        anim["look_x"] = ball_look
-    speed = 3 if state == "bored" else 14
-    anim["look_x"] += (anim["look_tx"] - anim["look_x"]) * min(1.0, dt * speed)
-
-    # blinking
-    blink = 0.0
-    if anim["blink_start"] < 0 and now >= anim["next_blink"] and state not in ("eating", "sleepy"):
-        anim["blink_start"] = now
-    if anim["blink_start"] >= 0:
-        t = (now - anim["blink_start"]) / 0.18
-        if t >= 1:
-            anim["blink_start"] = -1.0
-            anim["next_blink"] = now + random.uniform(1.5, 4.5)
-        else:
-            blink = math.sin(t * math.pi)
-
-    # surprise pop when the mood changes
-    pop = max(0.0, (anim["pop_until"] - now) / 0.3)
-
-    # body language
-    if state == "happy":
-        if now >= anim["next_hop"]:
-            anim["hop_until"] = now + 0.5
-            anim["next_hop"] = now + random.uniform(4, 8)
-        if now < anim["hop_until"]:
-            p = (anim["hop_until"] - now) / 0.5
-            dy = -int(sz(6) * abs(math.sin(p * 2 * math.pi)))
-        else:
-            dy = int(round(sz(1.5) * math.sin(now * 2.5)))
-    elif state == "sleepy":
-        dy = int(round(sz(2) * math.sin(now * 1.2)))       # slow sleepy breathing
-    elif state == "bored":
-        if now >= anim["next_sigh"]:
-            anim["sigh_until"] = now + 1.6
-            anim["next_sigh"] = now + random.uniform(5, 9)
-            if random.random() < 0.5:
-                set_message("*sigh*", 1.2)
-        if now < anim["sigh_until"]:                        # big slow sigh
-            p = 1 - (anim["sigh_until"] - now) / 1.6
-            dy = int(sz(7) * math.sin(p * math.pi))
-        if now >= anim["next_roll"]:                        # rolls its eyes
-            anim["roll_until"] = now + 0.9
-            anim["next_roll"] = now + random.uniform(7, 12)
-        if now < anim["roll_until"]:
-            a = (1 - (anim["roll_until"] - now) / 0.9) * 2 * math.pi
-            anim["look_x"] = -math.cos(a)
-            cur["look_y"] = -abs(math.sin(a)) - 0.2
-    elif state == "hungry":
-        if now >= anim["next_rumble"]:
-            anim["rumble_until"] = now + 0.6
-            anim["next_rumble"] = now + random.uniform(4, 8)
-        if now < anim["rumble_until"]:
-            dx = int(sz(3) * math.sin(now * 50))
-        if now >= anim["next_tear"]:
-            anim["next_tear"] = now + random.uniform(4, 8)
-            spawn_tear(random.choice((left_eye, right_eye)))
-    elif state == "angry":
-        if now >= anim["next_huff"]:
-            anim["huff_until"] = now + 0.5
-            anim["next_huff"] = now + random.uniform(1.2, 2.5)
-        if now < anim["huff_until"]:
-            dx = int(sz(3) * math.sin(now * 70))
-        if pixel:
-            pixel[0] = (int(150 + 100 * math.sin(now * 8)), 0, 0)
-    elif state == "furious":
-        dx = int(sz(3) * math.sin(now * 80))                # can't stop shaking
-        dy = int(sz(2) * math.sin(now * 37))
-        if now >= anim["next_tear"]:                        # streams of tears
-            anim["next_tear"] = now + 0.12
-            spawn_tear(left_eye if random.random() < 0.5 else right_eye)
-        if pixel:
-            pixel[0] = (255, 0, 0) if int(now * 8) % 2 else (40, 0, 0)
-
-    lid = cur["lid"] + blink * 95 - 12 * pop
-    f = dict(cur)
-    f["pupil"] = cur["pupil"] + 5 * pop
-    left_lid, right_lid = lid, lid
-    left_brow, right_brow = cur["brow_y"], cur["brow_y"]
-    if state == "confused":                         # one eyebrow up
-        left_lid += 14
-        right_lid = max(0, right_lid - 14)
-        right_brow += 10
-    if state == "sleepy":                           # peeks with one eye now and then
-        if now >= anim["next_peek"]:
-            anim["peek_until"] = now + 1.0
-            anim["next_peek"] = now + random.uniform(6, 12)
-        if now < anim["peek_until"]:
-            right_lid = 36
-    head = int(cur["head"] * s)
-    left_eye.draw(dx, dy - head, anim["look_x"], cur["look_y"], f, left_lid, left_brow)
-    right_eye.draw(dx, dy + head, anim["look_x"], cur["look_y"], f, right_lid, right_brow)
-    update_particles(now, dt)
-
-
-def update_status(now):
-    if now < anim["next_status"]:
-        return
-    anim["next_status"] = now + 0.25
-    st_state.text = state.upper()
-    st_food.text = "Food: {}%".format(int(food))
-    bar.width = max(1, int((W - 12) * food / 100))
-    if food > PECKISH_AT:
-        bar_pal[0] = 0x22CC44
-    elif food > HUNGRY_AT:
-        bar_pal[0] = 0xDDAA00
-    elif food > ANGRY_AT:
-        bar_pal[0] = 0xDD6622
-    else:
-        bar_pal[0] = 0xFF0000
-    st_fun.text = "Fun: {}%".format(int(fun))
-    fun_bar.width = max(1, int((W - 12) * fun / 100))
-    dist = "none" if last_cm is None else "{}cm".format(int(last_cm))
-    st_foods.text = "Cards: {}   Distance: {}".format(len(CARDS), dist)
-    st_card.text = "Last card: " + (last_uid or "none")
-
-
-# ---------------- main loop ----------------
-print("Digital pet V1.4 running")
-if pixel:
-    pixel[0] = MOOD_COLOURS[state]
-
-d0_was = False
-d0_down_at = 0.0
-d0_long_done = False
-d1_was = False
-next_rfid_poll = 0.0
-next_sonar = 0.0
-last_cm = None
-near_count = 0
-last = time.monotonic()
-
-while True:
-    now = time.monotonic()
-    dt = min(now - last, 0.1)
-    last = now
-
-    # 1. INPUT: time drains the food
-    if state != "eating":
-        food = max(0.0, food - FOOD_DRAIN_PER_SECOND * dt)
-    if state not in ("playing", "sleepy"):
-        fun = max(0.0, fun - FUN_DRAIN_PER_SECOND * dt)
-
-    # 2. INPUT: buttons
-    d0 = not btn0.value
-    if d0 and not d0_was:
-        d0_down_at = now
-        d0_long_done = False
-        poke()
-    if d0 and not d0_long_done and now - d0_down_at > 0.8:
-        d0_long_done = True
-        toggle_learning()
-    if not d0 and d0_was and not d0_long_done:
-        if state == "learning":
-            next_learn_pick()           # in LEARN mode, D0 picks what the card becomes
-        else:
-            toggle_mode()
-    d0_was = d0
-
-    if btn1 is not None:
-        d1 = btn1.value
-        if d1 and not d1_was:
-            poke()
-            toggle_learning()
-        d1_was = d1
-
-    # 3. INPUT: RFID card (a held card only counts once)
-    if rfid and now >= next_rfid_poll:
-        next_rfid_poll = now + 0.2
-        uid = rfid.read_uid()
-        if uid:
-            if uid != last_uid or now - last_seen > 1.5:
-                on_card(uid)
-            last_uid = uid
-            last_seen = now
-
-    # 3b. INPUT: ultrasonic - is something right in front of its nose?
-    if sonar and now >= next_sonar:
-        next_sonar = now + SONAR_EVERY
-        try:
-            cm = sonar.distance
-        except RuntimeError:               # no echo came back (nothing in range)
-            cm = None
-        last_cm = cm
-        if SHOW_DISTANCE:
-            print("distance:", "none" if cm is None else "{:.1f} cm".format(cm))
-        if cm is not None and cm <= NEAR_CM:
-            near_count += 1
-            if near_count == 2:            # two readings in a row = really there
-                on_near(cm)
-        else:
-            near_count = 0                 # it went away: ready to notice again
-
-    # 4. DECIDE: the pet's brain
-    if state in EVENT_STATES:
-        if now >= event_until:
-            if state == "learning":
-                set_message("Timed out", 1.5)
-            change_state(mood_from_food())
-    else:
-        mood = mood_from_food()
-        if mood == "happy" and now - last_interaction > SLEEPY_AFTER:
-            mood = "sleepy"
-        change_state(mood)
-
-    # 5. OUTPUT: screen
-    if not msg.hidden and now >= message_until:
-        msg.hidden = True
-    if mode == "face":
-        animate(now, dt)
-    else:
-        update_status(now)
-    display.refresh()
-    time.sleep(0.01)
+function makeTexture(c){const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,c);return tex}
+const signCanvas=document.createElement('canvas');signCanvas.width=1024;signCanvas.height=256;const sc=signCanvas.getContext('2d');sc.fillStyle='#183e4c';sc.fillRect(0,0,1024,256);sc.textAlign='center';sc.font='900 96px system-ui,sans-serif';sc.fillStyle='#faf5e5';sc.fillText('SPLASH PARK',512,135);sc.font='650 28px system-ui,sans-serif';sc.fillStyle='#8de0c0';sc.fillText('RUN  /  GRAB  /  MAKE YOUR MARK',512,200);const signTexture=makeTexture(signCanvas);
+const hudCanvas=document.createElement('canvas');hudCanvas.width=1024;hudCanvas.height=768;const hc=hudCanvas.getContext('2d'),hudTexture=makeTexture(hudCanvas);
+let panel={x:0,y:EYE,z:6,yaw:0,w:3.2,h:2.4},vrButtons=[],gazeId=null,gazeTime=0,gazeLatch=null,gazeX=512,gazeY=384;
+function placePanel(){const e=eyePosition(),d=flatDirection();panel.x=e.x+d.x*3;panel.y=e.y;panel.z=e.z+d.z*3;panel.yaw=Math.atan2(-d.x,-d.z);hudDirty=true}
+function gazeReset(){gazeId=null;gazeTime=0;gazeLatch=null}
+function rounded(x,y,w,h,r,fill,stroke){hc.beginPath();hc.roundRect(x,y,w,h,r);if(fill){hc.fillStyle=fill;hc.fill()}if(stroke){hc.strokeStyle=stroke;hc.lineWidth=2;hc.stroke()}}
+function line(t,x,y,size=28,c='#edf5e9',align='center'){hc.font=`${size>30?'800':'600'} ${size}px system-ui,sans-serif`;hc.textAlign=align;hc.fillStyle=c;hc.fillText(t,x,y)}
+function wrap(t,y,size=26,width=855,c='#aec7cf'){hc.font=`550 ${size}px system-ui,sans-serif`;let part='';for(const word of t.split(' ')){if(hc.measureText(part+word).width>width){line(part.trim(),512,y,size,c);y+=size*1.45;part=''}part+=word+' '}line(part.trim(),512,y,size,c);return y}
+function button(label,y,action,id=label,x=190,w=644,enabled=true){if(enabled)vrButtons.push({x,y,w,h:72,action,id});const hot=gazeId===id&&enabled;rounded(x,y,w,72,20,hot?'#b6f1c4':enabled?'#2b5360':'#28434b',enabled?'#659093':'#345961');line(label,x+w/2,y+47,26,hot?'#183e4c':enabled?'#eff7e6':'#7f999f')}
+function updateGaze(dt){if(!xrActive||state==='playing')return;const e=eyePosition(),d=viewDirection(),n={x:Math.sin(panel.yaw),z:Math.cos(panel.yaw)},right={x:Math.cos(panel.yaw),z:-Math.sin(panel.yaw)},den=d.x*n.x+d.z*n.z;let target=null;if(Math.abs(den)>.04){const t=((panel.x-e.x)*n.x+(panel.z-e.z)*n.z)/den;if(t>0){const dx=e.x+d.x*t-panel.x,dy=e.y+d.y*t-panel.y,dz=e.z+d.z*t-panel.z;gazeX=(.5+(dx*right.x+dz*right.z)/panel.w)*1024;gazeY=(.5-dy/panel.h)*768;target=vrButtons.find(b=>gazeX>=b.x&&gazeX<=b.x+b.w&&gazeY>=b.y&&gazeY<=b.y+b.h)}}if(!target){gazeId=null;gazeTime=0;gazeLatch=null;return}if(gazeLatch===target.id)return;if(gazeId!==target.id){gazeId=target.id;gazeTime=0}else gazeTime+=dt;if(gazeTime>=.85){const action=target.action;gazeLatch=target.id;gazeTime=0;action();hudDirty=true}}
+function drawHUD(){hc.clearRect(0,0,1024,768);vrButtons=[];const ch=accel.choose(performance.now()/1000),fresh=ch?.fresh(performance.now()/1000);
+ if(state==='playing'){rounded(115,17,794,92,23,'#faf5e8ec','#ffffffb0');line(`${painted()} / 12 PAINTED     ${score} PTS     ${timeText()}`,512,59,30,'#193e4b');line(mode==='stationary'?'STATIONARY PRACTICE':`${accel.label}   ${speed.toFixed(1)} virtual m/s   ·   ${Math.round(1000/frameMS)} fps`,512,88,19,'#567b7e');if(now<toastUntil){rounded(160,420,704,65,19,'#193e4ced');line(toastText,512,463,25,'#ccf5b6')}rounded(230,632,564,92,23,'#193e4cd9');hc.fillStyle=PAINT_HEX[colour];hc.beginPath();hc.arc(287,673,18,0,Math.PI*2);hc.fill();line('PINCH + SWING + RELEASE',558,670,23,'#f8f6e5');line('Middle pinch: colour  ·  Both open hands up: pause',512,705,16,'#bdd9d7');}
+ else{rounded(32,14,960,724,38,'#173d4bf5','#73a3a7');line('PAINT SPLASH PARK',512,75,24,'#9ce9ce');
+ if(state==='ready'||state==='check'){line(fresh?'Motion sensor is live.':'Check your motion sensor.',512,150,44);wrap(fresh?'Actual accelerometer data is arriving. Calibrate before walking.':reason||'Waiting for browser accelerometer readings. Head-position estimates will not be substituted.',211,25);line(ch?ch.id:'No live acceleration source',512,303,22,fresh?'#bdf4b7':'#ffd489');button('Calibrate treadmill movement',350,beginCalibration,'calibrate',160,704,!!fresh);button('Stationary paint practice',444,()=>startRound('stationary'),'stationary');button('Exit VR',538,()=>session.end(),'exit');wrap('Look at a button until its ring fills. Enable motion sensors on the start page if access is blocked.',654,20,840,'#9ebec4');}
+ else if(state==='calStill'){line('Stand comfortably still.',512,165,45);line(String(Math.ceil(Math.max(0,2-calTime))),512,316,100,'#bdf4b7');wrap('Keep your head steady while we measure the sensor noise.',405,27);rounded(155,500,714,18,9,'#2e5762');rounded(155,500,714*clamp(calTime/2,0,1),18,9,'#9ce9ce');line(calChannel?.id||'',512,601,21,'#aec9cc');line('2 seconds still → 4 seconds walking',512,662,22,'#b5cdcf')}
+ else if(state==='calWalk'){line('Walk at a comfortable pace.',512,165,40);line(String(Math.ceil(Math.max(0,4-calTime))),512,313,94,'#bdf4b7');wrap('Face forward. Walk normally on the treadmill.',403,26);rounded(155,490,714,25,12,'#2e5762');rounded(155,490,714*clamp((ch?.energy||0)/2,0,1),25,12,'#9ce9ce');line(`Acceleration signal: ${(ch?.energy||0).toFixed(2)} m/s²`,512,582,24,'#c4e2df');line('Only accelerometer samples set movement speed.',512,657,20,'#aec9cc')}
+ else if(state==='calReview'){line(calibrated?'You’re ready to splash.':'Try a clearer walking signal.',512,161,40);wrap(calResult,227,25);line(`Still: ${accel.rest.toFixed(2)}   Walk: ${accel.walk.toFixed(2)} m/s²`,512,329,22,'#b5d4d3');button('Start Paint Splash Park',384,()=>startRound('treadmill'),'start',160,704,calibrated);button('Calibrate again',480,beginCalibration,'calibrate');button('Stationary paint practice',576,()=>startRound('stationary'),'stationary');}
+ else if(state==='paused'){line('Park paused.',512,155,52);wrap(reason,217,25);button('Resume',320,resume,'resume');button('Recalibrate',413,()=>{accel.lock=null;beginCalibration()},'recal',84,400);button('Exit VR',413,()=>session.end(),'exit',540,400);button('Sensitivity −',511,()=>{settings.sensitivity=clamp(settings.sensitivity-.2,.5,2.5);save()},'less',84,400);button('Sensitivity +',511,()=>{settings.sensitivity=clamp(settings.sensitivity+.2,.5,2.5);save()},'more',540,400);line(`${painted()} / 12 targets   ·   ${score} points   ·   ${settings.sensitivity.toFixed(1)}× sensitivity`,512,658,22,'#b5d4d3')}
+ else if(state==='finished'){line('What a splash.',512,168,57);line(`${painted()} / 12 painted`,512,273,42,'#bdf4b7');line(`${score} POINTS     BEST ${best}`,512,336,29,'#eff5e5');button('Play another round',420,()=>startRound(mode),'again');button('Exit VR',520,()=>session.end(),'exit');line(`${shots} throws · ${botHits} bots tagged`,512,669,23,'#a9cdd1')}
+ if(gazeId){hc.lineWidth=6;hc.strokeStyle='#baf4aa';hc.beginPath();hc.arc(gazeX,gazeY,19,-Math.PI/2,-Math.PI/2+Math.PI*2*clamp(gazeTime/.85,0,1));hc.stroke()}hc.fillStyle='#fff9dd';hc.beginPath();hc.arc(gazeX,gazeY,4,0,Math.PI*2);hc.fill();}
+ gl.bindTexture(gl.TEXTURE_2D,hudTexture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,hudCanvas);lastHUD=now;hudDirty=false;}
+const worldFromGame=identity(),viewGame=identity(),vp=identity(),camGame=identity(),texModel=identity(),texMVP=identity(),desktopProj=identity(),desktopView=identity(),fog=new Float32Array([.76,.86,.79]);
+function drawTexture(tex,x,y,z,w,h,yaw0,opacity=1){compose(texModel,x,y,z,w,h,1,0,Math.sin(yaw0/2),0,Math.cos(yaw0/2));mult(texMVP,vp,texModel);gl.useProgram(texProg);gl.uniformMatrix4fv(tu.mvp,false,texMVP);gl.uniform1f(tu.opacity,opacity);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(tu.tex,0);gl.bindVertexArray(quadVAO);gl.drawArrays(gl.TRIANGLES,0,6)}
+function renderEye(projection,view,viewport){gl.viewport(viewport.x,viewport.y,viewport.width,viewport.height);inverseRigid(camGame,view);mult(vp,projection,view);gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.bindVertexArray(null);gl.useProgram(skyProg);gl.uniformMatrix4fv(su.camera,false,camGame);gl.uniform2f(su.lens,projection[0],projection[5]);gl.uniform3fv(su.fog,fog);gl.drawArrays(gl.TRIANGLES,0,3);gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LESS);gl.useProgram(prog);gl.uniformMatrix4fv(u.vp,false,vp);gl.uniform3f(u.eye,camGame[12],camGame[13],camGame[14]);gl.uniform3fv(u.fog,fog);for(const b of Object.values(buffers)){gl.bindVertexArray(b.vao);gl.drawArraysInstanced(gl.TRIANGLES,0,b.count,b.used)}gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);drawTexture(signTexture,0,3.35,-24.17,8.35,2.07,0);
+ if(xrActive){gl.disable(gl.DEPTH_TEST);if(state==='playing'){const e=eyePosition(),d=flatDirection();drawTexture(hudTexture,e.x+d.x*3,e.y,e.z+d.z*3,3.2,2.4,Math.atan2(-d.x,-d.z))}else drawTexture(hudTexture,panel.x,panel.y,panel.z,panel.w,panel.h,panel.yaw)}
+ const edge=settings.comfort?clamp(speed/settings.maxSpeed*.28,0,.28):0;if(edge>.003){gl.disable(gl.DEPTH_TEST);gl.bindVertexArray(null);gl.useProgram(edgeProg);gl.uniform1f(eu.amount,edge);gl.uniform1f(eu.hit,0);gl.drawArrays(gl.TRIANGLES,0,3)}gl.disable(gl.BLEND);gl.bindVertexArray(null)}
+function cameraMatrix(out,x,y,z,yaw0,pitch0){const a=Math.sin(pitch0/2),b=Math.cos(pitch0/2),c=Math.sin(yaw0/2),d=Math.cos(yaw0/2);compose(out,x,y,z,1,1,1,a*d,b*c,-a*c,b*d)}
+function resize(){if(xrActive)return;const dpr=Math.min(devicePixelRatio||1,1.5);canvas.width=Math.floor(innerWidth*dpr);canvas.height=Math.floor(innerHeight*dpr);perspective(desktopProj,Math.PI*.40,canvas.width/canvas.height,.06,110)}
+addEventListener('resize',resize);
+function desktopLoop(ms){requestAnimationFrame(desktopLoop);if(xrActive){lastDesktop=ms;return}now=ms/1000;const rawGap=lastDesktop?(ms-lastDesktop)/1000:.016,dt=clamp(rawGap,.001,.06);lastDesktop=ms;frameMS=mix(frameMS,clamp(rawGap*1000,1,1000),.07);const start=performance.now();if(state==='playing'){if(keys.has('ArrowLeft')||keys.has('KeyA')||touch.left)yaw+=dt*1.4;if(keys.has('ArrowRight')||keys.has('KeyD')||touch.right)yaw-=dt*1.4;const moving=keys.has('KeyW')||keys.has('ArrowUp')||touch.walk,run=keys.has('ShiftLeft')||keys.has('ShiftRight');accel.label=moving?(run?'RUN':'WALK'):'STILL';tick(dt,moving?(run?2.1:.8):0)}if(state==='home')for(const b of bots)b.y=1.6+Math.sin(now*2+b.phase)*.12;updateUI();cpuMS=mix(cpuMS,performance.now()-start,.1);buildScene();gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.clear(gl.DEPTH_BUFFER_BIT);if(state==='home'){cameraMatrix(camGame,12.7,8.3,19.3,.40,-.28)}else cameraMatrix(camGame,player.x,EYE,player.z,yaw,pitch);inverseRigid(desktopView,camGame);renderEye(desktopProj,desktopView,{x:0,y:0,width:canvas.width,height:canvas.height})}
+let prevHead=null;
+function xrLoop(ms,frame){if(!session||!xrActive)return;session.requestAnimationFrame(xrLoop);now=ms/1000;const gap=lastXR?(ms-lastXR)/1000:.011,dt=clamp(gap,.004,.055);lastXR=ms;frameMS=mix(frameMS,clamp(gap*1000,1,1000),.06);const start=performance.now();let pose;try{pose=frame.getViewerPose(refSpace)}catch(e){pose=null}trackValid=!!pose&&!pose.emulatedPosition&&session.visibilityState==='visible';
+ if(!trackValid){if(['playing','calStill','calWalk'].includes(state))pause('Headset tracking interrupted. Stand still, then resume.');speed=0;accel.resetGate();cancelHeld();prevHead=null;if(!pose)return}
+ if(pose){copyPoint(head,pose.transform.position);copyQuaternion(headQ,pose.transform.orientation)}
+ if(trackValid){if(prevHead&&length(head,prevHead)>.28&&state==='playing'){calibrated=false;pause('Tracking position changed suddenly. Recalibrate before walking.')}prevHead={...head};if(gap>.18&&['playing','calStill','calWalk'].includes(state))pause('A frame interruption stopped the game. Resume when ready.');pollHands(frame,dt);updateCalibration(dt);updateGaze(dt);if(state==='playing'){if(mode==='treadmill'){const input=accel.evaluate(performance.now()/1000,settings.sensitivity);if(!input.fresh){speed=0;pause('Accelerometer readings stopped. Movement is disabled until fresh data returns.')}else tick(dt,input.ratio)}else if(mode==='stationary')tick(dt,0)}}
+ updateUI();cpuMS=mix(cpuMS,performance.now()-start,.10);if(hudDirty||now-lastHUD>1/15)drawHUD();buildScene();const c=Math.cos(origin.yaw),s=Math.sin(origin.yaw);compose(worldFromGame,origin.x-c*player.x-s*player.z,origin.y-EYE,origin.z+s*player.x-c*player.z,1,1,1,0,Math.sin(origin.yaw/2),0,Math.cos(origin.yaw/2));gl.bindFramebuffer(gl.FRAMEBUFFER,baseLayer.framebuffer);gl.clear(gl.DEPTH_BUFFER_BIT);for(const view of pose.views){mult(viewGame,view.transform.inverse.matrix,worldFromGame);renderEye(view.projectionMatrix,viewGame,baseLayer.getViewport(view))}}
+async function enterVR(){if(!navigator.xr||!isSecureContext){showError('Open this file from an HTTPS address in a WebXR browser on Quest 3. Desktop play is available here.');return}unlockSound();$('enterVR').disabled=true;let pending;try{const sessionPromise=navigator.xr.requestSession('immersive-vr',{requiredFeatures:['local-floor'],optionalFeatures:['hand-tracking']});enableSensors();pending=await sessionPromise;session=pending;await gl.makeXRCompatible();refSpace=await session.requestReferenceSpace('local-floor');baseLayer=new XRWebGLLayer(session,gl,{alpha:false,antialias:false,framebufferScaleFactor:.85});session.updateRenderState({baseLayer,depthNear:.055,depthFar:110});session.addEventListener('end',endXR);session.addEventListener('visibilitychange',()=>{if(session?.visibilityState!=='visible')pause('Headset menu or focus change. Resume when ready.')});refSpace.addEventListener('reset',()=>{calibrated=false;resetEpoch++;pause('Reference space reset. Recalibrate before continuing.');prevHead=null;hudDirty=true});
+ if(session.supportedFrameRates&&session.updateTargetFrameRate){const rates=Array.from(session.supportedFrameRates),target=rates.includes(90)?90:rates.filter(r=>r<=90).sort((a,b)=>b-a)[0];if(target)session.updateTargetFrameRate(target).catch(()=>{})}
+ xrActive=true;mode='treadmill';lastXR=0;prevHead=null;calibrated=false;trackValid=false;accel.lock=null;initRound();state='check';reason='Waiting for browser accelerometer readings. No head-position fallback is used.';$('home').classList.add('hide');$('playUI').classList.add('hide');$('crosshair').classList.add('hide');$('captureTip').classList.add('hide');closeVeils();const first=(ms,f)=>{if(!session)return;const p=f.getViewerPose(refSpace);if(!p||p.emulatedPosition){session.requestAnimationFrame(first);return}copyPoint(head,p.transform.position);copyQuaternion(headQ,p.transform.orientation);anchor();placePanel();gazeReset();drawHUD();xrLoop(ms,f)};session.requestAnimationFrame(first);
+ }catch(e){showError('VR could not start: '+e.message+'. Check HTTPS, WebXR support and administrator permissions.');if(pending){try{await pending.end()}catch(_){}}xrActive=false;session=null;state='home';$('home').classList.remove('hide');resize()}finally{$('enterVR').disabled=false}}
+function endXR(){toastUntil=0;$('toast').style.opacity=0;xrActive=false;session=null;refSpace=null;baseLayer=null;speed=0;state='home';mode='desktop';accel.resetGate();cancelHeld();keys.clear();touch.walk=touch.left=touch.right=false;$('home').classList.remove('hide');$('playUI').classList.add('hide');$('crosshair').classList.add('hide');closeVeils();lastDesktop=0;initRound();resize()}
+
+function showError(s){$('homeError').textContent=s;$('homeError').style.display='block'}
+function timeText(){if(mode==='stationary'||settings.duration===0)return'FREE PAINT';const s=Math.max(0,Math.ceil(settings.duration-elapsed));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+function refreshSensorText(){const t=performance.now()/1000,c=accel.choose(t);$('sensorStatus').textContent=c?.fresh(t)?`Live: ${c.id} · approximately ${Math.round(c.rate)} samples/s · ${c.count} readings.`:'No live accelerometer samples. Treadmill movement remains disabled. '+(accel.errors.length?accel.errors.slice(-2).join('; '):'');$('sensorList').textContent=[...accel.channels.values()].map(s=>`${s.id}: ${s.count} samples · ${s.fresh(t)?'live':'stale / absent'}`).concat(accel.errors.slice(-3)).join('\n')||'No acceleration sources have produced data.'}
+let lastUI=-1,scopeAt=0;const scopeData=new Float32Array(160);
+function updateUI(){if(now>toastUntil)$('toast').style.opacity=0;if(now-lastUI<.10)return;lastUI=now;const count=painted();$('paintCount').textContent=count+' / 12';$('score').textContent=score;$('timer').textContent=timeText();$('signalSource').textContent=xrActive?(mode==='stationary'?'STATIONARY PRACTICE':'HEADSET ACCELEROMETER'):'DESKTOP SIMULATION';$('motionState').textContent=state==='playing'?(mode==='stationary'?'STILL':accel.label):state.toUpperCase();$('signalMeter').style.width=clamp(speed/settings.maxSpeed*100,0,100)+'%';$('frameInfo').textContent=Math.round(1000/frameMS)+' fps · '+cpuMS.toFixed(1)+' ms app update';$('objective').textContent=mode==='stationary'?'Stationary practice: pinch, swing and release.':settings.duration===0?'Free paint. Explore, splash and make your mark.':'Paint every target. Tag the bots to stop them repainting.';refreshSensorText();const t=performance.now()/1000,c=accel.choose(t);scopeData[scopeAt++%160]=c?.energy||0;if(!$('labVeil').classList.contains('hide')){$('labSource').textContent=c?.id||'Unavailable';$('labRate').textContent=c?Math.round(c.rate)+' Hz':'—';$('labAge').textContent=c&&c.count?((t-c.at)*1000).toFixed(0)+' ms':'—';$('labEnergy').textContent=c?c.energy.toFixed(3)+' m/s²':'—';$('labFPS').textContent=Math.round(1000/frameMS)+' fps';$('labCPU').textContent=cpuMS.toFixed(2)+' ms';const ctx=$('scope').getContext('2d');ctx.clearRect(0,0,580,100);ctx.strokeStyle='#cbdacf';for(let y=20;y<100;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(580,y);ctx.stroke()}ctx.strokeStyle='#109b91';ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<160;i++){let x=i/159*580,y=94-clamp(scopeData[(scopeAt+i)%160]/3,0,1)*84;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}}
+function closeVeils(){for(const id of ['settingsVeil','helpVeil','labVeil','endVeil'])$(id).classList.add('hide')}
+function openVeil(id){if(state==='playing')pause('The game is paused while this panel is open.');$('endVeil').classList.add('hide');$(id).classList.remove('hide');$(id).querySelector('button,select,input')?.focus();if(document.pointerLockElement===canvas)document.exitPointerLock()}
+function closeVeil(id){$(id).classList.add('hide');if(state==='paused'&&!xrActive)showEnd(false)}
+function fillSettings(){for(const key of Object.keys(defaults)){const el=$(key);if(el.type==='checkbox')el.checked=settings[key];else el.value=settings[key]}rangeLabels()}
+function rangeLabels(){$('sensitivityValue').textContent=Number($('sensitivity').value).toFixed(1)+'×';$('maxSpeedValue').textContent=Number($('maxSpeed').value).toFixed(2)+' m/s';$('throwGainValue').textContent=Number($('throwGain').value).toFixed(2)+'×'}
+function applySettings(){for(const key of Object.keys(defaults)){const el=$(key);settings[key]=el.type==='checkbox'?el.checked:Number(el.value)}sanitise();save();closeVeil('settingsVeil');hudDirty=true}
+function preview(){unlockSound();mode='desktop';startRound('desktop');$('home').classList.add('hide');$('playUI').classList.remove('hide');$('crosshair').classList.remove('hide');$('captureTip').classList.remove('hide');closeVeils();toast('W TO WALK · CLICK TO SPLASH',2.5)}
+function goHome(){toastUntil=0;$('toast').style.opacity=0;state='home';mode='desktop';speed=0;keys.clear();touch.walk=touch.left=touch.right=false;cancelHeld();closeVeils();$('home').classList.remove('hide');$('playUI').classList.add('hide');$('crosshair').classList.add('hide');$('captureTip').classList.add('hide');if(document.pointerLockElement)document.exitPointerLock();initRound()}
+function bindHold(id,on,off){const el=$(id);el.addEventListener('pointerdown',e=>{e.preventDefault();el.setPointerCapture(e.pointerId);on()});for(const name of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(name,off)}
+$('enterVR').onclick=enterVR;$('preview').onclick=preview;$('settingsOpen').onclick=()=>{fillSettings();openVeil('settingsVeil')};$('helpOpen').onclick=()=>openVeil('helpVeil');$('labOpen').onclick=()=>openVeil('labVeil');$('pauseButton').onclick=()=>state==='playing'?pause():resume();$('saveSettings').onclick=applySettings;$('sensorPermission').onclick=enableSensors;$('labEnable').onclick=enableSensors;$('resumeButton').onclick=resume;$('newRound').onclick=()=>{closeVeils();startRound('desktop')};$('homeButton').onclick=goHome;document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeVeil(b.dataset.close));for(const id of ['sensitivity','maxSpeed','throwGain'])$(id).oninput=rangeLabels;document.querySelectorAll('[data-colour]').forEach(b=>b.onclick=()=>setColour(Number(b.dataset.colour)));
+bindHold('touchWalk',()=>touch.walk=true,()=>touch.walk=false);bindHold('turnLeft',()=>touch.left=true,()=>touch.left=false);bindHold('turnRight',()=>touch.right=true,()=>touch.right=false);$('touchThrow').onclick=desktopThrow;$('touchColour').onclick=()=>setColour(colour+1);
+addEventListener('keydown',e=>{if(xrActive||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(state==='playing')keys.add(e.code);if(e.repeat)return;if(e.code==='Space')desktopThrow();if(/^Digit[123]$/.test(e.code))setColour(Number(e.code.slice(-1))-1);if(e.code==='KeyP')state==='playing'?pause():state==='paused'?resume():null;if(e.code==='Escape'&&state==='playing')pause()});addEventListener('keyup',e=>keys.delete(e.code));
+let pointer={x:0,y:0,down:false,moved:0},hadLock=false;
+canvas.addEventListener('pointerdown',e=>{if(xrActive||state!=='playing')return;pointer={x:e.clientX,y:e.clientY,down:true,moved:0};if(e.pointerType==='mouse'){desktopThrow();if(!document.pointerLockElement)try{const p=canvas.requestPointerLock();p?.catch?.(()=>{})}catch(_){}}else canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointermove',e=>{if(xrActive||state!=='playing')return;if(document.pointerLockElement===canvas){yaw-=e.movementX*.0024;pitch=clamp(pitch-e.movementY*.0024,-1,1)}else if(pointer.down){const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer.moved+=Math.abs(dx)+Math.abs(dy);yaw-=dx*.004;pitch=clamp(pitch-dy*.004,-1,1);pointer.x=e.clientX;pointer.y=e.clientY}});
+canvas.addEventListener('pointerup',e=>{if(e.pointerType!=='mouse'&&pointer.down&&pointer.moved<10)desktopThrow();pointer.down=false});canvas.addEventListener('pointercancel',()=>pointer.down=false);document.addEventListener('pointerlockchange',()=>{const has=document.pointerLockElement===canvas;if(hadLock&&!has&&state==='playing')pause('Mouse released. Resume when ready.');hadLock=has;$('captureTip').classList.toggle('hide',has||state!=='playing')});
+addEventListener('blur',()=>{keys.clear();touch.walk=touch.left=touch.right=false;if(!xrActive)pause('Browser focus changed. Resume when ready.')});document.addEventListener('visibilitychange',()=>{if(document.hidden)pause('Page hidden. Resume when ready.')});
+$('exportStats').onclick=()=>{const t=performance.now()/1000,c=accel.choose(t),data={game:'Paint Splash Park',version:'1.0',date:new Date().toISOString(),mode,score,painted:painted(),shots,targetHits,botHits,bestStreak,virtualMetres:Math.round(walked*10)/10,seconds:Math.round(elapsed),inputSource:mode==='desktop'?'Keyboard simulation':mode==='stationary'?'Stationary':c?.id||'Unavailable',calibration:{noise:accel.rest,walk:accel.walk},settings,frameIntervalMs:Math.round(frameMS*10)/10,appUpdateCpuMs:Math.round(cpuMS*100)/100,hardwareLatencyMeasured:false,treadmillDataUsed:false,headPositionUsedForWalking:false};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Paint_Splash_Park_Run.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000)};
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();pause('Graphics interrupted. Reload the page.');if(session)session.end().catch(()=>{});$('fatalText').textContent='The graphics context was lost. Movement has stopped. Reload this page before starting again.';$('fatal').style.display='block'});
+fillSettings();resize();initRound();if(navigator.xr){navigator.xr.isSessionSupported('immersive-vr').then(s=>{$('support').textContent=s?'VR available. The headset sensor check happens inside.':'Open this HTTPS page on Quest 3 for VR. Desktop play works here.'}).catch(()=>{$('support').textContent='Open on Quest 3 over HTTPS for VR. Accelerometer availability is checked live.'})}else $('support').textContent='Open the HTTPS page on Quest 3 for VR. Desktop play works here.';
+// Synthetic QA hooks are opt-in and never supply production headset locomotion data.
+if(new URLSearchParams(location.search).has('qa'))window.__qa={AccelChannel,AccelHub,HandHistory,accel,settings,preview,initRound,pause,resume,startRound,finish,spawnBall,firstCollision,segmentBox,segmentSphere,releaseHand,hands,cancelHeld,setColour,updateMovement,tick,stepBalls,beginCalibration,updateCalibration,enterVR,flatDirection,worldPosition,worldVector,painted,buffers,drawHUD,hitTarget,getState:()=>({state,mode,xrActive,trackValid,calibrated,player:{...player},origin:{...origin},head:{...head},speed,yaw,pitch,score,elapsed,shots,targetHits,painted:painted(),handCount,reason,balls:balls.map(b=>({...b})),targets:targets.map(t=>({...t})),bots: bots.map(b=>({...b})),splats:splats.length,frameMS,cpuMS,colour}),setClock:t=>now=t,setPlayer:p=>Object.assign(player,p),setView:(y,p=0)=>{yaw=y;pitch=p},setHead:(p,q)=>{Object.assign(head,p);if(q)Object.assign(headQ,q)},setMode:m=>mode=m,setState:s=>state=s,setOrigin:o=>Object.assign(origin,o),setTracking:t=>trackValid=t,setCalibration:v=>calibrated=v};
+requestAnimationFrame(desktopLoop);
+
+})();
+</script>
+</body></html>
